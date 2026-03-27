@@ -7,6 +7,13 @@ from pydantic import BaseModel, Field
 from dm_bot.characters.models import COCAttributes, COCInvestigatorProfile
 
 
+class ArchiveFinishingRecommendation(BaseModel):
+    recommended_occupation_skills: list[str] = Field(default_factory=list)
+    recommended_interest_skills: list[str] = Field(default_factory=list)
+    allowed_adjustments: list[str] = Field(default_factory=list)
+    rules_note: str = ""
+
+
 class InvestigatorArchiveProfile(BaseModel):
     profile_id: str
     user_id: str
@@ -14,14 +21,67 @@ class InvestigatorArchiveProfile(BaseModel):
     occupation: str
     age: int
     concept: str = ""
+    occupation_detail: str = ""
+    specialty: str = ""
     background: str = ""
+    career_arc: str = ""
     key_past_event: str = ""
+    core_belief: str = ""
     life_goal: str = ""
+    material_desire: str = ""
     weakness: str = ""
+    fear_or_taboo: str = ""
+    important_tie: str = ""
     disposition: str = ""
     favored_skills: list[str] = Field(default_factory=list)
     portrait_summary: str = ""
+    finishing: ArchiveFinishingRecommendation = Field(default_factory=ArchiveFinishingRecommendation)
     coc: COCInvestigatorProfile
+
+    def summary_line(self) -> str:
+        goal = self.life_goal or "未记录目标"
+        goal = goal[:20] + ("…" if len(goal) > 20 else "")
+        return f"{self.profile_id} | {self.name} | {self.coc.occupation} | SAN {self.coc.san} | 目标 {goal}"
+
+    def detail_view(self) -> str:
+        favored = "、".join(self.favored_skills) if self.favored_skills else "未记录"
+        occ_skills = "、".join(self.finishing.recommended_occupation_skills) if self.finishing.recommended_occupation_skills else "未记录"
+        interest_skills = "、".join(self.finishing.recommended_interest_skills) if self.finishing.recommended_interest_skills else "未记录"
+        adjustments = "；".join(self.finishing.allowed_adjustments) if self.finishing.allowed_adjustments else "无"
+        lines = [
+            "【调查员档案】",
+            f"{self.name} / {self.coc.occupation} / {self.age}岁",
+            "",
+            "【人物】",
+            f"骨架：{self.concept or '未记录'}",
+            f"职业细化：{self.occupation_detail or self.occupation or '未记录'}",
+            f"专长：{self.specialty or '未记录'}",
+            f"职业轨迹：{self.career_arc or self.background or '未记录'}",
+            "",
+            "【塑造】",
+            f"关键过往：{self.key_past_event or '未记录'}",
+            f"核心信念：{self.core_belief or '未记录'}",
+            f"人生目标：{self.life_goal or '未记录'}",
+            f"物质欲望：{self.material_desire or '未记录'}",
+            f"弱点：{self.weakness or '未记录'}",
+            f"恐惧/禁忌：{self.fear_or_taboo or '未记录'}",
+            f"重要关系：{self.important_tie or '未记录'}",
+            f"处事方式：{self.disposition or '未记录'}",
+            "",
+            "【数值】",
+            f"STR {self.coc.attributes.str} / CON {self.coc.attributes.con} / DEX {self.coc.attributes.dex} / APP {self.coc.attributes.app}",
+            f"POW {self.coc.attributes.pow} / SIZ {self.coc.attributes.siz} / INT {self.coc.attributes.int} / EDU {self.coc.attributes.edu}",
+            f"SAN {self.coc.san} / HP {self.coc.hp} / MP {self.coc.mp} / LUCK {self.coc.luck} / MOV {self.coc.move_rate}",
+            f"体格 {self.coc.build} / 伤害加值 {self.coc.damage_bonus}",
+            "",
+            "【技能与收束】",
+            f"偏好技能：{favored}",
+            f"职业技能建议：{occ_skills}",
+            f"兴趣技能建议：{interest_skills}",
+            f"允许的规则内收束：{adjustments}",
+            f"规则说明：{self.finishing.rules_note or '未记录'}",
+        ]
+        return "\n".join(lines)
 
 
 class InvestigatorArchiveRepository:
@@ -38,9 +98,16 @@ class InvestigatorArchiveRepository:
         background: str,
         portrait_summary: str = "",
         concept: str = "",
+        occupation_detail: str = "",
+        specialty: str = "",
+        career_arc: str = "",
         key_past_event: str = "",
+        core_belief: str = "",
         life_goal: str = "",
+        material_desire: str = "",
         weakness: str = "",
+        fear_or_taboo: str = "",
+        important_tie: str = "",
         disposition: str,
         favored_skills: list[str],
         generation: dict[str, int],
@@ -57,6 +124,13 @@ class InvestigatorArchiveRepository:
         )
         favored = [skill.strip() for skill in favored_skills if skill.strip()]
         skills = {skill: 50 for skill in favored}
+        finishing = _build_finishing_recommendation(
+            occupation=occupation,
+            age=age,
+            favored_skills=favored,
+            specialty=specialty,
+            concept=concept,
+        )
         profile = InvestigatorArchiveProfile(
             profile_id=str(uuid4()),
             user_id=user_id,
@@ -64,13 +138,21 @@ class InvestigatorArchiveRepository:
             occupation=occupation,
             age=age,
             concept=concept,
+            occupation_detail=occupation_detail or occupation,
+            specialty=specialty,
             background=background,
+            career_arc=career_arc,
             key_past_event=key_past_event,
+            core_belief=core_belief,
             life_goal=life_goal,
+            material_desire=material_desire,
             weakness=weakness,
+            fear_or_taboo=fear_or_taboo,
+            important_tie=important_tie,
             disposition=disposition,
             favored_skills=favored,
             portrait_summary=portrait_summary or f"{occupation}。{background} 性格上{disposition}",
+            finishing=finishing,
             coc=COCInvestigatorProfile(
                 occupation=occupation,
                 age=age,
@@ -94,6 +176,10 @@ class InvestigatorArchiveRepository:
     def get_profile(self, user_id: str, profile_id: str) -> InvestigatorArchiveProfile:
         return self._profiles[user_id][profile_id]
 
+    def latest_profile(self, user_id: str) -> InvestigatorArchiveProfile | None:
+        profiles = list(self._profiles.get(user_id, {}).values())
+        return profiles[-1] if profiles else None
+
     def export_state(self) -> dict[str, object]:
         return {
             user_id: {profile_id: profile.model_dump() for profile_id, profile in profiles.items()}
@@ -107,6 +193,43 @@ class InvestigatorArchiveRepository:
             for profile_id, raw in dict(raw_profiles).items():
                 bucket[profile_id] = InvestigatorArchiveProfile.model_validate(raw)
             self._profiles[str(user_id)] = bucket
+
+
+def _build_finishing_recommendation(
+    *,
+    occupation: str,
+    age: int,
+    favored_skills: list[str],
+    specialty: str,
+    concept: str,
+) -> ArchiveFinishingRecommendation:
+    occupation_skills = _occupation_skill_suggestions(occupation=occupation, specialty=specialty)
+    interest_skills = list(dict.fromkeys([skill for skill in favored_skills if skill]))
+    allowed_adjustments = [
+        "按职业与兴趣技能点分配来体现人物采访结果",
+        "允许在职业细化范围内重新排序推荐技能",
+    ]
+    if age >= 40:
+        allowed_adjustments.append("按本地规则书应用年龄相关修正")
+    if "落魄" in concept or "失意" in concept:
+        allowed_adjustments.append("只通过信用评级、资源叙述和技能倾向体现落魄感，不直接改核心属性")
+    return ArchiveFinishingRecommendation(
+        recommended_occupation_skills=occupation_skills,
+        recommended_interest_skills=interest_skills,
+        allowed_adjustments=allowed_adjustments,
+        rules_note="采访结果只能影响规则允许的职业/兴趣技能倾向与合法修正，不能直接发明属性加值。",
+    )
+
+
+def _occupation_skill_suggestions(*, occupation: str, specialty: str) -> list[str]:
+    base = occupation + " " + specialty
+    if "医生" in base or "医学" in base:
+        return ["医学", "急救", "科学(生物学)", "心理学"]
+    if "记者" in base:
+        return ["图书馆使用", "心理学", "说服", "侦查"]
+    if "警察" in base or "侦探" in base:
+        return ["侦查", "法律", "心理学", "聆听"]
+    return ["图书馆使用", "聆听", "心理学"]
 
 
 def _build_for(total: int) -> int:

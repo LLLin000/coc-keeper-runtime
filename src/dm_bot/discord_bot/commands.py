@@ -126,8 +126,15 @@ class BotCommands:
         if not profiles:
             await interaction.response.send_message("你还没有长期调查员档案。先用 `/start_builder` 建一张。", ephemeral=True)
             return
-        lines = [f"{item.profile_id} | {item.name} | {item.coc.occupation} | SAN {item.coc.san}" for item in profiles]
+        lines = [item.summary_line() for item in profiles]
         await interaction.response.send_message("\n".join(lines), ephemeral=True)
+
+    async def profile_detail(self, interaction, *, profile_id: str) -> None:
+        if self._archive_repository is None:
+            await interaction.response.send_message("archive repository is not configured", ephemeral=True)
+            return
+        profile = self._archive_repository.get_profile(str(interaction.user.id), profile_id)
+        await interaction.response.send_message(profile.detail_view(), ephemeral=True)
 
     async def select_profile(self, interaction, *, profile_id: str) -> None:
         if self._archive_repository is None:
@@ -488,15 +495,20 @@ class BotCommands:
         )
 
     async def show_sheet(self, interaction) -> None:
-        if self._gameplay is None:
-            await interaction.response.send_message("gameplay is not configured", ephemeral=True)
-            return
         archive_channel = self._session_store.archive_channel_for(str(interaction.guild_id)) if self._session_store else None
         if archive_channel and str(interaction.channel_id) != archive_channel:
             await interaction.response.send_message(
                 f"请到角色档案频道 `<#{archive_channel}>` 查看长期角色信息。",
                 ephemeral=True,
             )
+            return
+        if self._archive_repository is not None:
+            latest_profile = self._archive_repository.latest_profile(str(interaction.user.id))
+            if latest_profile is not None:
+                await interaction.response.send_message(latest_profile.detail_view(), ephemeral=True)
+                return
+        if self._gameplay is None:
+            await interaction.response.send_message("gameplay is not configured", ephemeral=True)
             return
         snapshot = self._gameplay.investigator_panel_snapshot(str(interaction.user.id))
         knowledge_titles = [item.get("title", "") for item in snapshot.get("knowledge", []) if item.get("title")]

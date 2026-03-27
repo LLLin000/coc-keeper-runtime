@@ -183,6 +183,8 @@ def test_conversational_builder_creates_archive_profile() -> None:
     assert profiles[0].coc.attributes.int == 70
     assert profiles[0].life_goal.startswith("我想查清")
     assert "执拗" in profiles[0].weakness
+    assert profiles[0].finishing.recommended_interest_skills
+    assert "规则" in profiles[0].finishing.rules_note
 
 
 def test_builder_uses_concept_to_ask_a_more_specific_follow_up() -> None:
@@ -274,6 +276,7 @@ def test_archive_channel_plain_messages_can_finish_builder_session() -> None:
     assert profiles[0].name == "林钟轩"
     assert profiles[0].coc.occupation == "临床医生"
     assert "证明" in profiles[0].life_goal
+    assert profiles[0].specialty
 
 
 def test_ready_projects_selected_archive_profile_without_mutating_archive() -> None:
@@ -324,3 +327,80 @@ def test_ready_projects_selected_archive_profile_without_mutating_archive() -> N
     assert panel["name"] == "林秋"
     assert panel["san"] == archive_profile.coc.san - 5
     assert archive_profile.coc.san == 70
+
+
+def test_profiles_command_shows_richer_summary_line() -> None:
+    from dm_bot.coc.archive import InvestigatorArchiveRepository
+
+    repo = InvestigatorArchiveRepository()
+    repo.create_profile(
+        user_id="user-1",
+        name="林钟轩",
+        occupation="临床医生",
+        age=38,
+        concept="38岁的落魄临床医生",
+        background="被手术纠纷拖下神坛的临床医生。",
+        key_past_event="一次违规手术让他被迫离开三甲医院。",
+        life_goal="赚很多钱然后逃到山里隐居。",
+        weakness="过度自信且酗酒。",
+        disposition="嘴硬，控制欲强。",
+        specialty="神经外科",
+        career_arc="三甲医院神经外科名医，后被贬至县城医院。",
+        core_belief="我不是在犯错，我是在救人。",
+        portrait_summary="落魄但不肯认输的临床医生。",
+        favored_skills=["医学", "急救", "心理学"],
+        generation={"str": 50, "con": 55, "dex": 60, "app": 65, "pow": 70, "siz": 50, "int": 75, "edu": 80, "luck": 45},
+    )
+    commands = BotCommands(
+        settings=Settings(),
+        session_store=SessionStore(),
+        turn_coordinator=None,
+        archive_repository=repo,
+    )
+    interaction = FakeInteraction(channel_id="archive-1")
+
+    asyncio.run(commands.list_profiles(interaction))
+
+    content = interaction.response.messages[0][0]
+    assert "临床医生" in content
+    assert "目标" in content
+
+
+def test_profile_detail_command_renders_investigator_card_sections() -> None:
+    from dm_bot.coc.archive import InvestigatorArchiveRepository
+
+    repo = InvestigatorArchiveRepository()
+    profile = repo.create_profile(
+        user_id="user-1",
+        name="林钟轩",
+        occupation="临床医生",
+        age=38,
+        concept="38岁的落魄临床医生",
+        background="被手术纠纷拖下神坛的临床医生。",
+        key_past_event="一次违规手术让他被迫离开三甲医院。",
+        life_goal="赚很多钱然后逃到山里隐居。",
+        weakness="过度自信且酗酒。",
+        disposition="嘴硬，控制欲强。",
+        specialty="神经外科",
+        career_arc="三甲医院神经外科名医，后被贬至县城医院。",
+        core_belief="我不是在犯错，我是在救人。",
+        portrait_summary="落魄但不肯认输的临床医生。",
+        favored_skills=["医学", "急救", "心理学"],
+        generation={"str": 50, "con": 55, "dex": 60, "app": 65, "pow": 70, "siz": 50, "int": 75, "edu": 80, "luck": 45},
+    )
+    commands = BotCommands(
+        settings=Settings(),
+        session_store=SessionStore(),
+        turn_coordinator=None,
+        archive_repository=repo,
+    )
+    interaction = FakeInteraction(channel_id="archive-1")
+
+    asyncio.run(commands.profile_detail(interaction, profile_id=profile.profile_id))
+
+    content = interaction.response.messages[0][0]
+    assert "【调查员档案】" in content
+    assert "【人物】" in content
+    assert "【数值】" in content
+    assert "【塑造】" in content
+    assert "神经外科" in content

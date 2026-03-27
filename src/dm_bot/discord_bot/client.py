@@ -85,6 +85,11 @@ class DiscordDmBot(commands.Bot):
         async def profiles(interaction: discord.Interaction) -> None:
             await self.handlers.list_profiles(interaction)
 
+        @self.tree.command(name="profile_detail", description="Show one archive investigator profile in detail")
+        @app_commands.describe(profile_id="Archive profile id")
+        async def profile_detail(interaction: discord.Interaction, profile_id: str) -> None:
+            await self.handlers.profile_detail(interaction, profile_id=profile_id)
+
         @self.tree.command(name="select_profile", description="Select an archive profile for this campaign")
         @app_commands.describe(profile_id="Archive profile id")
         async def select_profile(interaction: discord.Interaction, profile_id: str) -> None:

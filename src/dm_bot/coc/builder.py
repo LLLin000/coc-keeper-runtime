@@ -28,6 +28,10 @@ class InterviewPlanner(Protocol):
     async def next_question(self, session: BuilderSession) -> BuilderQuestionChoice: ...
 
 
+class ArchiveSemanticExtractor(Protocol):
+    async def extract(self, session: BuilderSession) -> dict[str, str]: ...
+
+
 class HeuristicInterviewPlanner:
     async def next_question(self, session: BuilderSession) -> BuilderQuestionChoice:
         concept = session.answers.get("concept", "")
@@ -91,6 +95,62 @@ class ModelGuidedInterviewPlanner:
         return await self._fallback.next_question(session)
 
 
+class HeuristicArchiveSemanticExtractor:
+    async def extract(self, session: BuilderSession) -> dict[str, str]:
+        answers = session.answers
+        return {
+            "occupation_detail": _build_occupation_detail(answers),
+            "specialty": _infer_specialty(answers),
+            "career_arc": _infer_career_arc(answers),
+            "core_belief": _infer_core_belief(answers),
+            "material_desire": _infer_material_desire(answers),
+            "fear_or_taboo": _infer_fear_or_taboo(answers),
+            "important_tie": _infer_important_tie(answers),
+        }
+
+
+class ModelGuidedArchiveSemanticExtractor:
+    def __init__(self, *, model_client, fallback: ArchiveSemanticExtractor | None = None) -> None:
+        self._model_client = model_client
+        self._fallback = fallback or HeuristicArchiveSemanticExtractor()
+
+    async def extract(self, session: BuilderSession) -> dict[str, str]:
+        request = ModelRequest(
+            system_prompt=(
+                "你是克苏鲁的呼唤人物档案归档器。"
+                "根据采访答案，提取适合长期档案保存的人物语义字段。"
+                "不要编造采访里完全不存在的事实。"
+                "可以做适度归纳，但必须忠于原意。"
+                "只返回 JSON，不要解释。"
+                '返回键限定为: occupation_detail, specialty, career_arc, core_belief, material_desire, fear_or_taboo, important_tie。'
+                "值必须是简洁中文字符串；没有把握就返回空字符串。"
+            ),
+            user_prompt=f"采访答案:\n{json.dumps(session.answers, ensure_ascii=False)}",
+            response_format={"type": "json_object"},
+        )
+        try:
+            response = await self._model_client.call_router(request)
+            payload = json.loads(response.content)
+            allowed = {
+                "occupation_detail",
+                "specialty",
+                "career_arc",
+                "core_belief",
+                "material_desire",
+                "fear_or_taboo",
+                "important_tie",
+            }
+            normalized = {
+                key: str(payload.get(key, "") or "").strip()
+                for key in allowed
+            }
+            if any(normalized.values()):
+                return normalized
+        except Exception:
+            pass
+        return await self._fallback.extract(session)
+
+
 class ConversationalCharacterBuilder:
     INTRO_QUESTION = "先给这位调查员起个名字。"
     CONCEPT_QUESTION = "用一句短话描述这个人的人物骨架，例如“38岁的落魄临床医生”。"
@@ -101,10 +161,12 @@ class ConversationalCharacterBuilder:
         archive_repository: InvestigatorArchiveRepository,
         roll_provider=None,
         interview_planner: InterviewPlanner | None = None,
+        semantic_extractor: ArchiveSemanticExtractor | None = None,
     ) -> None:
         self._archive_repository = archive_repository
         self._roll_provider = roll_provider or self._default_roll_provider
         self._interview_planner = interview_planner or HeuristicInterviewPlanner()
+        self._semantic_extractor = semantic_extractor or HeuristicArchiveSemanticExtractor()
         self._sessions: dict[str, BuilderSession] = {}
 
     def start(self, *, user_id: str, visibility: str = "private") -> str:
@@ -131,12 +193,20 @@ class ConversationalCharacterBuilder:
             session.asked_slots.append(next_question.slot)
             return next_question.question, None
 
+        semantic_fields = await self._semantic_extractor.extract(session)
         profile = self._archive_repository.create_profile(
             user_id=user_id,
             name=session.answers["name"],
             occupation=session.answers["occupation"],
             age=int(session.answers["age"]),
             background=_build_background(session.answers),
+            occupation_detail=semantic_fields.get("occupation_detail", ""),
+            specialty=semantic_fields.get("specialty", ""),
+            career_arc=semantic_fields.get("career_arc", ""),
+            core_belief=semantic_fields.get("core_belief", ""),
+            material_desire=semantic_fields.get("material_desire", ""),
+            fear_or_taboo=semantic_fields.get("fear_or_taboo", ""),
+            important_tie=semantic_fields.get("important_tie", ""),
             disposition=session.answers.get("disposition", ""),
             favored_skills=[item.strip() for item in session.answers.get("favored_skills", "").split(",") if item.strip()],
             portrait_summary=_build_portrait_summary(session.answers),
@@ -224,6 +294,67 @@ def _past_event_question(concept: str, occupation: str) -> str:
 def _build_background(answers: dict[str, str]) -> str:
     snippets = [answers.get("concept", ""), answers.get("key_past_event", "")]
     return " ".join(part.strip() for part in snippets if part and part.strip())
+
+
+def _build_occupation_detail(answers: dict[str, str]) -> str:
+    concept = answers.get("concept", "")
+    occupation = answers.get("occupation", "")
+    if occupation and occupation not in concept:
+        return occupation
+    return concept or occupation
+
+
+def _infer_specialty(answers: dict[str, str]) -> str:
+    occupation = answers.get("occupation", "")
+    favored = answers.get("favored_skills", "")
+    source = " ".join([occupation, answers.get("key_past_event", ""), favored, answers.get("concept", "")])
+    if "脑" in source or "神经" in source:
+        return "神经外科"
+    if "医生" in occupation or "医学" in favored:
+        return "临床医学"
+    if "记者" in occupation:
+        return "调查报道"
+    if "侦探" in occupation or "警察" in occupation:
+        return "刑事调查"
+    return ""
+
+
+def _infer_career_arc(answers: dict[str, str]) -> str:
+    concept = answers.get("concept", "")
+    event = answers.get("key_past_event", "")
+    if concept and event:
+        return f"{concept}；后来因为{event}"
+    return event or concept
+
+
+def _infer_core_belief(answers: dict[str, str]) -> str:
+    combined = " ".join(answers.values())
+    if "不是我的错" in combined or "我是在救人" in combined:
+        return "结果比规则更重要，我首先是在救人。"
+    if "真相" in combined:
+        return "真相值得追到底。"
+    return ""
+
+
+def _infer_material_desire(answers: dict[str, str]) -> str:
+    goal = answers.get("life_goal", "")
+    if "钱" in goal or "发财" in goal:
+        return goal
+    return ""
+
+
+def _infer_fear_or_taboo(answers: dict[str, str]) -> str:
+    weakness = answers.get("weakness", "")
+    if "酗酒" in weakness:
+        return "害怕再次在失控中毁掉别人，也害怕承认自己已经失控。"
+    return ""
+
+
+def _infer_important_tie(answers: dict[str, str]) -> str:
+    event = answers.get("key_past_event", "")
+    if "病人" in event or "患者" in event:
+        return "那位改变他职业命运的病人与其家属。"
+    return ""
 
 
 def _build_portrait_summary(answers: dict[str, str]) -> str:
