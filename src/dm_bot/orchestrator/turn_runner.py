@@ -68,11 +68,17 @@ class TurnRunner:
     ) -> tuple[TurnPlan, NarrationRequest]:
         plan = await self._router.route(envelope)
         computed_tool_results = tool_results or []
+        computed_state_snapshot = dict(state_snapshot or {})
         if self._gameplay is not None:
             computed_tool_results = [*computed_tool_results, *self._gameplay.resolve_plan(plan)]
+            guidance = self._gameplay.evaluate_scene_action(envelope.content) if self._gameplay.adventure is not None else None
+            if self._gameplay.adventure is not None:
+                computed_state_snapshot["adventure"] = self._gameplay.adventure_snapshot()
+            if guidance and guidance.get("kind") != "none":
+                computed_state_snapshot["guidance"] = guidance
         request = NarrationRequest(
             player_input=envelope.content,
-            state_snapshot=state_snapshot or {},
+            state_snapshot=computed_state_snapshot,
             tool_results=computed_tool_results,
             plan=plan,
         )

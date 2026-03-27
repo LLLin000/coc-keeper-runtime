@@ -93,6 +93,7 @@ class GameplayOrchestrator:
                 "current_scene": scene.model_dump(),
                 "objectives": list(self.adventure_state.get("objectives", [])),
                 "state": self.adventure.public_state(module_state),
+                "guidance": self.adventure_guidance_snapshot(),
             },
             "gm": {
                 "premise": self.adventure.premise,
@@ -100,6 +101,33 @@ class GameplayOrchestrator:
                 "endings": [ending.model_dump() for ending in self.adventure.endings],
             },
         }
+
+    def adventure_guidance_snapshot(self) -> dict[str, object]:
+        if self.adventure is None:
+            return {}
+        scene = self.adventure.scene_by_id(str(self.adventure_state.get("scene_id", self.adventure.start_scene_id)))
+        return {
+            "ambient_focus": list(scene.guidance.ambient_focus),
+            "light_hint": scene.guidance.light_hint,
+            "rescue_hint": scene.guidance.rescue_hint,
+            "known_clues": list(self.adventure_state.get("clues_found", [])),
+        }
+
+    def scene_frame_text(self, *, scene_id: str | None = None) -> str:
+        if self.adventure is None:
+            return ""
+        resolved_scene_id = scene_id or str(self.adventure_state.get("scene_id", self.adventure.start_scene_id))
+        scene = self.adventure.scene_by_id(resolved_scene_id)
+        lines = [f"【{scene.title}】", scene.summary]
+        if scene.presentation.entry_text:
+            lines.append(scene.presentation.entry_text)
+        if scene.presentation.pressure_text:
+            lines.append(scene.presentation.pressure_text)
+        if scene.presentation.choice_prompt:
+            lines.append(scene.presentation.choice_prompt)
+        elif scene.guidance.ambient_focus:
+            lines.append(f"现在最值得留意的是：{'、'.join(scene.guidance.ambient_focus)}。")
+        return "\n".join(line for line in lines if line)
 
     def set_adventure_scene(self, scene_id: str) -> None:
         if self.adventure is None:
@@ -146,15 +174,13 @@ class GameplayOrchestrator:
     def adventure_opening_text(self, *, active_characters: dict[str, str]) -> str:
         if self.adventure is None:
             raise RuntimeError("adventure not loaded")
-        scene = self.adventure.scene_by_id(str(self.adventure_state.get("scene_id", self.adventure.start_scene_id)))
         roster = [name for name in active_characters.values() if name]
         roster_line = f"已就位调查员：{', '.join(roster)}。" if roster else "已就位调查员：未命名调查员。"
         return (
             f"《{self.adventure.title}》开始。\n"
             f"{self.adventure.premise}\n"
             f"{roster_line}\n"
-            f"开场场景：{scene.title}。\n"
-            f"{scene.summary}\n"
+            f"{self.scene_frame_text()}\n"
             "先描述你们第一轮的观察、站位或试探动作。"
         )
 
@@ -163,6 +189,73 @@ class GameplayOrchestrator:
         if onboarding and onboarding.get("status") == "awaiting_ready":
             return "模组已加载，先用 `/ready` 完成就位；如未导入角色，可在 `/ready` 里填写角色名。"
         return None
+
+    def evaluate_scene_action(self, content: str) -> dict[str, object]:
+        if self.adventure is None:
+            return {"kind": "none"}
+        scene = self.adventure.scene_by_id(str(self.adventure_state.get("scene_id", self.adventure.start_scene_id)))
+        lowered = content.lower()
+        scored_matches: list[tuple[int, object]] = []
+        for interactable in scene.interactables:
+            score = sum(1 for keyword in interactable.keywords if keyword.lower() in lowered)
+            if score > 0:
+                scored_matches.append((score, interactable))
+
+        scored_matches.sort(key=lambda item: item[0], reverse=True)
+        top_score = scored_matches[0][0] if scored_matches else 0
+        matches = [interactable for score, interactable in scored_matches if score == top_score]
+
+        if not matches:
+            return self._record_scene_miss_and_hint(scene)
+        if len(matches) > 1:
+            return {
+                "kind": "clarify",
+                "message": f"你想先处理哪一个：{', '.join(item.title for item in matches)}？",
+            }
+
+        interactable = matches[0]
+        if interactable.discover_clue:
+            self.record_adventure_clue(interactable.discover_clue)
+        if interactable.transition_scene_id:
+            self.set_adventure_scene(interactable.transition_scene_id)
+        self.adventure_state["scene_miss_count"] = 0
+
+        if interactable.judgement == "roll":
+            return {
+                "kind": "roll_needed",
+                "message": interactable.prompt_text or f"这里需要一次 {interactable.roll_label or '检定'}。",
+                "roll": {
+                    "action": interactable.roll_type or "ability_check",
+                    "label": interactable.roll_label or "Check",
+                },
+            }
+        if interactable.judgement == "clarify":
+            return {
+                "kind": "clarify",
+                "message": interactable.prompt_text or f"请先说明你打算怎么处理{interactable.title}。",
+            }
+        if interactable.transition_scene_id:
+            return {
+                "kind": "auto",
+                "message": f"{interactable.result_text or scene.summary}\n{self.scene_frame_text()}",
+                "guidance": "",
+            }
+        return {
+            "kind": "auto",
+            "message": interactable.result_text or scene.summary,
+            "guidance": scene.guidance.light_hint,
+        }
+
+    def _record_scene_miss_and_hint(self, scene) -> dict[str, object]:
+        miss_count = int(self.adventure_state.get("scene_miss_count", 0)) + 1
+        self.adventure_state["scene_miss_count"] = miss_count
+        hint = scene.guidance.rescue_hint if miss_count >= 2 and scene.guidance.rescue_hint else scene.guidance.light_hint
+        return {
+            "kind": "hint",
+            "message": hint or scene.summary,
+            "guidance": f"现在最值得留意的是：{'、'.join(scene.guidance.ambient_focus)}。" if scene.guidance.ambient_focus else "",
+            "tier": "rescue" if miss_count >= 2 and scene.guidance.rescue_hint else "light",
+        }
 
     def resolve_manual_roll(
         self,

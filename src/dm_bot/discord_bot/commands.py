@@ -86,6 +86,11 @@ class BotCommands:
         if onboarding_block:
             await interaction.followup.send(onboarding_block, ephemeral=True)
             return
+        adventure_response = self._handle_adventure_guidance(content=content)
+        if adventure_response is not None:
+            self._save_campaign_state(session.campaign_id)
+            await interaction.followup.send(adventure_response)
+            return
         await self._stream_turn_to_transport(
             campaign_id=session.campaign_id,
             channel_id=str(interaction.channel_id),
@@ -327,6 +332,11 @@ class BotCommands:
         if onboarding_block:
             return onboarding_block
 
+        adventure_response = self._handle_adventure_guidance(content=content)
+        if adventure_response is not None:
+            self._save_campaign_state(session.campaign_id)
+            return adventure_response
+
         inline_roll = self._try_inline_roll(
             channel_id=channel_id,
             user_id=user_id,
@@ -373,6 +383,12 @@ class BotCommands:
         onboarding_block = self._gameplay.onboarding_block_message() if self._gameplay is not None else None
         if onboarding_block:
             await message.channel.send(onboarding_block)
+            return
+
+        adventure_response = self._handle_adventure_guidance(content=content)
+        if adventure_response is not None:
+            self._save_campaign_state(session.campaign_id)
+            await message.channel.send(adventure_response)
             return
 
         inline_roll = self._try_inline_roll(channel_id=channel_id, user_id=user_id, content=content)
@@ -532,3 +548,21 @@ class BotCommands:
         if action == "damage_roll":
             return f"{result['actor']} 的伤害掷骰：{result['roll']}，总计 {result['total']} {result['damage_type']}"
         return f"{result['actor']} 掷骰：{result['roll']}，总计 {result['total']}"
+
+    def _handle_adventure_guidance(self, *, content: str) -> str | None:
+        if self._gameplay is None or self._gameplay.adventure is None:
+            return None
+        evaluation = self._gameplay.evaluate_scene_action(content)
+        kind = str(evaluation.get("kind", "none"))
+        if kind == "none":
+            return None
+        if kind == "roll_needed":
+            roll = dict(evaluation.get("roll", {}))
+            label = roll.get("label", "Check")
+            return f"{evaluation['message']}\n建议下一步：`/check label:{label} modifier:0 advantage:none`"
+        if kind in {"auto", "clarify", "hint"}:
+            guidance = evaluation.get("guidance")
+            if guidance:
+                return f"{evaluation['message']}\n{guidance}"
+            return str(evaluation["message"])
+        return None

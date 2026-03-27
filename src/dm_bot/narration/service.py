@@ -35,6 +35,7 @@ class NarrationService:
                 "You are the Chinese D&D DM. Produce final Discord-ready prose only. "
                 "Write like a practical tabletop DM: concise sensory framing, clear actionable details, "
                 "distinct NPC speech when needed, and no repetitive filler. "
+                "Use guidance context to orient players lightly, but never turn the scene into a walkthrough or spoil gated secrets. "
                 "Do not invent state mutations."
             ),
             user_prompt=self._build_prompt(request),

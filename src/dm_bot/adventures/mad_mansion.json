@@ -22,6 +22,58 @@
       "id": "central_hall",
       "title": "中央大厅",
       "summary": "纯白大厅中央刺眼的吊灯照得人心神不宁，四面光幕分别通向贪欲、生命、死亡与鲜血之馆。墙上的数字钟正在倒计时。",
+      "guidance": {
+        "ambient_focus": ["数字钟", "四道光幕", "强光下的大厅中央"],
+        "light_hint": "现在最值得注意的是墙上的数字钟，以及四道分别通往不同分馆的光幕。",
+        "rescue_hint": "如果你们没有头绪，先调查数字钟，或者选择一扇光幕进入对应分馆。"
+      },
+      "presentation": {
+        "entry_text": "刺目的白光把大厅每一寸轮廓都照得毫无遮掩，像是在逼你们立刻做出选择。",
+        "pressure_text": "那面不断倒数的数字钟提醒你们，这里的每一次迟疑都可能有代价。",
+        "choice_prompt": "先从最显眼的事物开始：看钟、试探光幕，或者分头观察大厅。"
+      },
+      "interactables": [
+        {
+          "id": "clock",
+          "title": "数字钟",
+          "keywords": ["钟", "数字钟", "clock", "倒计时"],
+          "judgement": "auto",
+          "result_text": "你们看清了墙上的数字钟，它正在稳定倒计时，说明这不是单纯的摆设，而是会真正决定生死的压力源。",
+          "discover_clue": "clock_countdown"
+        },
+        {
+          "id": "portal_greed",
+          "title": "贪欲之馆光幕",
+          "keywords": ["贪欲", "贪欲之馆", "光幕", "门"],
+          "judgement": "auto",
+          "result_text": "当你伸手触碰那道光幕，刺眼的白光立刻吞没视野。下一瞬，你已经站在贪欲之馆之中。",
+          "transition_scene_id": "greed_hall"
+        },
+        {
+          "id": "portal_life",
+          "title": "生命之馆光幕",
+          "keywords": ["生命", "生命之馆", "光幕", "门"],
+          "judgement": "auto",
+          "result_text": "你刚触到那层白光，脚下的重力感就像被抽走一样。再睁眼时，你已经进入生命之馆。",
+          "transition_scene_id": "life_hall"
+        },
+        {
+          "id": "portal_death",
+          "title": "死亡之馆光幕",
+          "keywords": ["死亡", "死亡之馆", "光幕", "门"],
+          "judgement": "auto",
+          "result_text": "你碰上光幕的瞬间，四周亮得发白，随后黑暗猛地压了下来。你已经来到死亡之馆。",
+          "transition_scene_id": "death_hall"
+        },
+        {
+          "id": "portal_blood",
+          "title": "鲜血之馆光幕",
+          "keywords": ["鲜血", "鲜血之馆", "血池", "光幕", "门"],
+          "judgement": "auto",
+          "result_text": "你朝那片光幕迈步，鼻腔里立刻钻进一股腥甜气味。回过神来，你已经站在鲜血之馆前。",
+          "transition_scene_id": "blood_hall"
+        }
+      ],
       "clues": [
         "四道光幕各自通往不同分馆",
         "墙上的数字钟正在倒计时",
@@ -38,6 +90,25 @@
       "id": "greed_hall",
       "title": "贪欲之馆",
       "summary": "白得发光的房间里摆着红木桌，一名持扇少女坐在其后，自称管理员与商人，愿意以理智为代价售卖各种物品。",
+      "guidance": {
+        "ambient_focus": ["红木桌", "持扇少女", "可疑的交易气氛"],
+        "light_hint": "这里最关键的是管理员少女和她提出的交易内容。",
+        "rescue_hint": "如果不确定怎么推进，就直接和管理员交谈，逼她说明代价、规则或可交易的东西。"
+      },
+      "presentation": {
+        "entry_text": "房间里的白光被红木桌和少女手中的折扇切得支离破碎，像一场早已准备好的交易仪式。",
+        "pressure_text": "她正等着你们先开口，而主动权显然不会白白送给你们。",
+        "choice_prompt": "现在最值得留意的是她的措辞、桌上的物件，以及你们是否真要与她做交易。"
+      },
+      "interactables": [
+        {
+          "id": "talk_admin",
+          "title": "管理员少女",
+          "keywords": ["少女", "管理员", "商人", "交谈", "问", "说"],
+          "judgement": "auto",
+          "result_text": "少女轻轻摇着扇子，笑意浮在嘴角，却没有半点温度。她显然愿意谈，但每一句话都像在等你们先暴露欲望。"
+        }
+      ],
       "clues": [
         "管理员愿意用理智值换取道具",
         "她会曲解购买内容并故意放大代价",
@@ -54,6 +125,34 @@
       "id": "life_hall",
       "title": "生命之馆",
       "summary": "触手人体雕像立在大厅中央，书架上摆着诡异图书与一本旧笔记本。石板承诺可用灵性换取完好的身体。",
+      "guidance": {
+        "ambient_focus": ["触手人体雕像", "书架", "旧笔记本", "石板"],
+        "light_hint": "这里最值得调查的是书架、旧笔记和那尊不自然的雕像。",
+        "rescue_hint": "如果卡住了，优先翻阅书架和旧笔记；它们比贸然向雕像献祭更稳妥。"
+      },
+      "presentation": {
+        "entry_text": "书架和雕像并排立在同一片惨白灯光下，仿佛分别邀请你们用理智与肉体去交换答案。",
+        "pressure_text": "这里最危险的不是立刻受伤，而是你们可能在没看懂代价前就做出无法挽回的选择。",
+        "choice_prompt": "现在最值得留意的是书架、旧笔记和雕像本身留下的异常细节。"
+      },
+      "interactables": [
+        {
+          "id": "search_books",
+          "title": "书架与旧笔记",
+          "keywords": ["书架", "书", "笔记", "旧笔记", "翻书", "查书"],
+          "judgement": "roll",
+          "roll_type": "ability_check",
+          "roll_label": "LibraryUse",
+          "prompt_text": "这里适合做一次图书馆检定，看看你能否从诡异图书和旧笔记里整理出真正有用的线索。"
+        },
+        {
+          "id": "inspect_statue",
+          "title": "雕像",
+          "keywords": ["雕像", "石像", "触手"],
+          "judgement": "auto",
+          "result_text": "你绕着雕像观察，越看越不舒服。它不像单纯的艺术品，更像某种等待回应的祭祀媒介。"
+        }
+      ],
       "clues": [
         "《奈亚的五个房间》记载了生门与死门的隐晦关系",
         "旧笔记本写着管理员是可以被杀死的",
@@ -70,6 +169,32 @@
       "id": "death_hall",
       "title": "死亡之馆",
       "summary": "漆黑房间中躺着三具干枯尸体，墙角的十字架状祭具静静地等着新的牺牲者。",
+      "guidance": {
+        "ambient_focus": ["三具干尸", "十字架状祭具", "黑暗中的地面痕迹"],
+        "light_hint": "先看尸体和祭具本身，它们比盲目尝试献祭更安全。",
+        "rescue_hint": "如果不确定代价，先调查尸体和十字架留下的痕迹，不要急着把人送上去。"
+      },
+      "presentation": {
+        "entry_text": "黑暗几乎吞掉了房间的边界，只有尸体和十字架状祭具像故意留给你们看的答案。",
+        "pressure_text": "这里每一个线索都在暗示代价已经发生过，而且下一次未必还有退路。",
+        "choice_prompt": "现在最值得留意的是尸体被耗尽的方式，以及祭具究竟是如何使用的。"
+      },
+      "interactables": [
+        {
+          "id": "inspect_corpses",
+          "title": "干尸",
+          "keywords": ["尸体", "干尸", "尸"],
+          "judgement": "auto",
+          "result_text": "你们很快确认这些尸体都像被彻底放干了血，连残留的痛苦都被抽空，只剩下被消耗过的痕迹。"
+        },
+        {
+          "id": "inspect_cross",
+          "title": "祭具",
+          "keywords": ["十字架", "祭具", "架子"],
+          "judgement": "auto",
+          "result_text": "那东西并不是宗教象征，而是某种专门用来固定、放血、等待选择的装置。"
+        }
+      ],
       "clues": [
         "尸体会流尽血液并最终消失",
         "十字架会要求牺牲者献血来增加同伴生机",
@@ -86,6 +211,35 @@
       "id": "blood_hall",
       "title": "鲜血之馆",
       "summary": "腥臭血池缓缓蠕动，对岸墙上刻着离开的条件。只有足够的伤痛之血，才能令池底的出口显现。",
+      "guidance": {
+        "ambient_focus": ["墙上刻字", "血池", "池底可能隐藏的结构"],
+        "light_hint": "先读墙上的文字，再决定是否靠近血池或寻找池底结构。",
+        "rescue_hint": "如果没有头绪，先确认墙上的条件，再思考怎么让血池或池底结构发生变化。"
+      },
+      "presentation": {
+        "entry_text": "血腥味先于视线扑了上来，池面细微的蠕动让整个房间像活物一样呼吸。",
+        "pressure_text": "真正的出口显然和鲜血有关，而错误的尝试很可能会让代价落在你们自己身上。",
+        "choice_prompt": "现在最值得留意的是墙上刻字、血池变化，以及池底是否藏着人工结构。"
+      },
+      "interactables": [
+        {
+          "id": "read_wall",
+          "title": "墙上刻字",
+          "keywords": ["墙", "字", "刻字", "文字"],
+          "judgement": "auto",
+          "result_text": "你们辨认出墙上的句子，它直白得近乎恶毒：唯有伤痛之后流下的鲜血，才会为离开之路开门。",
+          "discover_clue": "blood_exit_rule"
+        },
+        {
+          "id": "inspect_pool",
+          "title": "血池",
+          "keywords": ["血池", "池子", "水池", "潜水", "下去"],
+          "judgement": "roll",
+          "roll_type": "ability_check",
+          "roll_label": "SpotHidden",
+          "prompt_text": "如果你要仔细确认池底结构或潜水寻找出口，先做一次侦查检定。"
+        }
+      ],
       "clues": [
         "墙上的文字说明唯有伤痛后的鲜血能打开出去的路",
         "默认的开门条件是累计流失 25 点人类 HP",

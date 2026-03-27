@@ -201,6 +201,7 @@ def test_ready_command_posts_opening_when_all_members_are_ready() -> None:
     asyncio.run(commands.ready_for_adventure(second, character_name="调查员B"))
 
     assert any("疯狂之馆" in message for message in first.channel.messages)
+    assert any("先从最显眼的事物开始" in message for message in first.channel.messages)
     assert commands._gameplay.adventure_state["onboarding"]["status"] == "in_progress"
 
 

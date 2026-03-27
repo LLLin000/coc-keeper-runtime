@@ -151,3 +151,81 @@ def test_natural_message_is_blocked_until_adventure_ready() -> None:
 
     assert "ready" in reply.lower()
     assert coordinator.calls == []
+
+
+def test_natural_message_surfaces_scene_guidance_before_generic_dm_reply() -> None:
+    from dm_bot.adventures.loader import load_adventure
+
+    store = SessionStore()
+    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    coordinator = StubTurnCoordinator()
+    gameplay = build_gameplay()
+    gameplay.load_adventure(load_adventure("mad_mansion"))
+    gameplay.begin_adventure()
+    commands = BotCommands(settings=None, session_store=store, turn_coordinator=coordinator, gameplay=gameplay)
+
+    reply = asyncio.run(
+        commands.handle_channel_message(
+            channel_id="chan-1",
+            guild_id="guild-1",
+            user_id="user-1",
+            content="我先看一下墙上的钟。",
+            mention_count=0,
+        )
+    )
+
+    assert "倒计时" in reply or "压力源" in reply
+    assert coordinator.calls == []
+
+
+def test_natural_message_can_prompt_roll_requirement_from_scene_data() -> None:
+    from dm_bot.adventures.loader import load_adventure
+
+    store = SessionStore()
+    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    coordinator = StubTurnCoordinator()
+    gameplay = build_gameplay()
+    gameplay.load_adventure(load_adventure("mad_mansion"))
+    gameplay.begin_adventure()
+    gameplay.set_adventure_scene("life_hall")
+    commands = BotCommands(settings=None, session_store=store, turn_coordinator=coordinator, gameplay=gameplay)
+
+    reply = asyncio.run(
+        commands.handle_channel_message(
+            channel_id="chan-1",
+            guild_id="guild-1",
+            user_id="user-1",
+            content="我去翻书架和旧笔记。",
+            mention_count=0,
+        )
+    )
+
+    assert "图书馆检定" in reply
+    assert "/check" in reply
+    assert coordinator.calls == []
+
+
+def test_natural_message_scene_transition_adds_scene_framing() -> None:
+    from dm_bot.adventures.loader import load_adventure
+
+    store = SessionStore()
+    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    coordinator = StubTurnCoordinator()
+    gameplay = build_gameplay()
+    gameplay.load_adventure(load_adventure("mad_mansion"))
+    gameplay.begin_adventure()
+    commands = BotCommands(settings=None, session_store=store, turn_coordinator=coordinator, gameplay=gameplay)
+
+    reply = asyncio.run(
+        commands.handle_channel_message(
+            channel_id="chan-1",
+            guild_id="guild-1",
+            user_id="user-1",
+            content="我直接走进贪欲之馆的光幕。",
+            mention_count=0,
+        )
+    )
+
+    assert "贪欲之馆" in reply
+    assert "现在最值得留意" in reply
+    assert coordinator.calls == []

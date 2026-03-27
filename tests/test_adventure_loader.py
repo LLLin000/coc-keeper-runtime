@@ -80,3 +80,41 @@ def test_load_mad_mansion_formal_module() -> None:
     }
     assert "time_remaining" in adventure.state_defaults()
     assert any(ending.id == "survive" for ending in adventure.endings)
+    assert adventure.scene_by_id("central_hall").guidance.light_hint
+    assert adventure.scene_by_id("central_hall").interactables
+
+
+def test_adventure_package_supports_guidance_tiers_and_interactables() -> None:
+    adventure = AdventurePackage.model_validate(
+        {
+            "slug": "guided_module",
+            "title": "Guided Module",
+            "premise": "Test premise.",
+            "start_scene_id": "intro",
+            "scenes": [
+                {
+                    "id": "intro",
+                    "title": "大厅",
+                    "summary": "一个可测试的大厅。",
+                    "guidance": {
+                        "ambient_focus": ["石钟", "四道门"],
+                        "light_hint": "先看看最显眼的装置。",
+                        "rescue_hint": "如果没头绪，就去调查石钟或门。"
+                    },
+                    "interactables": [
+                        {
+                            "id": "clock",
+                            "title": "石钟",
+                            "keywords": ["钟", "clock"],
+                            "judgement": "auto",
+                            "result_text": "你看见钟针正在倒退。"
+                        }
+                    ]
+                }
+            ],
+        }
+    )
+
+    scene = adventure.scene_by_id("intro")
+    assert scene.guidance.light_hint == "先看看最显眼的装置。"
+    assert scene.interactables[0].judgement == "auto"

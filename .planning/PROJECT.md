@@ -25,13 +25,13 @@ Run a real multiplayer D&D session in Discord where a local AI DM can narrate, r
 - ✓ Dice and roll resolution now reuse a mature external engine instead of placeholder values, with command-path support for checks, saves, attacks, damage, and raw expressions — v1.2 Phase 10
 - ✓ Discord play now gives clearer pending and blocked feedback through setup guidance, ready gating, and ordinary-message responsiveness improvements — v1.2 Phase 11
 - ✓ Narrator output can now stream live into Discord through rate-safe chunked message edits, with fallback to finalized non-streamed replies if streaming fails — v1.2 Phase 12
+- ✓ `疯狂之馆` now uses structured runtime judgement to distinguish automatic outcomes, clarification prompts, and explicit roll-needed moments before generic narration takes over — v1.3 Phase 13
+- ✓ Light guidance, rescue hints, and stall recovery now come from reusable schema and runtime contracts so players get oriented without being spoon-fed solutions — v1.3 Phase 14
+- ✓ Scene entry framing, pressure presentation, and consequence-facing prompts now feel more like a human Keeper while staying grounded in reusable prompt and module structures — v1.3 Phase 15
 
 ### Active
 
-- [ ] `疯狂之馆` should decide more like a real Keeper when an action needs a roll, when it succeeds automatically, and when the table needs clarification instead of generic narration.
-- [ ] The module should provide stronger clue timing, hint timing, and stall recovery so players are guided without being railroaded, over-instructed, or spoiled.
-- [ ] Scene presentation should feel more like a real human Keeper running a scenario, with better framing, consequence delivery, and return-to-choice rhythm.
-- [ ] Prompt rules, module schema, and extraction or parsing should all improve together so later adventures inherit the same light-guidance behavior instead of relying on one-off `疯狂之馆` hacks.
+- [ ] The next milestone should turn the reusable module guidance contracts into a more general adventure ingestion path so new scripts can be structured with less manual authoring.
 
 ### Out of Scope
 
@@ -44,7 +44,7 @@ Run a real multiplayer D&D session in Discord where a local AI DM can narrate, r
 
 ## Current State
 
-`v1.2` shipped the startup, dice, and streaming usability milestone. The runtime now supports ready-gated packaged-adventure onboarding, automatic opening narration for `疯狂之馆`, mature `d20`-backed dice resolution for common roll families, and true narrator-phase Discord streaming through chunked message edits with fallback if streaming fails. The next milestone is about presentation and judgement quality: making the bot feel more like a real Keeper/DM instead of merely a technically correct runtime, while also improving the reusable prompt and module pipeline for future scripts.
+`v1.3` shipped the first pass of keeper-style experience polish. The runtime now makes structured judgements about when an interaction should resolve automatically, when it should ask for clarification, and when it should explicitly call for a roll; direct scene guidance and stall recovery are now sourced from reusable module metadata rather than only narrator improvisation; and `疯狂之馆` scene entries and turn pacing carry more explicit pressure and next-step orientation without collapsing into walkthrough-style handholding.
 
 ## Context
 
@@ -57,7 +57,7 @@ This model split is chosen for local hardware fit and reliability on a machine i
 
 The project should preferentially reuse mature external components instead of inventing custom equivalents. Current candidate references include `DND5E-MCP` as an AI-facing rules/lookup skill, `5e-srd-api` as a stable SRD-backed rules data source, and `Avrae` as a reference implementation for interaction patterns and D&D automation design rather than as the core embedded runtime. For dice resolution, the next milestone should adopt a mature parser and roller such as the Python `d20` ecosystem already used by established Discord D&D tooling instead of expanding the placeholder local roller.
 
-The first release proved the core Discord gameplay loop end-to-end: player input, orchestration, rule/tool invocation, state updates, and narrated DM output. The second milestone turned that into a formal module runtime and then closed the startup, dice, and streaming gaps. The next milestone shifts from infrastructure quality to live-play craft: judgement about when to call for rolls, deliberate clue timing, bounded light guidance, stronger scene framing, and recovery when players stall or misread the situation. Those improvements should land not only in `疯狂之馆` data, but also in the prompt contracts, extraction or parsing path, and reusable runtime hint pipeline.
+The first release proved the core Discord gameplay loop end-to-end: player input, orchestration, rule/tool invocation, state updates, and narrated DM output. The second milestone turned that into a formal module runtime and then closed the startup, dice, and streaming gaps. `v1.3` shifted from infrastructure quality to live-play craft: judgement about when to call for rolls, deliberate clue timing, bounded light guidance, stronger scene framing, and recovery when players stall or misread the situation. Those improvements now land not only in `疯狂之馆` data, but also in prompt contracts, reusable runtime hint handling, and the module schema surface that future adventures can inherit.
 
 ## Constraints
 
@@ -104,4 +104,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 for milestone v1.3 planning*
+*Last updated: 2026-03-27 after milestone v1.3 execution*

@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: 剧本主持体验打磨
-status: planning
-stopped_at: Planned milestone v1.3 around judgement, hint timing, and keeper-style presentation
-last_updated: "2026-03-27T23:40:00.000Z"
-last_activity: 2026-03-27 - Started milestone v1.3 planning
+status: completed
+stopped_at: Completed milestone v1.3 with structured judgement, bounded guidance, and keeper-style scene framing
+last_updated: "2026-03-27T23:59:00.000Z"
+last_activity: 2026-03-27 - Completed milestone v1.3 execution
 progress:
   total_phases: 15
-  completed_phases: 12
-  total_plans: 29
-  completed_plans: 23
-  percent: 79
+  completed_phases: 15
+  total_plans: 35
+  completed_plans: 35
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Run a real multiplayer D&D session in Discord where a local AI DM can narrate, roleplay multiple characters, and enforce heavy rules flow without constant manual bookkeeping.
-**Current focus:** Planning milestone v1.3 for judgement quality, hint timing, and keeper-style scene presentation
+**Current focus:** Completed milestone v1.3; runtime now supports structured judgement, light bounded guidance, and stronger keeper-style scene framing for packaged adventures
 
 ## Current Position
 
-Phase: 13 of 15 (Structured Judgement And Roll Prompting)
-Plan: 0 of 2
-Status: Planning
-Last activity: 2026-03-27 - Started milestone v1.3 planning
+Phase: 15 of 15 (Keeper-Style Scene Framing And Consequence Presentation)
+Plan: 2 of 2
+Status: Completed
+Last activity: 2026-03-27 - Completed milestone v1.3 execution
 
-Progress: [████████░░] 79%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -70,9 +70,9 @@ Recent decisions affecting current work:
 - Phase 10 target: placeholder rolls should be replaced with a mature dice engine, not a custom parser.
 - Phase 11 target: Discord should show progress during long DM turns and ordinary message handling should be more transparent.
 - Phase 12 target: Ollama narrator output should stream live into Discord through chunked edits with safe fallback.
-- Phase 13 target: structured runtime should decide when actions need rolls, automatic success, or clarification.
-- Phase 14 target: clue timing and hint timing should guide the table without spoiling module secrets.
-- Phase 15 target: `疯狂之馆` scene framing and consequence delivery should feel more like a real Keeper/DM.
+- Phase 13 delivered structured runtime judgements for direct scene interactions, including automatic outcomes, clarification prompts, and explicit roll-needed prompts.
+- Phase 14 delivered reusable light/rescue hint tiers and stall recovery driven by module metadata rather than freeform narrator guesswork.
+- Phase 15 delivered stronger scene entry framing, pressure presentation, and return-to-choice pacing for `疯狂之馆`, with reusable hooks for later modules.
 
 ### Pending Todos
 
@@ -80,7 +80,7 @@ None yet.
 
 ### Roadmap Evolution
 
-- Roadmap now continues with Phases 13-15 for milestone v1.3.
+- Milestone v1.3 finished all remaining roadmap phases 13-15.
 
 ### Blockers/Concerns
 
@@ -89,10 +89,10 @@ None yet.
 - Dice parsing should be integrated from a mature external library to reduce debugging cost.
 - Streaming transport must not become the source of truth for canonical state.
 - Discord message edit frequency must stay rate-safe when true streaming is added.
-- Presentation polish should still stay grounded in structured module logic rather than freeform narrator improvisation.
+- Presentation polish should stay grounded in structured module logic rather than freeform narrator improvisation as new modules are added.
 
 ## Session Continuity
 
-Last session: 2026-03-27T23:40:00.000Z
-Stopped at: Planned milestone v1.3 around judgement, hint timing, and keeper-style presentation
+Last session: 2026-03-27T23:59:00.000Z
+Stopped at: Completed milestone v1.3 with structured judgement, bounded guidance, and keeper-style presentation
 Resume file: .planning/PROJECT.md

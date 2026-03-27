@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field, model_validator
 
 
 Visibility = Literal["public", "discoverable", "secret", "gm_only"]
+JudgementKind = Literal["auto", "roll", "clarify"]
 
 
 class AdventureStateField(BaseModel):
@@ -13,6 +14,29 @@ class AdventureStateField(BaseModel):
 
 
 class AdventureScene(BaseModel):
+    class Guidance(BaseModel):
+        ambient_focus: list[str] = Field(default_factory=list)
+        light_hint: str = ""
+        rescue_hint: str = ""
+
+    class Presentation(BaseModel):
+        entry_text: str = ""
+        pressure_text: str = ""
+        choice_prompt: str = ""
+
+    class Interactable(BaseModel):
+        id: str
+        title: str
+        keywords: list[str] = Field(default_factory=list)
+        judgement: JudgementKind = "auto"
+        result_text: str = ""
+        prompt_text: str = ""
+        roll_type: str = ""
+        roll_label: str = ""
+        discover_clue: str = ""
+        transition_scene_id: str = ""
+        guidance_tier: Literal["light", "rescue"] = "light"
+
     id: str
     title: str
     summary: str
@@ -20,6 +44,9 @@ class AdventureScene(BaseModel):
     reveals: list[str] = Field(default_factory=list)
     combat: bool = False
     exits: list[str] = Field(default_factory=list)
+    guidance: Guidance = Field(default_factory=Guidance)
+    presentation: Presentation = Field(default_factory=Presentation)
+    interactables: list[Interactable] = Field(default_factory=list)
 
 
 class AdventureEnding(BaseModel):

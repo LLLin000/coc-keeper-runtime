@@ -156,6 +156,66 @@ def test_turn_runner_passes_compact_context_to_narrator() -> None:
     assert "tool_calls" not in narration_request.user_prompt
 
 
+def test_turn_runner_includes_guidance_context_from_gameplay() -> None:
+    from dm_bot.adventures.models import AdventurePackage
+    from dm_bot.orchestrator.gameplay import CharacterRegistry, GameplayOrchestrator
+    from dm_bot.rules.compendium import FixtureCompendium
+    from dm_bot.rules.engine import RulesEngine
+
+    gameplay = GameplayOrchestrator(
+        importer=None,
+        registry=CharacterRegistry(),
+        rules_engine=RulesEngine(compendium=FixtureCompendium(baseline="2014", fixtures={})),
+    )
+    gameplay.load_adventure(
+        AdventurePackage.model_validate(
+            {
+                "slug": "guided_module",
+                "title": "Guided Module",
+                "premise": "测试。",
+                "start_scene_id": "hall",
+                "scenes": [
+                    {
+                        "id": "hall",
+                        "title": "大厅",
+                        "summary": "白色大厅中央有一座石钟。",
+                        "guidance": {"light_hint": "注意石钟和门。"},
+                        "interactables": [
+                            {
+                                "id": "clock",
+                                "title": "石钟",
+                                "keywords": ["钟"],
+                                "judgement": "auto",
+                                "result_text": "钟针在倒退。"
+                            }
+                        ]
+                    }
+                ],
+            }
+        )
+    )
+    client = StubOllamaClient(
+        router_content='{"mode":"dm","tool_calls":[],"state_intents":[],"narration_brief":"brief"}',
+        narrator_content="你看到石钟的指针正在倒退。",
+    )
+    runner = TurnRunner(router=RouterService(client), narrator=NarrationService(client), gameplay=gameplay)
+
+    result = asyncio.run(
+        runner.run_turn(
+            TurnEnvelope(
+                campaign_id="camp-1",
+                channel_id="chan-1",
+                user_id="user-1",
+                trace_id="trace-1",
+                content="我看钟。",
+            )
+        )
+    )
+
+    assert "倒退" in result.reply
+    assert "guidance" in client.narrator_requests[0].user_prompt
+
+
 def test_model_snapshot_reports_router_and_narrator_readiness(monkeypatch) -> None:
     monkeypatch.setattr(
         "dm_bot.runtime.model_checks.list_ollama_models",

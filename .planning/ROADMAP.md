@@ -88,6 +88,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 10. Mature Dice Engine And Deterministic Roll Resolution | 2/2 | Completed | 2026-03-27 |
 | 11. Streaming Responses And Message Reliability | 2/2 | Completed | 2026-03-27 |
 | 12. True Streaming Discord Output | 1/1 | Completed | 2026-03-27 |
-| 13. Structured Judgement And Roll Prompting | 0/2 | Planned | - |
-| 14. Hint Timing, Clue Flow, And Stall Recovery | 0/2 | Planned | - |
-| 15. Keeper-Style Scene Framing And Consequence Presentation | 0/2 | Planned | - |
+| 13. Structured Judgement And Roll Prompting | 2/2 | Completed | 2026-03-27 |
+| 14. Hint Timing, Clue Flow, And Stall Recovery | 2/2 | Completed | 2026-03-27 |
+| 15. Keeper-Style Scene Framing And Consequence Presentation | 2/2 | Completed | 2026-03-27 |

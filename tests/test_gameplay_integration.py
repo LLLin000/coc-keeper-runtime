@@ -149,3 +149,64 @@ def test_gameplay_can_progress_mad_mansion_module_state() -> None:
     assert snapshot["public"]["state"]["time_remaining"] == 120
     assert snapshot["gm"]["state"]["blood_collected"] == 11
     assert gameplay.adventure_state["ending_id"] == "survive"
+
+
+def test_gameplay_evaluates_scene_actions_with_guidance_and_roll_prompts() -> None:
+    gameplay = build_gameplay()
+    gameplay.load_adventure(
+        AdventurePackage.model_validate(
+            {
+                "slug": "guided_module",
+                "title": "Guided Module",
+                "premise": "测试模组。",
+                "start_scene_id": "hall",
+                "scenes": [
+                    {
+                        "id": "hall",
+                        "title": "中央大厅",
+                        "summary": "白色大厅中央有一座石钟和四道门。",
+                        "guidance": {
+                            "ambient_focus": ["石钟", "四道门"],
+                            "light_hint": "你们可以先观察石钟或靠近任一道门。",
+                            "rescue_hint": "最稳妥的推进方向是先调查石钟，再决定进哪道门。"
+                        },
+                        "interactables": [
+                            {
+                                "id": "clock",
+                                "title": "石钟",
+                                "keywords": ["钟", "clock"],
+                                "judgement": "auto",
+                                "result_text": "钟针在倒退。",
+                                "discover_clue": "clock_countdown"
+                            },
+                            {
+                                "id": "bookshelf",
+                                "title": "书架",
+                                "keywords": ["书架", "翻书"],
+                                "judgement": "roll",
+                                "roll_type": "ability_check",
+                                "roll_label": "LibraryUse",
+                                "prompt_text": "这里需要一次图书馆检定，看看你能不能从散乱的手记里拼出有用信息。"
+                            }
+                        ]
+                    }
+                ]
+            }
+        )
+    )
+
+    auto = gameplay.evaluate_scene_action("我先检查一下大厅里的钟。")
+    roll = gameplay.evaluate_scene_action("我去翻书架。")
+    miss1 = gameplay.evaluate_scene_action("我站着发呆。")
+    miss2 = gameplay.evaluate_scene_action("我继续发呆。")
+
+    assert auto["kind"] == "auto"
+    assert "倒退" in str(auto["message"])
+    assert "clock_countdown" in gameplay.adventure_state["clues_found"]
+    assert roll["kind"] == "roll_needed"
+    assert roll["roll"]["action"] == "ability_check"
+    assert "图书馆检定" in str(roll["message"])
+    assert miss1["kind"] == "hint"
+    assert "观察石钟" in str(miss1["message"])
+    assert miss2["kind"] == "hint"
+    assert "最稳妥的推进方向" in str(miss2["message"])
