@@ -2,7 +2,7 @@
 
 ## Overview
 
-Milestone `v1.0` established the Discord-first local-DM runtime with deterministic rules, persistence, diagnostics, and a starter packaged adventure. Milestone `v1.1` introduced a formal module runtime and shipped `疯狂之馆` as the first structured full-length module. Milestone `v1.2` added ready-gated startup, mature dice integration, and true Discord streaming. Milestone `v1.3` now focuses on the part players feel most directly during live play: better judgement about when rolls should happen, light guidance with clear boundaries, and scene presentation that feels closer to a real human Keeper/DM while still improving the reusable prompt, parsing, and module pipeline for future adventures.
+Milestone `v1.0` established the Discord-first local-DM runtime with deterministic rules, persistence, diagnostics, and a starter packaged adventure. Milestone `v1.1` introduced a formal module runtime and shipped `疯狂之馆` as the first structured full-length module. Milestone `v1.2` added ready-gated startup, mature dice integration, and true Discord streaming. Milestone `v1.3` polished live-play feel through structured judgement, bounded guidance, and keeper-style scene framing. Milestone `v1.4` now changes the underlying module representation: adventures should be understood and run as room graphs with local triggers and branching state, extracted AI-first from source scripts and then refined into reusable runtime data.
 
 ## Phases
 
@@ -24,55 +24,58 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 10: Mature Dice Engine And Deterministic Roll Resolution** - Replace placeholder rolls with a mature dice engine.
 - [x] **Phase 11: Streaming Responses And Message Reliability** - Make Discord play feel responsive with clearer processing feedback.
 - [x] **Phase 12: True Streaming Discord Output** - Stream narrator output live into Discord through chunked edits with fallback.
+- [x] **Phase 13: Structured Judgement And Roll Prompting** - Add keeper-style action judgement and explicit roll prompting.
+- [x] **Phase 14: Hint Timing, Clue Flow, And Stall Recovery** - Add bounded guidance tiers and stall recovery.
+- [x] **Phase 15: Keeper-Style Scene Framing And Consequence Presentation** - Strengthen room introductions, pressure, and return-to-choice rhythm.
 
-## Milestone v1.3 Planned Work
+## Milestone v1.4 Planned Work
 
-### Phase 13: Structured Judgement And Roll Prompting
-**Goal**: Make the runtime act more like a real Keeper by deciding when a roll is needed, when it is not, and how to prompt the table clearly, while expressing those decisions through reusable prompt and runtime structures.
-**Depends on**: Phase 12
-**Requirements**: JUDGE-01, JUDGE-02, JUDGE-03, JUDGE-04, GUIDE-01
+### Phase 16: Room Graph Runtime Foundations
+**Goal**: Replace sequence-first adventure representation with explicit room or location graphs that carry local state, reachable transitions, and runtime-ready place data.
+**Depends on**: Phase 15
+**Requirements**: GRAPH-01, GRAPH-02, GRAPH-03, GRAPH-04
 **Success Criteria** (what must be TRUE):
-  1. `疯狂之馆` interactions can distinguish between automatic success, blocked action, clarification-needed action, and formal roll-needed action through structured runtime logic.
-  2. When a roll is needed, the bot can surface a concise DM-facing prompt that identifies the actor, the roll family, and the reason.
-  3. Roll-trigger outcomes update canonical state and downstream narration rather than being treated as a purely narrative flourish.
-  4. The design reuses mature tabletop and bot patterns where possible instead of inventing unnecessary new judgement semantics, and the prompt/runtime contract is reusable by later modules.
+  1. Formal adventures can define rooms or locations, explicit edges between them, and local interactables without being reduced to ordered scene lists.
+  2. Runtime decisions can key off current location plus reachable nodes rather than script-order progression.
+  3. Existing narration, persistence, and judgement layers can consume the new room-graph state without a parallel stack being invented.
+  4. The new schema is general enough for future adventures and not tailored only to `疯狂之馆`.
 **Plans**: 2 plans
 Plans:
-- [ ] 13-01-PLAN.md - Add structured action judgement tiers and map roll-needed outcomes into the deterministic rules layer.
-- [ ] 13-02-PLAN.md - Surface explicit DM roll prompts and reusable guidance-tier contracts through prompt and ordinary-message flow.
+- [ ] 16-01-PLAN.md - Introduce room-graph schema, local interactable containers, and adjacency-aware runtime state.
+- [ ] 16-02-PLAN.md - Adapt runtime loading, persistence, and location-aware judgement to consume room graphs cleanly.
 
-### Phase 14: Hint Timing, Clue Flow, And Stall Recovery
-**Goal**: Improve how `疯狂之馆` reveals information, nudges players, and recovers from stalls without spoiling hidden truths, while formalizing guidance tiers that future modules can reuse.
-**Depends on**: Phase 13
-**Requirements**: HINT-01, HINT-02, HINT-03, HINT-04, GUIDE-02
+### Phase 17: AI Extraction For Room Graphs And Trigger Trees
+**Goal**: Build an AI-first extraction pipeline that reads source scripts and emits draft room graphs, trigger trees, reveal gates, and editable runtime data.
+**Depends on**: Phase 16
+**Requirements**: TREE-01, TREE-02, TREE-03, TREE-04, EXTRACT-01, EXTRACT-02, EXTRACT-03, EXTRACT-04
 **Success Criteria** (what must be TRUE):
-  1. The module can distinguish ambient description from discoverable clues, light guidance, and explicit rescue-level hints.
-  2. The runtime can detect common stall states or repeated dead-end loops and emit safe next-step guidance.
-  3. Major pressure beats and critical module truths are introduced deliberately rather than accidentally drifting into view.
-  4. Hints never bypass canonical reveal gates or expose protected late-stage secrets too early, and extracted module data preserves enough metadata to support the same behavior in later adventures.
+  1. Source scripts can be transformed into draft maps of locations, triggers, and local state with limited manual bootstrapping.
+  2. Trigger trees attach to places, objects, NPCs, and roll outcomes rather than only to prose sequence.
+  3. Extracted output stays reviewable and editable so humans can correct AI mistakes without rebuilding everything by hand.
+  4. Player intent like observing, approaching, entering, leaving, and activating can be mapped onto the room graph in a reusable way.
 **Plans**: 2 plans
 Plans:
-- [ ] 14-01-PLAN.md - Encode context-sensitive hint triggers, clue tiers, and stall detection into the runtime and module schema.
-- [ ] 14-02-PLAN.md - Improve DM-facing recap and redirect messaging plus extraction-time clue metadata so players can recover without raw state inspection.
+- [ ] 17-01-PLAN.md - Build AI-assisted extraction artifacts for room topology, trigger trees, and reveal-safe state metadata.
+- [ ] 17-02-PLAN.md - Add reviewable module draft outputs and integrate trigger-tree concepts into runtime intent handling.
 
-### Phase 15: Keeper-Style Scene Framing And Consequence Presentation
-**Goal**: Make scene presentation, consequence delivery, and return-to-choice rhythm feel more like a human Keeper running the module, without turning scenes into over-guided walkthroughs.
-**Depends on**: Phase 14
-**Requirements**: PRESENT-01, PRESENT-02, PRESENT-03, PRESENT-04, GUIDE-03
+### Phase 18: 疯狂之馆 Room-Graph Migration
+**Goal**: Migrate `疯狂之馆` into the new room-graph format and use it to improve actual session feel in navigation, consequences, and location-driven play.
+**Depends on**: Phase 17
+**Requirements**: MANSION-01, MANSION-02, MANSION-03, MANSION-04
 **Success Criteria** (what must be TRUE):
-  1. Central hall framing, branch-hall introductions, and major set-piece interactions have stronger module-specific DM voice and usable scene structure.
-  2. The runtime can present transitions between exploration, roll prompt, consequence, and next choice cleanly enough that the session rhythm feels intentional.
-  3. Scene output highlights salient props, threats, and opportunities without collapsing into either generic prose, menu spam, or over-explicit solution feeding.
-  4. Failed exploration and wrong assumptions still move the table forward because the DM knows when to restate pressure, recap discoveries, and redirect attention, and the polish remains mostly reusable beyond this single module.
+  1. `疯狂之馆` is modeled as a room graph with the central hall, branch halls, key landmarks, and their real movement relationships.
+  2. Room entry, observation, movement, return paths, and local interactions behave more like tabletop play than script playback.
+  3. Roll results and trigger outcomes update local room state and future options in ways players can feel.
+  4. The migrated module remains faithful to the original script while allowing varied player phrasing and DM improvisational tolerance.
 **Plans**: 2 plans
 Plans:
-- [ ] 15-01-PLAN.md - Refine `疯狂之馆` scene framing and branch introductions using structured presentation templates with bounded guidance.
-- [ ] 15-02-PLAN.md - Integrate consequence narration, recap beats, return-to-choice pacing, and reusable prompt/schema hooks into live Discord output.
+- [ ] 18-01-PLAN.md - Port `疯狂之馆` data into room-graph nodes, edges, landmarks, and trigger trees.
+- [ ] 18-02-PLAN.md - Tune live play around movement, inspection, room exits, and consequence flow using the migrated module.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16 -> 17 -> 18
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -91,3 +94,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 13. Structured Judgement And Roll Prompting | 2/2 | Completed | 2026-03-27 |
 | 14. Hint Timing, Clue Flow, And Stall Recovery | 2/2 | Completed | 2026-03-27 |
 | 15. Keeper-Style Scene Framing And Consequence Presentation | 2/2 | Completed | 2026-03-27 |
+| 16. Room Graph Runtime Foundations | 0/2 | Planned | - |
+| 17. AI Extraction For Room Graphs And Trigger Trees | 0/2 | Planned | - |
+| 18. 疯狂之馆 Room-Graph Migration | 0/2 | Planned | - |

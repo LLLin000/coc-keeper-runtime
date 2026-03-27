@@ -31,7 +31,9 @@ Run a real multiplayer D&D session in Discord where a local AI DM can narrate, r
 
 ### Active
 
-- [ ] The next milestone should turn the reusable module guidance contracts into a more general adventure ingestion path so new scripts can be structured with less manual authoring.
+- [ ] The next milestone should move adventure understanding away from sequence-first script chunks and toward room-graph runtime structures with places, connections, triggers, and local state.
+- [ ] New adventures should be extracted AI-first from source scripts into maps, room nodes, trigger trees, and reveal gates, with human review rather than full manual authoring.
+- [ ] Runtime play should key off current location, reachable locations, local interactables, and trigger state so player language can vary without breaking the underlying module logic.
 
 ### Out of Scope
 
@@ -44,7 +46,7 @@ Run a real multiplayer D&D session in Discord where a local AI DM can narrate, r
 
 ## Current State
 
-`v1.3` shipped the first pass of keeper-style experience polish. The runtime now makes structured judgements about when an interaction should resolve automatically, when it should ask for clarification, and when it should explicitly call for a roll; direct scene guidance and stall recovery are now sourced from reusable module metadata rather than only narrator improvisation; and `疯狂之馆` scene entries and turn pacing carry more explicit pressure and next-step orientation without collapsing into walkthrough-style handholding.
+`v1.3` shipped the first pass of keeper-style experience polish. The runtime now makes structured judgements about when an interaction should resolve automatically, when it should ask for clarification, and when it should explicitly call for a roll; direct scene guidance and stall recovery are now sourced from reusable module metadata rather than only narrator improvisation; and `疯狂之馆` scene entries and turn pacing carry more explicit pressure and next-step orientation without collapsing into walkthrough-style handholding. The next milestone pivots from presentation polish to adventure representation: instead of treating source scripts as ordered prose, the system should model them as place graphs with triggers, local state, and branching reveal trees.
 
 ## Context
 
@@ -57,7 +59,7 @@ This model split is chosen for local hardware fit and reliability on a machine i
 
 The project should preferentially reuse mature external components instead of inventing custom equivalents. Current candidate references include `DND5E-MCP` as an AI-facing rules/lookup skill, `5e-srd-api` as a stable SRD-backed rules data source, and `Avrae` as a reference implementation for interaction patterns and D&D automation design rather than as the core embedded runtime. For dice resolution, the next milestone should adopt a mature parser and roller such as the Python `d20` ecosystem already used by established Discord D&D tooling instead of expanding the placeholder local roller.
 
-The first release proved the core Discord gameplay loop end-to-end: player input, orchestration, rule/tool invocation, state updates, and narrated DM output. The second milestone turned that into a formal module runtime and then closed the startup, dice, and streaming gaps. `v1.3` shifted from infrastructure quality to live-play craft: judgement about when to call for rolls, deliberate clue timing, bounded light guidance, stronger scene framing, and recovery when players stall or misread the situation. Those improvements now land not only in `疯狂之馆` data, but also in prompt contracts, reusable runtime hint handling, and the module schema surface that future adventures can inherit.
+The first release proved the core Discord gameplay loop end-to-end: player input, orchestration, rule/tool invocation, state updates, and narrated DM output. The second milestone turned that into a formal module runtime and then closed the startup, dice, and streaming gaps. `v1.3` shifted from infrastructure quality to live-play craft: judgement about when to call for rolls, deliberate clue timing, bounded light guidance, stronger scene framing, and recovery when players stall or misread the situation. The next milestone changes the underlying representation so those behaviors are not tied to sequence-first script chunks: source adventures should be interpreted as maps of rooms and locations, with interactables, trigger trees, reveal gates, and state transitions attached to places. That should let the AI DM stay faithful to the original script while still tolerating varied player language and future modules.
 
 ## Constraints
 
@@ -85,6 +87,8 @@ The first release proved the core Discord gameplay loop end-to-end: player input
 | New runtime subsystems should reuse mature prior art where possible | This reduces debugging cost and keeps the bot aligned with proven Discord D&D workflows | `d20`-style dice integration prioritized for v1.2 |
 | Live-play feel now matters more than new runtime primitives | The next milestone should polish judgement, hinting, and scene presentation before expanding breadth | `疯狂之馆` experience polish prioritized for v1.3 |
 | Guidance must stay light and bounded | Players should feel oriented, not shepherded through the solution | v1.3 should add tiered hints rather than hard walkthroughs |
+| Adventure runtime should be location-first, not script-order-first | Players navigate rooms and places, not paragraphs; the module model should reflect that | v1.4 should introduce room graphs and trigger trees |
+| Adventure ingestion should be AI-first with human review | Manual from-scratch authoring will not scale; AI should extract structure under review | v1.4 should add room-graph extraction from source scripts |
 
 ## Evolution
 

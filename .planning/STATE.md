@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: 剧本主持体验打磨
-status: completed
-stopped_at: Completed milestone v1.3 with structured judgement, bounded guidance, and keeper-style scene framing
-last_updated: "2026-03-27T23:59:00.000Z"
-last_activity: 2026-03-27 - Completed milestone v1.3 execution
+milestone: v1.4
+milestone_name: 房间图驱动的剧本理解与运行时
+status: planning
+stopped_at: Planned milestone v1.4 around room graphs, AI-first extraction, and 疯狂之馆 migration
+last_updated: "2026-03-28T00:20:00.000Z"
+last_activity: 2026-03-28 - Started milestone v1.4 planning
 progress:
-  total_phases: 15
+  total_phases: 18
   completed_phases: 15
-  total_plans: 35
+  total_plans: 41
   completed_plans: 35
-  percent: 100
+  percent: 85
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Run a real multiplayer D&D session in Discord where a local AI DM can narrate, roleplay multiple characters, and enforce heavy rules flow without constant manual bookkeeping.
-**Current focus:** Completed milestone v1.3; runtime now supports structured judgement, light bounded guidance, and stronger keeper-style scene framing for packaged adventures
+**Current focus:** Planning milestone v1.4 for room-graph runtime foundations, AI-first extraction, and location-driven module play
 
 ## Current Position
 
-Phase: 15 of 15 (Keeper-Style Scene Framing And Consequence Presentation)
-Plan: 2 of 2
-Status: Completed
-Last activity: 2026-03-27 - Completed milestone v1.3 execution
+Phase: 16 of 18 (Room Graph Runtime Foundations)
+Plan: 0 of 2
+Status: Planning
+Last activity: 2026-03-28 - Started milestone v1.4 planning
 
-Progress: [██████████] 100%
+Progress: [████████░░] 85%
 
 ## Performance Metrics
 
@@ -73,6 +73,9 @@ Recent decisions affecting current work:
 - Phase 13 delivered structured runtime judgements for direct scene interactions, including automatic outcomes, clarification prompts, and explicit roll-needed prompts.
 - Phase 14 delivered reusable light/rescue hint tiers and stall recovery driven by module metadata rather than freeform narrator guesswork.
 - Phase 15 delivered stronger scene entry framing, pressure presentation, and return-to-choice pacing for `疯狂之馆`, with reusable hooks for later modules.
+- Phase 16 target: adventure runtime should become location-first through room graphs, local interactables, and explicit adjacency.
+- Phase 17 target: source scripts should be AI-extracted into room graphs, trigger trees, and reveal-safe runtime drafts.
+- Phase 18 target: `疯狂之馆` should migrate into the new room-graph format and improve live navigation and consequence flow.
 
 ### Pending Todos
 
@@ -80,7 +83,7 @@ None yet.
 
 ### Roadmap Evolution
 
-- Milestone v1.3 finished all remaining roadmap phases 13-15.
+- Roadmap now continues with Phases 16-18 for milestone v1.4.
 
 ### Blockers/Concerns
 
@@ -90,9 +93,11 @@ None yet.
 - Streaming transport must not become the source of truth for canonical state.
 - Discord message edit frequency must stay rate-safe when true streaming is added.
 - Presentation polish should stay grounded in structured module logic rather than freeform narrator improvisation as new modules are added.
+- AI-first extraction must stay reviewable; the system should not silently turn source scripts into opaque runtime blobs.
+- Location graphs should preserve the original script topology and not flatten everything into unordered node soup.
 
 ## Session Continuity
 
-Last session: 2026-03-27T23:59:00.000Z
-Stopped at: Completed milestone v1.3 with structured judgement, bounded guidance, and keeper-style presentation
+Last session: 2026-03-28T00:20:00.000Z
+Stopped at: Planned milestone v1.4 around room graphs, AI-first extraction, and 疯狂之馆 migration
 Resume file: .planning/PROJECT.md
