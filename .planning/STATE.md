@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: 通用 Trigger Tree 与后果引擎
-status: planning
-stopped_at: Planned milestone v1.5 around generic chained triggers, declarative consequences, and reusable hooks
-last_updated: "2026-03-28T01:30:00.000Z"
-last_activity: 2026-03-28 - Started milestone v1.5 planning
+status: completed
+stopped_at: Completed milestone v1.5 with generic trigger execution, consequence chains, and event-log backed migration for 疯狂之馆
+last_updated: "2026-03-28T03:45:00.000Z"
+last_activity: 2026-03-28 - Completed milestone v1.5 execution and archive prep
 progress:
   total_phases: 21
-  completed_phases: 18
-  total_plans: 47
-  completed_plans: 41
-  percent: 87
+  completed_phases: 21
+  total_plans: 53
+  completed_plans: 47
+  percent: 100
 ---
 
 # Project State
@@ -21,22 +21,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Run a real multiplayer D&D session in Discord where a local AI DM can narrate, roleplay multiple characters, and enforce heavy rules flow without constant manual bookkeeping.
-**Current focus:** Planning milestone v1.5 for generic chained triggers and consequence execution across reusable modules
+**Current focus:** Preparing the next milestone after finishing v1.5 trigger execution, consequence chains, and event-log backed module progression
 
 ## Current Position
 
-Phase: 19 of 21 (Generic Trigger And Consequence Schema)
-Plan: 0 of 2
-Status: Planning
-Last activity: 2026-03-28 - Started milestone v1.5 planning
+Phase: 21 of 21 (疯狂之馆 Trigger Migration)
+Plan: 2 of 2
+Status: Completed
+Last activity: 2026-03-28 - Completed milestone v1.5 execution and archive prep
 
-Progress: [████████░░] 87%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 11
+- Total plans completed: 17
 - Average duration: -
 - Total execution time: 0.0 hours
 
@@ -49,6 +49,9 @@ Progress: [████████░░] 87%
 | 3 | 3 | - | - |
 | 4 | 2 | - | - |
 | 5 | 2 | - | - |
+| 19 | 2 | - | - |
+| 20 | 2 | - | - |
+| 21 | 2 | - | - |
 
 **Recent Trend:**
 
@@ -79,9 +82,9 @@ Recent decisions affecting current work:
 - Phase 16 delivered location-aware runtime state, adjacency, and room-graph schema support.
 - Phase 17 delivered reviewable AI extraction drafts for room graphs and trigger summaries.
 - Phase 18 delivered the first location-first migration of `疯狂之馆`, including natural portal observation and room returns.
-- Phase 19 target: define a generic chain-capable trigger schema with mostly declarative nodes and limited hook escape hatches.
-- Phase 20 target: execute trigger trees at runtime so actions and rolls cause auditable consequence chains.
-- Phase 21 target: migrate `疯狂之馆` key progress beats onto the generic trigger engine and verify reuse.
+- Phase 19 delivered a generic chain-capable trigger schema with mostly declarative nodes and limited hook escape hatches.
+- Phase 20 delivered runtime trigger execution so actions and rolls now cause auditable consequence chains.
+- Phase 21 migrated `疯狂之馆` key progress beats onto the generic trigger engine and verified reusable consequence flow.
 
 ### Pending Todos
 
@@ -89,7 +92,7 @@ None yet.
 
 ### Roadmap Evolution
 
-- Roadmap now continues with Phases 19-21 for milestone v1.5.
+- Roadmap now includes completed Phases 19-21 for milestone v1.5.
 
 ### Blockers/Concerns
 
@@ -102,9 +105,10 @@ None yet.
 - AI-first extraction must stay reviewable; the system should not silently turn source scripts into opaque runtime blobs.
 - Location graphs should preserve the original script topology and not flatten everything into unordered node soup.
 - Trigger execution must stay reusable across future adventures and cannot collapse into `疯狂之馆`-specific imperative code.
+- The next milestone should focus on stronger GM/operator surfaces, channel routing, and event-log visibility rather than replacing the new trigger core.
 
 ## Session Continuity
 
-Last session: 2026-03-28T01:30:00.000Z
-Stopped at: Planned milestone v1.5 around generic chained triggers, declarative consequences, and reusable hooks
+Last session: 2026-03-28T03:45:00.000Z
+Stopped at: Completed milestone v1.5 with generic trigger execution, consequence chains, and event-log backed migration for 疯狂之馆
 Resume file: .planning/PROJECT.md

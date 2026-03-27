@@ -1,5 +1,17 @@
 # Milestones
 
+## v1.5 通用 Trigger Tree 与后果引擎 (Shipped: 2026-03-28)
+
+**Phases completed:** 3 phases total, 6 plans total, 0 tasks
+
+**Key accomplishments:**
+
+- Added a reusable declarative trigger schema with conditions, effects, and constrained hook boundaries.
+- Added runtime trigger execution so actions and rolls now produce persisted consequence chains and auditable event-log entries.
+- Migrated key `疯狂之馆` investigation beats onto the generic trigger engine, including pending-roll consequence flow and clearer diagnostics.
+
+---
+
 ## v1.4 房间图驱动的剧本理解与运行时 (Shipped: 2026-03-28)
 
 **Phases completed:** 3 phases total, 6 plans total, 0 tasks

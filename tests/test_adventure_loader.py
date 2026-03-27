@@ -186,6 +186,14 @@ def test_extract_room_graph_draft_returns_reviewable_structure() -> None:
                         "outcomes": ["揭露倒计时", "引导进入分馆"],
                     }
                 ],
+                "trigger_drafts": [
+                    {
+                        "id": "clock_inspection",
+                        "event_kind": "action",
+                        "action_id": "clock",
+                        "summary": "调查数字钟时揭露倒计时压力。"
+                    }
+                ],
             },
             ensure_ascii=False,
         )
@@ -196,4 +204,5 @@ def test_extract_room_graph_draft_returns_reviewable_structure() -> None:
     assert draft.source_name == "疯狂之馆"
     assert draft.locations[0].id == "central_hall"
     assert draft.trigger_trees[0].location_id == "central_hall"
+    assert draft.trigger_drafts[0].id == "clock_inspection"
     assert "room graph" in llm.prompts[0].lower()

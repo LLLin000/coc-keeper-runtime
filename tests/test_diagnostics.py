@@ -44,9 +44,11 @@ def test_diagnostics_service_reports_adventure_state_summary(tmp_path: Path) -> 
         {
             "adventure_state": {
                 "scene_id": "blood_hall",
+                "location_id": "blood_hall",
                 "clues_found": ["blood_exit_rule", "clock_countdown"],
                 "objectives": ["找到出口"],
                 "module_state": {"time_remaining": 120, "blood_required": 25, "blood_collected": 11},
+                "pending_roll": {"id": "life_library_research", "action": "ability_check"},
                 "ending_id": None,
             }
         },
@@ -58,6 +60,7 @@ def test_diagnostics_service_reports_adventure_state_summary(tmp_path: Path) -> 
     assert "blood_hall" in summary
     assert "120" in summary
     assert "blood_exit_rule" in summary
+    assert "pending_roll=life_library_research" in summary
 
 
 def test_debug_command_surfaces_recent_events(tmp_path: Path) -> None:
@@ -75,3 +78,18 @@ def test_debug_command_surfaces_recent_events(tmp_path: Path) -> None:
     asyncio.run(commands.debug_status(interaction, campaign_id="camp-1"))
 
     assert "trace-1" in interaction.response.messages[0][0]
+
+
+def test_diagnostics_service_surfaces_trigger_events(tmp_path: Path) -> None:
+    store = PersistenceStore(tmp_path / "diag.sqlite3")
+    store.append_event(
+        campaign_id="camp-1",
+        trace_id="trigger-clock",
+        event_type="trigger.effect_applied",
+        payload={"trigger_id": "clock_inspection", "effect": "add_clue", "clue_id": "clock_countdown"},
+    )
+    service = DiagnosticsService(store)
+
+    summary = service.recent_summary("camp-1")
+
+    assert "trigger.effect_applied" in summary

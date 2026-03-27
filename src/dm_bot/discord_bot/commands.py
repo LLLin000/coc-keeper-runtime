@@ -86,10 +86,11 @@ class BotCommands:
         if onboarding_block:
             await interaction.followup.send(onboarding_block, ephemeral=True)
             return
-        adventure_response = self._handle_adventure_guidance(content=content)
+        adventure_response = self._evaluate_adventure_guidance(content=content)
         if adventure_response is not None:
+            self._record_trigger_events(session.campaign_id, list(adventure_response.get("trigger_events", [])))
             self._save_campaign_state(session.campaign_id)
-            await interaction.followup.send(adventure_response)
+            await interaction.followup.send(str(adventure_response["message"]))
             return
         await self._stream_turn_to_transport(
             campaign_id=session.campaign_id,
@@ -338,13 +339,15 @@ class BotCommands:
             content=content,
         )
         if inline_roll is not None:
+            self._record_trigger_events(session.campaign_id, self._consume_gameplay_trigger_events())
             self._save_campaign_state(session.campaign_id)
             return inline_roll
 
-        adventure_response = self._handle_adventure_guidance(content=content)
+        adventure_response = self._evaluate_adventure_guidance(content=content)
         if adventure_response is not None:
+            self._record_trigger_events(session.campaign_id, list(adventure_response.get("trigger_events", [])))
             self._save_campaign_state(session.campaign_id)
-            return adventure_response
+            return str(adventure_response["message"])
 
         blocked = self._combat_gate_message(channel_id=channel_id, user_id=user_id)
         if blocked:
@@ -387,14 +390,16 @@ class BotCommands:
 
         inline_roll = self._try_inline_roll(channel_id=channel_id, user_id=user_id, content=content)
         if inline_roll is not None:
+            self._record_trigger_events(session.campaign_id, self._consume_gameplay_trigger_events())
             self._save_campaign_state(session.campaign_id)
             await message.channel.send(inline_roll)
             return
 
-        adventure_response = self._handle_adventure_guidance(content=content)
+        adventure_response = self._evaluate_adventure_guidance(content=content)
         if adventure_response is not None:
+            self._record_trigger_events(session.campaign_id, list(adventure_response.get("trigger_events", [])))
             self._save_campaign_state(session.campaign_id)
-            await message.channel.send(adventure_response)
+            await message.channel.send(str(adventure_response["message"]))
             return
 
         blocked = self._combat_gate_message(channel_id=channel_id, user_id=user_id)
@@ -539,17 +544,22 @@ class BotCommands:
 
     def _format_roll_result(self, result: dict[str, object]) -> str:
         action = str(result.get("action", "roll"))
+        consequence = str(result.get("consequence_summary", "")).strip()
         if action == "attack_roll":
             hit_text = "命中" if result.get("hit") else "未命中"
             damage_text = f"，伤害 {result.get('damage')}" if result.get("hit") else ""
-            return f"{result['actor']} 攻击 {result['target']}：{result['roll']}，总计 {result['total']}，{hit_text}{damage_text}"
+            base = f"{result['actor']} 攻击 {result['target']}：{result['roll']}，总计 {result['total']}，{hit_text}{damage_text}"
+            return f"{base}\n{consequence}" if consequence else base
         if action in {"ability_check", "saving_throw"}:
-            return f"{result['actor']} 的 {result['label']}：{result['roll']}，总计 {result['total']}"
+            base = f"{result['actor']} 的 {result['label']}：{result['roll']}，总计 {result['total']}"
+            return f"{base}\n{consequence}" if consequence else base
         if action == "damage_roll":
-            return f"{result['actor']} 的伤害掷骰：{result['roll']}，总计 {result['total']} {result['damage_type']}"
-        return f"{result['actor']} 掷骰：{result['roll']}，总计 {result['total']}"
+            base = f"{result['actor']} 的伤害掷骰：{result['roll']}，总计 {result['total']} {result['damage_type']}"
+            return f"{base}\n{consequence}" if consequence else base
+        base = f"{result['actor']} 掷骰：{result['roll']}，总计 {result['total']}"
+        return f"{base}\n{consequence}" if consequence else base
 
-    def _handle_adventure_guidance(self, *, content: str) -> str | None:
+    def _evaluate_adventure_guidance(self, *, content: str) -> dict[str, object] | None:
         if self._gameplay is None or self._gameplay.adventure is None:
             return None
         evaluation = self._gameplay.evaluate_scene_action(content)
@@ -559,10 +569,35 @@ class BotCommands:
         if kind == "roll_needed":
             roll = dict(evaluation.get("roll", {}))
             label = roll.get("label", "Check")
-            return f"{evaluation['message']}\n建议下一步：`/check label:{label} modifier:0 advantage:none`"
+            return {
+                "message": f"{evaluation['message']}\n建议下一步：`/check label:{label} modifier:0 advantage:none`",
+                "trigger_events": list(evaluation.get("trigger_events", [])),
+            }
         if kind in {"auto", "clarify", "hint"}:
             guidance = evaluation.get("guidance")
             if guidance:
-                return f"{evaluation['message']}\n{guidance}"
-            return str(evaluation["message"])
+                return {
+                    "message": f"{evaluation['message']}\n{guidance}",
+                    "trigger_events": list(evaluation.get("trigger_events", [])),
+                }
+            return {
+                "message": str(evaluation["message"]),
+                "trigger_events": list(evaluation.get("trigger_events", [])),
+            }
         return None
+
+    def _record_trigger_events(self, campaign_id: str, events: list[dict[str, object]]) -> None:
+        if self._persistence_store is None:
+            return
+        for event in events:
+            self._persistence_store.append_event(
+                campaign_id=campaign_id,
+                trace_id=f"trigger-{event.get('payload', {}).get('trigger_id', 'unknown')}",
+                event_type=str(event.get("event_type", "trigger.event")),
+                payload=dict(event.get("payload", {})),
+            )
+
+    def _consume_gameplay_trigger_events(self) -> list[dict[str, object]]:
+        if self._gameplay is None:
+            return []
+        return self._gameplay.consume_trigger_events()

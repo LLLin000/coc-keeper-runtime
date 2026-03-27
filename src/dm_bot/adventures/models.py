@@ -36,6 +36,7 @@ class AdventureScene(BaseModel):
         discover_clue: str = ""
         transition_scene_id: str = ""
         guidance_tier: Literal["light", "rescue"] = "light"
+        trigger_ids: list[str] = Field(default_factory=list)
 
     id: str
     title: str
@@ -60,6 +61,8 @@ class AdventureLocationConnection(BaseModel):
     keywords: list[str] = Field(default_factory=list)
     travel_text: str = ""
     observe_text: str = ""
+    travel_trigger_ids: list[str] = Field(default_factory=list)
+    observe_trigger_ids: list[str] = Field(default_factory=list)
 
 
 class AdventureLocation(BaseModel):
@@ -69,6 +72,50 @@ class AdventureLocation(BaseModel):
     aliases: list[str] = Field(default_factory=list)
     landmarks: list[str] = Field(default_factory=list)
     connections: list[AdventureLocationConnection] = Field(default_factory=list)
+
+
+class TriggerCondition(BaseModel):
+    location_id: str = ""
+    pending_roll_id: str = ""
+    state_matches: dict[str, int | bool | str] = Field(default_factory=dict)
+    required_clues: list[str] = Field(default_factory=list)
+    absent_clues: list[str] = Field(default_factory=list)
+    min_total: int | None = None
+    max_total: int | None = None
+
+
+class TriggerEffect(BaseModel):
+    kind: Literal[
+        "set_module_state",
+        "increment_module_state",
+        "set_location_state",
+        "add_clue",
+        "move_location",
+        "set_pending_roll",
+        "clear_pending_roll",
+    ]
+    key: str = ""
+    value: int | bool | str = ""
+    amount: int = 0
+    location_id: str = ""
+    clue_id: str = ""
+    roll_id: str = ""
+    roll_action: str = ""
+    roll_label: str = ""
+    prompt: str = ""
+
+
+class AdventureTrigger(BaseModel):
+    id: str
+    event_kind: Literal["action", "roll", "chain"]
+    action_id: str = ""
+    pending_roll_id: str = ""
+    roll_action: str = ""
+    conditions: TriggerCondition = Field(default_factory=TriggerCondition)
+    effects: list[TriggerEffect] = Field(default_factory=list)
+    table_summary: str = ""
+    gm_summary: str = ""
+    next_trigger_ids: list[str] = Field(default_factory=list)
 
 
 class AdventurePackage(BaseModel):
@@ -81,6 +128,7 @@ class AdventurePackage(BaseModel):
     state_fields: list[AdventureStateField] = Field(default_factory=list)
     scenes: list[AdventureScene] = Field(default_factory=list)
     locations: list[AdventureLocation] = Field(default_factory=list)
+    triggers: list[AdventureTrigger] = Field(default_factory=list)
     endings: list[AdventureEnding] = Field(default_factory=list)
 
     @model_validator(mode="after")
@@ -124,6 +172,12 @@ class AdventurePackage(BaseModel):
             landmarks=list(scene.guidance.ambient_focus),
             connections=[AdventureLocationConnection(to_location_id=target, keywords=[target]) for target in scene.exits],
         )
+
+    def trigger_by_id(self, trigger_id: str) -> AdventureTrigger:
+        for trigger in self.triggers:
+            if trigger.id == trigger_id:
+                return trigger
+        raise KeyError(trigger_id)
 
     def state_defaults(self) -> dict[str, int | bool | str | list[str]]:
         return {field.key: field.default for field in self.state_fields}

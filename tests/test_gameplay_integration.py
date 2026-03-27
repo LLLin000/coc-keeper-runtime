@@ -229,3 +229,26 @@ def test_gameplay_tracks_locations_and_distinguishes_observe_vs_enter() -> None:
     assert gameplay.adventure_state["location_id"] == "greed_hall"
     assert enter["kind"] == "auto"
     assert "贪欲之馆" in str(enter["message"])
+
+
+def test_manual_roll_applies_trigger_consequences() -> None:
+    gameplay = build_gameplay()
+    gameplay.load_adventure(load_adventure("mad_mansion"))
+    gameplay.set_adventure_location("life_hall")
+
+    prompt = gameplay.evaluate_scene_action("我去翻书架和旧笔记。")
+    assert prompt["kind"] == "roll_needed"
+    assert gameplay.adventure_state["pending_roll"]["id"] == "life_library_research"
+
+    result = gameplay.resolve_manual_roll(
+        actor_name="调查员A",
+        action="ability_check",
+        label="LibraryUse",
+        modifier=20,
+        advantage="none",
+    )
+
+    assert "consequence_summary" in result
+    assert "管理员并非不可触及" in str(result["consequence_summary"])
+    assert "life_library_notes" in gameplay.adventure_state["clues_found"]
+    assert "pending_roll" not in gameplay.adventure_state

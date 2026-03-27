@@ -1,5 +1,6 @@
 from dm_bot.gameplay.combat import CombatEncounter, Combatant
 from dm_bot.gameplay.modes import GameModeState
+from dm_bot.adventures.trigger_engine import TriggerEngine
 from dm_bot.characters.models import CharacterRecord
 from dm_bot.router.contracts import TurnPlan
 from dm_bot.rules.actions import LookupAction, RuleAction, StatBlock
@@ -26,6 +27,8 @@ class GameplayOrchestrator:
         self.combat: CombatEncounter | None = None
         self.adventure: AdventurePackage | None = None
         self.adventure_state: dict[str, object] = {}
+        self._trigger_engine = TriggerEngine()
+        self._pending_trigger_events: list[dict[str, object]] = []
 
     def import_character(self, *, user_id: str, provider: str, external_id: str) -> CharacterRecord:
         character = self._importer.import_character(provider, external_id)
@@ -73,6 +76,7 @@ class GameplayOrchestrator:
             "clues_found": [],
             "objectives": list(adventure.objectives),
             "module_state": adventure.state_defaults(),
+            "location_state": {},
             "ending_id": None,
             "onboarding": {
                 "status": "awaiting_ready",
@@ -103,6 +107,7 @@ class GameplayOrchestrator:
                 "premise": self.adventure.premise,
                 "state": self.adventure.gm_state(module_state),
                 "endings": [ending.model_dump() for ending in self.adventure.endings],
+                "pending_roll": dict(self.adventure_state.get("pending_roll", {})),
             },
         }
 
@@ -115,6 +120,7 @@ class GameplayOrchestrator:
             "light_hint": scene.guidance.light_hint,
             "rescue_hint": scene.guidance.rescue_hint,
             "known_clues": list(self.adventure_state.get("clues_found", [])),
+            "pending_roll": dict(self.adventure_state.get("pending_roll", {})),
         }
 
     def scene_frame_text(self, *, scene_id: str | None = None) -> str:
@@ -234,11 +240,39 @@ class GameplayOrchestrator:
             }
 
         interactable = matches[0]
+        self.adventure_state["scene_miss_count"] = 0
+
+        if interactable.trigger_ids:
+            resolution = self._trigger_engine.execute(
+                package=self.adventure,
+                adventure_state=self.adventure_state,
+                event={"kind": "action", "action_id": interactable.id},
+                trigger_ids=interactable.trigger_ids,
+            )
+            summary = resolution.merged_table_summary()
+            self._pending_trigger_events.extend(event.__dict__ for event in resolution.events)
+            if interactable.judgement == "roll":
+                pending_roll = dict(self.adventure_state.get("pending_roll", {}))
+                return {
+                    "kind": "roll_needed",
+                    "message": summary or interactable.prompt_text or f"这里需要一次 {interactable.roll_label or '检定'}。",
+                    "roll": {
+                        "action": pending_roll.get("action") or interactable.roll_type or "ability_check",
+                        "label": pending_roll.get("label") or interactable.roll_label or "Check",
+                    },
+                    "trigger_events": [event.__dict__ for event in resolution.events],
+                }
+            return {
+                "kind": "auto" if interactable.judgement != "clarify" else "clarify",
+                "message": summary or interactable.result_text or scene.summary,
+                "guidance": scene.guidance.light_hint if interactable.judgement != "clarify" else "",
+                "trigger_events": [event.__dict__ for event in resolution.events],
+            }
+
         if interactable.discover_clue:
             self.record_adventure_clue(interactable.discover_clue)
         if interactable.transition_scene_id:
             self.set_adventure_scene(interactable.transition_scene_id)
-        self.adventure_state["scene_miss_count"] = 0
 
         if interactable.judgement == "roll":
             return {
@@ -307,12 +341,34 @@ class GameplayOrchestrator:
 
         connection = matches[0]
         if self._is_observation_only(content):
+            if connection.observe_trigger_ids:
+                resolution = self._trigger_engine.execute(
+                    package=self.adventure,
+                    adventure_state=self.adventure_state,
+                    event={"kind": "action", "action_id": f"observe:{location.id}->{connection.to_location_id}"},
+                    trigger_ids=connection.observe_trigger_ids,
+                )
+                self._pending_trigger_events.extend(event.__dict__ for event in resolution.events)
+                summary = resolution.merged_table_summary()
+                if summary:
+                    return {"kind": "auto", "message": summary, "guidance": "", "trigger_events": [event.__dict__ for event in resolution.events]}
             return {
                 "kind": "auto",
                 "message": connection.observe_text or f"你靠近后暂时没有立刻踏进去，而是先观察通往 {self.adventure.location_by_id(connection.to_location_id).title} 的入口。",
                 "guidance": "",
             }
         if self._is_travel_intent(content):
+            if connection.travel_trigger_ids:
+                resolution = self._trigger_engine.execute(
+                    package=self.adventure,
+                    adventure_state=self.adventure_state,
+                    event={"kind": "action", "action_id": f"travel:{location.id}->{connection.to_location_id}"},
+                    trigger_ids=connection.travel_trigger_ids,
+                )
+                self._pending_trigger_events.extend(event.__dict__ for event in resolution.events)
+                summary = resolution.merged_table_summary()
+                if summary:
+                    return {"kind": "auto", "message": summary, "guidance": "", "trigger_events": [event.__dict__ for event in resolution.events]}
             self.set_adventure_location(connection.to_location_id)
             self.adventure_state["scene_miss_count"] = 0
             return {
@@ -370,7 +426,7 @@ class GameplayOrchestrator:
             }
         else:
             raise RuntimeError(action)
-        return self._rules_engine.execute(
+        result = self._rules_engine.execute(
             RuleAction(
                 action=action,
                 actor=actor,
@@ -378,6 +434,12 @@ class GameplayOrchestrator:
                 parameters=parameters,
             )
         )
+        consequence = self._apply_roll_consequences(result)
+        if consequence is not None:
+            result["consequence_summary"] = consequence.merged_table_summary()
+            result["trigger_events"] = [event.__dict__ for event in consequence.events]
+            self._pending_trigger_events.extend(event.__dict__ for event in consequence.events)
+        return result
 
     def export_state(self) -> dict[str, object]:
         return {
@@ -404,6 +466,35 @@ class GameplayOrchestrator:
             from dm_bot.adventures.loader import load_adventure
 
             self.adventure = load_adventure(str(slug))
+
+    def _apply_roll_consequences(self, result: dict[str, object]):
+        if self.adventure is None:
+            return None
+        pending_roll = dict(self.adventure_state.get("pending_roll", {}))
+        if not pending_roll:
+            return None
+        expected_action = pending_roll.get("action")
+        if expected_action and expected_action != result.get("action"):
+            return None
+        resolution = self._trigger_engine.execute(
+            package=self.adventure,
+            adventure_state=self.adventure_state,
+            event={
+                "kind": "roll",
+                "pending_roll_id": pending_roll.get("id", ""),
+                "roll_action": result.get("action", ""),
+                "roll_total": result.get("total"),
+            },
+        )
+        if resolution.matched_trigger_ids:
+            self.adventure_state.pop("pending_roll", None)
+            return resolution
+        return None
+
+    def consume_trigger_events(self) -> list[dict[str, object]]:
+        events = list(self._pending_trigger_events)
+        self._pending_trigger_events.clear()
+        return events
 
     def resolve_plan(self, plan: TurnPlan) -> list[dict[str, object]]:
         results: list[dict[str, object]] = []

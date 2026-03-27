@@ -285,6 +285,43 @@ def test_inline_roll_command_beats_adventure_guidance() -> None:
     assert coordinator.calls == []
 
 
+def test_inline_roll_can_surface_trigger_consequence_summary() -> None:
+    from dm_bot.adventures.loader import load_adventure
+
+    store = SessionStore()
+    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    coordinator = StubTurnCoordinator()
+    gameplay = build_gameplay()
+    gameplay.load_adventure(load_adventure("mad_mansion"))
+    gameplay.begin_adventure()
+    gameplay.set_adventure_location("life_hall")
+    commands = BotCommands(settings=None, session_store=store, turn_coordinator=coordinator, gameplay=gameplay)
+
+    asyncio.run(
+        commands.handle_channel_message(
+            channel_id="chan-1",
+            guild_id="guild-1",
+            user_id="user-1",
+            content="我去翻书架和旧笔记。",
+            mention_count=0,
+        )
+    )
+
+    reply = asyncio.run(
+        commands.handle_channel_message(
+            channel_id="chan-1",
+            guild_id="guild-1",
+            user_id="user-1",
+            content="check LibraryUse 20",
+            mention_count=0,
+        )
+    )
+
+    assert "总计" in reply
+    assert "管理员并非不可触及" in reply
+    assert coordinator.calls == []
+
+
 def test_natural_message_can_return_to_central_hall() -> None:
     from dm_bot.adventures.loader import load_adventure
 

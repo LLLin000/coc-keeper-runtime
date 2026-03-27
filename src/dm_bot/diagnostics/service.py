@@ -11,6 +11,8 @@ class DiagnosticsService:
         if adventure_state:
             module_state = dict(adventure_state.get("module_state", {}))
             lines.append(f"scene={adventure_state.get('scene_id', 'unknown')}")
+            if adventure_state.get("location_id"):
+                lines.append(f"location={adventure_state['location_id']}")
             onboarding = dict(adventure_state.get("onboarding", {}))
             if onboarding:
                 ready = onboarding.get("ready_user_ids", [])
@@ -23,6 +25,9 @@ class DiagnosticsService:
                 lines.append(f"time_remaining={module_state['time_remaining']}")
             if "blood_collected" in module_state and "blood_required" in module_state:
                 lines.append(f"blood={module_state['blood_collected']}/{module_state['blood_required']}")
+            pending_roll = dict(adventure_state.get("pending_roll", {}))
+            if pending_roll:
+                lines.append(f"pending_roll={pending_roll.get('id', 'unknown')} action={pending_roll.get('action', 'unknown')}")
             if adventure_state.get("ending_id"):
                 lines.append(f"ending={adventure_state['ending_id']}")
 

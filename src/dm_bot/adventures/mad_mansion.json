@@ -135,7 +135,8 @@
           "keywords": ["钟", "数字钟", "clock", "倒计时"],
           "judgement": "auto",
           "result_text": "你们看清了墙上的数字钟，它正在稳定倒计时，说明这不是单纯的摆设，而是会真正决定生死的压力源。",
-          "discover_clue": "clock_countdown"
+          "discover_clue": "clock_countdown",
+          "trigger_ids": ["clock_inspection"]
         },
         {
           "id": "portal_greed",
@@ -247,7 +248,8 @@
           "judgement": "roll",
           "roll_type": "ability_check",
           "roll_label": "LibraryUse",
-          "prompt_text": "这里适合做一次图书馆检定，看看你能否从诡异图书和旧笔记里整理出真正有用的线索。"
+          "prompt_text": "这里适合做一次图书馆检定，看看你能否从诡异图书和旧笔记里整理出真正有用的线索。",
+          "trigger_ids": ["life_books_prompt"]
         },
         {
           "id": "inspect_statue",
@@ -348,7 +350,8 @@
           "keywords": ["墙", "字", "刻字", "文字"],
           "judgement": "auto",
           "result_text": "你们辨认出墙上的句子，它直白得近乎恶毒：唯有伤痛之后流下的鲜血，才会为离开之路开门。",
-          "discover_clue": "blood_exit_rule"
+          "discover_clue": "blood_exit_rule",
+          "trigger_ids": ["blood_wall_read"]
         },
         {
           "id": "inspect_pool",
@@ -379,6 +382,70 @@
       ],
       "combat": false,
       "exits": ["central_hall"]
+    }
+  ],
+  "triggers": [
+    {
+      "id": "clock_inspection",
+      "event_kind": "action",
+      "action_id": "clock",
+      "effects": [
+        { "kind": "add_clue", "clue_id": "clock_countdown" }
+      ],
+      "table_summary": "你们看清了墙上的数字钟，它正在稳定倒计时，说明这不是单纯的摆设，而是会真正决定生死的压力源。"
+    },
+    {
+      "id": "life_books_prompt",
+      "event_kind": "action",
+      "action_id": "search_books",
+      "effects": [
+        {
+          "kind": "set_pending_roll",
+          "roll_id": "life_library_research",
+          "roll_action": "ability_check",
+          "roll_label": "LibraryUse",
+          "prompt": "这里适合做一次图书馆检定，看看你能否从诡异图书和旧笔记里整理出真正有用的线索。"
+        }
+      ],
+      "table_summary": "这里适合做一次图书馆检定，看看你能否从诡异图书和旧笔记里整理出真正有用的线索。"
+    },
+    {
+      "id": "life_books_success",
+      "event_kind": "roll",
+      "pending_roll_id": "life_library_research",
+      "roll_action": "ability_check",
+      "conditions": {
+        "min_total": 12,
+        "location_id": "life_hall"
+      },
+      "effects": [
+        { "kind": "add_clue", "clue_id": "life_library_notes" },
+        { "kind": "clear_pending_roll" }
+      ],
+      "table_summary": "你从旧笔记和诡异书页里拼出了关键线索：管理员并非不可触及，而生命之馆的馈赠背后确实藏着代价。"
+    },
+    {
+      "id": "life_books_fail",
+      "event_kind": "roll",
+      "pending_roll_id": "life_library_research",
+      "roll_action": "ability_check",
+      "conditions": {
+        "max_total": 11,
+        "location_id": "life_hall"
+      },
+      "effects": [
+        { "kind": "clear_pending_roll" }
+      ],
+      "table_summary": "你翻了几页就被那些扭曲内容扰乱了思路，只能确认这里确实藏着重要信息，但暂时还没整理出关键脉络。"
+    },
+    {
+      "id": "blood_wall_read",
+      "event_kind": "action",
+      "action_id": "read_wall",
+      "effects": [
+        { "kind": "add_clue", "clue_id": "blood_exit_rule" }
+      ],
+      "table_summary": "你们辨认出墙上的句子，它直白得近乎恶毒：唯有伤痛之后流下的鲜血，才会为离开之路开门。"
     }
   ],
   "endings": [
