@@ -6,6 +6,17 @@ This roadmap is now organized by persistent product tracks, not only by historic
 
 Historical phase execution still matters and remains recorded in `MILESTONES.md`, but future planning should use the track structure below.
 
+## Track Planning Policy
+
+Future milestone planning should follow this policy:
+
+1. Choose one primary track.
+2. Define scope in that track first.
+3. If other tracks are affected, declare them as secondary impact instead of widening the milestone's primary ownership.
+4. When a shared contract changes, document the affected contract and migration note in the milestone or PR summary.
+
+This keeps the system compatible with GSD's linear milestone history while still allowing four parallel product lanes.
+
 ## Track A Roadmap: 模组与规则运行层
 
 Owns canonical module truth, rules truth, structured state, trigger execution, and reusable authoring/runtime contracts.
@@ -77,6 +88,11 @@ Includes:
 - module review flow
 - package conventions
 
+Recommended contract focus:
+- `AdventureSchema`
+- `ModuleState`
+- `TriggerExecutionResult`
+
 ## Track B Roadmap: 人物构建与管理层
 
 Owns long-lived character truth, archive lifecycles, builder flows, and campaign projection.
@@ -139,6 +155,11 @@ Includes:
 - panel-ready data groupings
 - richer role overlays for complex modules
 
+Recommended contract focus:
+- `ArchiveProfile`
+- `CampaignProjection`
+- `AdminProfileOps`
+
 ## Track C Roadmap: Discord 交互层
 
 Owns how users and operators interact with the runtime inside Discord.
@@ -199,6 +220,11 @@ Includes:
 - UI-ready payloads
 - boundaries between bot-native and Activity-only features
 
+Recommended contract focus:
+- `ChannelRoleConfig`
+- `InteractionRouting`
+- `OperationalHealth`
+
 ## Track D Roadmap: 游戏呈现层
 
 Owns table feel, Keeper presentation, clue visibility, and the readable player-facing shape of the experience.
@@ -252,6 +278,11 @@ Goal:
 
 Includes:
 - future Activity-backed character/clue/map panels
+
+Recommended contract focus:
+- `NarratorInput`
+- `GuidanceContract`
+- `PanelSummaryContract`
 
 ## Governance Milestone
 

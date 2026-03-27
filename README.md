@@ -112,6 +112,19 @@ flowchart TD
    - `uv run python -m dm_bot.main smoke-check`
 5. 新功能优先做成可复用 runtime 能力，而不是单模组硬编码。
 
+## Cross-Track Changes
+
+这个项目允许为了整合、实验或调试而跨 Track 修改，但不允许“悄悄改了别的层却不说明”。
+
+如果一个改动影响了别的 Track，提交说明、PR 说明或 milestone 说明里至少应写清：
+
+- `Primary Track`
+- `Secondary Impact`
+- `Contracts Changed`
+- `Migration Notes`
+
+这样协作者在 fork 后即使试验性改动了别的板块，也能让后续接手的人和 AI 看懂系统边界发生了什么变化。
+
 ## Milestone History
 
 ### v1.0 Foundations
@@ -335,6 +348,7 @@ uv run python -m dm_bot.main run-bot
 - 先看 `.planning/PROJECT.md` 里的 Track 和 Global Rules，再决定当前工作属于哪一层
 - 再看 `.planning/ROADMAP.md` 选择该 Track 的下一个 milestone
 - 用 `.planning/STATE.md` 判断当前激活的是哪条 Track，避免多人同时改同一层
+- 如果改动跨了多个 Track，必须在说明里写明 `Primary Track / Secondary Impact / Contracts Changed / Migration Notes`
 - 不要把 prompt 当真相来源，真相在结构化状态里
 - 规则变化要先看本地 COC 规则边界，不要直接让模型自由发挥
 - 优先补通用 runtime，不要急着对单个模组打大量专属补丁

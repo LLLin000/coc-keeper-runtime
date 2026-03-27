@@ -79,7 +79,9 @@ When resuming:
 1. Read `PROJECT.md` for track definitions and global rules.
 2. Read `ROADMAP.md` for the next milestone choices by track.
 3. Use `MILESTONES.md` for historical context.
-4. Keep `v2.2` focused on governance/document structure only.
+4. If starting a new milestone, choose one primary track before defining scope.
+5. If other tracks will be touched, declare secondary impact and affected contracts explicitly.
+6. Keep `v2.2` focused on governance/document structure only.
 
 ---
 *Last updated: 2026-03-28 for milestone v2.2 planning restructure*

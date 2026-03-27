@@ -100,6 +100,24 @@ These rules apply to every track and every milestone.
 6. New features should prefer reusable runtime primitives over one-off module hacks.
 7. Planning docs and README must stay understandable to a fresh GSD agent working from the repository alone.
 
+## Cross-Track Change Declaration
+
+Shared contracts are stable by default, but this project still allows controlled cross-track evolution when integration work requires it.
+
+If a milestone, implementation, or PR changes another track's interface or assumptions, it must explicitly declare:
+
+- `Primary Track`
+- `Secondary Impact`
+- `Contracts Changed`
+- `Migration Notes`
+
+This means cross-track modification is allowed for integration, experimentation, or debugging, but silent breakage is not allowed.
+
+Preferred policy:
+- preserve backward compatibility where practical
+- extend before replacing when practical
+- if a breaking change is necessary, document the affected tracks and update planning/docs in the same change
+
 ## Track Selection Guidance
 
 When starting a new milestone:
@@ -113,6 +131,11 @@ Use these heuristics:
 - If the work changes who a player is across sessions, it belongs to Track B.
 - If the work changes how people operate the bot in Discord, it belongs to Track C.
 - If the work changes how the table perceives the experience, it belongs to Track D.
+
+When work genuinely spans multiple tracks:
+- pick the track with the strongest ownership over the canonical behavior being changed
+- record all secondary impacts explicitly
+- avoid turning one milestone into a broad multi-track rewrite
 
 ## Active Milestone
 
