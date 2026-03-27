@@ -1,112 +1,79 @@
-# Requirements
+# Requirements: Discord AI DM
 
-**Project:** Discord AI DM  
-**Version:** v1 scope definition  
 **Defined:** 2026-03-27
+**Core Value:** Run a real multiplayer D&D session in Discord where a local AI DM can narrate, roleplay multiple characters, and enforce heavy rules flow without constant manual bookkeeping.
 
-## v1 Requirements
+## v1.1 Requirements
 
-### Discord Session Runtime
+### Structured Adventure Runtime
 
-- [ ] **DISC-01**: Players can create or join a campaign session bound to a Discord channel or thread.
-- [ ] **DISC-02**: Multiple human players can participate in the same active campaign session without corrupting turn or combat state.
-- [ ] **DISC-03**: The bot acknowledges Discord interactions quickly and completes long-running work asynchronously through follow-up responses.
-- [ ] **DISC-04**: The system supports a clear v1 session topology and validates required Discord permissions during setup.
+- [ ] **MOD-01**: Operators can load a structured adventure package that declares scenes, state variables, triggers, reveal rules, and endings instead of relying on freeform raw script prompting.
+- [ ] **MOD-02**: The runtime validates adventure packages before play and fails closed when required module data is missing or malformed.
+- [ ] **MOD-03**: Canonical adventure state tracks room progress, discovered clues, trigger flags, timers, and module-specific variables independently of Discord chat history.
+- [ ] **MOD-04**: The DM runtime can treat the narrator as omniscient over module data while still enforcing reveal policy so hidden information is only surfaced when allowed by current state or player discovery.
 
-### Gameplay Modes And Roleplay
+### 疯狂之馆 Module
 
-- [ ] **PLAY-01**: The DM can run normal narration mode where the bot responds as the world-facing DM.
-- [ ] **PLAY-02**: The system can switch into scene-based multi-character performance where the bot speaks as multiple NPCs or enemies with explicit speaker attribution.
-- [ ] **PLAY-03**: The system can return from performance scenes to normal DM-led play without losing scene, combat, or actor context.
-- [ ] **PLAY-04**: The narrator produces Chinese-first output suitable for storytelling, scene framing, and NPC dialogue.
+- [ ] **MANS-01**: Players can play `疯狂之馆` from the opening hall through the four branch wings using structured room progression rather than ad hoc narration.
+- [ ] **MANS-02**: The module enforces `疯狂之馆`'s special mechanics, including countdown pressure and room-specific costs or conditions, through deterministic state updates.
+- [ ] **MANS-03**: The module tracks key hidden-status mechanics such as blood progress, sensory loss, saint-state style transformations, and other branch-specific consequences required by the script.
+- [ ] **MANS-04**: The module supports the story's branching discoveries and endings so the session can conclude differently based on party choices and accumulated state.
 
-### Character Data
+### Discord Gameplay UX
 
-- [ ] **CHAR-01**: A player can import or link a character from one mature external source through a clearly defined v1 path.
-- [ ] **CHAR-02**: Imported character data is normalized into a local gameplay model that can power checks, attacks, saves, spell use, and resource tracking.
-- [ ] **CHAR-03**: The system clearly labels whether character data is a snapshot import or a live sync path.
-- [ ] **CHAR-04**: Character onboarding does not require building or managing a custom full-sheet editor inside Discord.
+- [ ] **UX-01**: Campaign-to-channel binding and joined-player membership survive bot restarts so ordinary channel messages continue to work without forcing the group to rebind and rejoin every time.
+- [ ] **UX-02**: Joined players in a bound channel can use ordinary channel messages as their primary gameplay input during packaged adventures, with clear handling for OOC chatter and combat turn gating.
+- [ ] **UX-03**: Bot replies and commands surface the current room, active pressure, known objectives, and next-action guidance clearly enough that a small group can keep playing without operator guesswork.
+- [ ] **UX-04**: Operators can inspect packaged adventure state, current node, discovered clues, and blocked triggers from a compact command or debug surface.
 
-### Rules And Mechanical Resolution
+### Reusable Adventure Pipeline
 
-- [ ] **RULE-01**: The system uses a deterministic rules layer as the canonical authority for state-changing mechanics.
-- [ ] **RULE-02**: Players can trigger ability checks, skill checks, saving throws, attack rolls, and damage resolution from Discord.
-- [ ] **RULE-03**: The system can resolve initiative, turn order, HP changes, conditions, concentration, death saves, and basic resource counters during combat.
-- [ ] **RULE-04**: The system can perform rules, spell, monster, class, and equipment lookup using an open structured compendium source.
-- [ ] **RULE-05**: The v1 rules baseline is explicitly constrained to `2014 SRD only`.
-- [ ] **RULE-06**: The system rejects or flags malformed model actions instead of silently applying uncertain state mutations.
-
-### Persistence And Recovery
-
-- [ ] **PERS-01**: Campaign state persists across restarts and can be reloaded without reconstructing the game manually.
-- [ ] **PERS-02**: The system stores enough canonical state to resume scenes, combat, resources, and party context after interruption.
-- [ ] **PERS-03**: Every turn records a replayable event trail including user action, router decision, tool execution, state mutations, and outbound bot response.
-- [ ] **PERS-04**: The system can generate prompt-ready summaries or projections from canonical state without using raw Discord history as the only source of truth.
-
-### Orchestration And Models
-
-- [ ] **ORCH-01**: The system uses a dual-model architecture with a small router model and a separate narrator model.
-- [ ] **ORCH-02**: The router emits structured output that determines gameplay mode, tool usage, and state intents without generating final prose as its primary output.
-- [ ] **ORCH-03**: The narrator consumes compact context and tool results to produce final DM/NPC output without directly mutating canonical state.
-- [ ] **ORCH-04**: The default local model stack remains practical on a consumer machine in the class of `8GB` VRAM and `32GB` system RAM.
-
-### Operations And Diagnostics
-
-- [ ] **OPS-01**: Operators can inspect the health of Discord integration, model calls, tool execution, and recent rules failures from a compact debug surface or command.
-- [ ] **OPS-02**: The system provides traceable identifiers that link one player action to routing, tool use, state changes, and final Discord output.
-- [ ] **OPS-03**: The system exposes a basic health check workflow to verify setup, permissions, and service connectivity before running a live session.
+- [ ] **PACK-01**: Future adventures can be added by authoring a new package in the same schema instead of modifying core runtime code for each new script.
+- [ ] **PACK-02**: The repository includes practical docs for loading, running, and authoring packaged adventures, using `疯狂之馆` as the first formal example.
 
 ## v2 Requirements
 
-- [ ] **V2-01**: The DM can override or correct rules outcomes from an operator control path.
-- [ ] **V2-02**: The system generates structured session recaps and campaign journals after play.
-- [ ] **V2-03**: The narrator tracks richer NPC memory and relationship continuity across longer campaigns.
-- [ ] **V2-04**: The platform supports async between-session play and downtime exchanges.
-- [ ] **V2-05**: The system supports lightweight map or encounter visualization integrations.
-- [ ] **V2-06**: The system supports broader homebrew content policies and overrides.
-- [ ] **V2-07**: The platform adds optional voice/TTS delivery modes.
+### Adventure Authoring And GM Controls
+
+- **AUTHR-01**: Operators can author or edit adventures through a higher-level authoring tool instead of hand-editing JSON.
+- **AUTHR-02**: The runtime supports per-player secret handouts or whisper reveals as a first-class mechanic.
+- **AUTHR-03**: Operators can override or patch packaged adventure state live during a session without editing stored files manually.
+- **AUTHR-04**: The module schema supports richer puzzle scripting and reusable logic macros beyond the first formal adventure set.
 
 ## Out Of Scope
 
-- Full custom character builder or sheet manager in v1
-- Full VTT features including maps, fog of war, token UI, and tactical positioning UI
-- Multi-platform chat support outside Discord in v1
-- Full support for multiple tabletop systems at launch
-- Runtime dependence on `Avrae` as the core bot engine
-- Dependence on `DND5E-MCP` as a required production core
-- Custom model training or fine-tuning before product validation
-- NSFW-specific model behavior in v1
+| Feature | Reason |
+|---------|--------|
+| Running `疯狂之馆` by feeding the raw `.docx` directly to the narrator | Hidden-state modules need deterministic structure and reveal control. |
+| A visual module editor in this milestone | The first priority is a real schema and one real module, not editor UI. |
+| Rebuilding combat, rules, or character import foundations from scratch | Those shipped in v1.0 and this milestone builds on them. |
+| Multi-platform chat runtimes outside Discord | Discord remains the sole runtime surface for this milestone. |
+| NSFW-specific module behavior | Runtime and module quality are the priority for this round. |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DISC-01 | Phase 1 | Pending |
-| DISC-02 | Phase 1 | Pending |
-| DISC-03 | Phase 1 | Pending |
-| DISC-04 | Phase 1 | Pending |
-| PLAY-01 | Phase 3 | Pending |
-| PLAY-02 | Phase 3 | Pending |
-| PLAY-03 | Phase 3 | Pending |
-| PLAY-04 | Phase 3 | Pending |
-| CHAR-01 | Phase 2 | Pending |
-| CHAR-02 | Phase 2 | Pending |
-| CHAR-03 | Phase 2 | Pending |
-| CHAR-04 | Phase 2 | Pending |
-| RULE-01 | Phase 2 | Pending |
-| RULE-02 | Phase 3 | Pending |
-| RULE-03 | Phase 3 | Pending |
-| RULE-04 | Phase 2 | Pending |
-| RULE-05 | Phase 2 | Pending |
-| RULE-06 | Phase 2 | Pending |
-| PERS-01 | Phase 4 | Pending |
-| PERS-02 | Phase 4 | Pending |
-| PERS-03 | Phase 4 | Pending |
-| PERS-04 | Phase 4 | Pending |
-| ORCH-01 | Phase 1 | Pending |
-| ORCH-02 | Phase 1 | Pending |
-| ORCH-03 | Phase 1 | Pending |
-| ORCH-04 | Phase 1 | Pending |
-| OPS-01 | Phase 4 | Pending |
-| OPS-02 | Phase 4 | Pending |
-| OPS-03 | Phase 1 | Pending |
+| MOD-01 | Phase 6 | Pending |
+| MOD-02 | Phase 6 | Pending |
+| MOD-03 | Phase 6 | Pending |
+| MOD-04 | Phase 6 | Pending |
+| MANS-01 | Phase 7 | Pending |
+| MANS-02 | Phase 7 | Pending |
+| MANS-03 | Phase 7 | Pending |
+| MANS-04 | Phase 7 | Pending |
+| UX-01 | Phase 8 | Pending |
+| UX-02 | Phase 8 | Pending |
+| UX-03 | Phase 8 | Pending |
+| UX-04 | Phase 8 | Pending |
+| PACK-01 | Phase 8 | Pending |
+| PACK-02 | Phase 8 | Pending |
+
+**Coverage:**
+- v1.1 requirements: 14 total
+- Mapped to phases: 14
+- Unmapped: 0
+
+---
+*Requirements defined: 2026-03-27*
+*Last updated: 2026-03-27 after starting milestone v1.1*

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This roadmap keeps v1 narrow: deliver a Discord-first D&D runtime that can run a real local-model session with deterministic rules authority, one mature character import path, Chinese-first DM narration, and enough persistence and diagnostics to recover and operate campaign play on consumer hardware.
+This roadmap now has two milestones in sequence. Milestone `v1.0` established a Discord-first local-DM runtime with deterministic rules, persistence, diagnostics, and a starter packaged adventure. Milestone `v1.1` builds on that base by introducing a formal structured module runtime, making `疯狂之馆` the first full official module, and hardening Discord interaction so packaged adventures can survive restarts and remain campaign-usable.
 
 ## Phases
 
@@ -78,7 +78,7 @@ Plans:
 - [x] 04-01-PLAN.md - Add durable campaign state storage and append-only turn events.
 - [x] 04-02-PLAN.md - Expose compact diagnostics and trace inspection through the runtime.
 
-## Progress
+## Milestone v1.0 Progress
 
 ### Phase 5: Multiplayer usability, natural message intake, and starter adventure
 **Goal**: Make the bot genuinely runnable by a small group through natural channel input, cleaner multiplayer flow, Chinese DM voice refinement, and a packaged starter one-shot.
@@ -94,10 +94,42 @@ Plans:
 - [x] 05-01-PLAN.md - Add multiplayer runtime helpers, natural message intake, and combat gating.
 - [x] 05-02-PLAN.md - Improve DM narration, ship a starter adventure, and rewrite operator docs.
 
+## Milestone v1.1 Planned Work
+
+### Phase 6: Structured Module Runtime
+**Goal**: Introduce a reusable formal adventure package model with canonical state, reveal policy, and deterministic trigger handling that can power full modules.
+**Depends on**: Phase 5
+**Requirements**: MOD-01, MOD-02, MOD-03, MOD-04
+**Success Criteria** (what must be TRUE):
+  1. Operators can load a formally structured adventure package whose scenes, state variables, reveal tiers, and ending paths are validated before play begins.
+  2. The runtime stores module state separately from Discord history and can answer what room, clues, triggers, timers, and hidden flags are currently active.
+  3. Narration can consume omniscient module data without leaking hidden information that is still gated by the package's reveal policy.
+  4. Invalid or incomplete package data fails closed with actionable diagnostics instead of silently degrading into freeform DM improvisation.
+
+### Phase 7: 疯狂之馆 Formal Module
+**Goal**: Encode `疯狂之馆` as the first full-length structured module with its room logic, hidden-status mechanics, and branching endings.
+**Depends on**: Phase 6
+**Requirements**: MANS-01, MANS-02, MANS-03, MANS-04
+**Success Criteria** (what must be TRUE):
+  1. A group can enter `疯狂之馆`, move through the hall and branch wings, and have room progression driven by structured data instead of ad hoc prompt text.
+  2. Countdown pressure, room-specific costs, blood progression, sensory loss, saint-state style transformations, and similar script mechanics mutate canonical module state deterministically.
+  3. The DM reveals clues and hidden information according to scripted triggers and discoveries, while still retaining full module knowledge internally.
+  4. The run can conclude through multiple endings that depend on accumulated state and choices rather than a single scripted exit.
+
+### Phase 8: Module UX, Session Continuity, and Operator Guidance
+**Goal**: Make packaged adventure play reliable after restarts and understandable to a small real group using ordinary Discord messages.
+**Depends on**: Phase 7
+**Requirements**: UX-01, UX-02, UX-03, UX-04, PACK-01, PACK-02
+**Success Criteria** (what must be TRUE):
+  1. Campaign/channel binding, joined-member state, and packaged-adventure context survive bot restarts well enough that natural-message play resumes without manual re-setup.
+  2. Joined players can play packaged adventures through ordinary channel messages with clear OOC filtering, combat gating, and feedback when input is ignored or blocked.
+  3. Commands or debug surfaces clearly report the current room, objectives, known clues, pressure, and blocked progression so the operator does not have to inspect raw state files.
+  4. The repository contains docs and examples that let an operator load `疯狂之馆`, understand the gameplay loop, and author the next structured module without reverse-engineering the code.
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -106,3 +138,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 3. Gameplay Loop & Combat Play | 3/3 | Completed | 2026-03-27 |
 | 4. Persistence, Recovery & Diagnostics | 2/2 | Completed | 2026-03-27 |
 | 5. Multiplayer usability, natural message intake, and starter adventure | 2/2 | Completed | 2026-03-27 |
+| 6. Structured Module Runtime | 0/0 | Planned | — |
+| 7. 疯狂之馆 Formal Module | 0/0 | Planned | — |
+| 8. Module UX, Session Continuity, and Operator Guidance | 0/0 | Planned | — |
