@@ -5,4 +5,8 @@ __pycache__/
 *.sqlite3
 bot.stdout.log
 bot.stderr.log
+bot.smoke.log
 .models/
+.planning/config.json
+tmp_*.md
+run-bot-bg.cmd
