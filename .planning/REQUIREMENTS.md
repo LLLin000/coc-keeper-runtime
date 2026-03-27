@@ -15,7 +15,7 @@
 ### Hinting, Clueing, And Reveal Timing
 
 - [ ] **HINT-01**: `疯狂之馆` can surface context-sensitive hints when the group stalls, loops, or misses required next steps, without leaking protected hidden information too early.
-- [ ] **HINT-02**: The bot can separate ambient description, discoverable clue prompts, and explicit actionable guidance so players are not forced to guess what is interactable.
+- [ ] **HINT-02**: The bot can separate ambient description, discoverable clue prompts, light actionable guidance, and explicit rescue-level direction so players are not forced to guess what is interactable, but are also not walked through the solution.
 - [ ] **HINT-03**: Important module beats such as the countdown, the function of the four halls, sacrifice costs, and the blood-exit condition are introduced at deliberate times instead of by accidental prompt drift.
 - [ ] **HINT-04**: Reveal timing remains module-safe: table-facing hints never bypass canonical hidden-state gates or spoil late-stage truths prematurely.
 
@@ -25,6 +25,12 @@
 - [ ] **PRESENT-02**: The runtime can present clearer transitions between free exploration, explicit roll prompts, consequences, and return-to-choice moments so the session rhythm feels intentional.
 - [ ] **PRESENT-03**: Scene output can call attention to salient props, risks, NPC posture, and available interaction vectors without turning into a menu dump.
 - [ ] **PRESENT-04**: The table can recover from failed exploration or wrong assumptions because the bot knows when to restate pressure, recap discovered truths, or redirect attention.
+
+### Reusable Guidance Pipeline
+
+- [ ] **GUIDE-01**: Prompt rules, structured module fields, and runtime hint logic should express guidance tiers explicitly so later adventures can reuse the same DM-behavior pipeline.
+- [ ] **GUIDE-02**: Adventure extraction and parsing should preserve enough scene metadata, interaction affordances, and clue tiers that new modules do not require large one-off prompt hacks to feel guided.
+- [ ] **GUIDE-03**: Module-specific polish for `疯狂之馆` should be implemented as schema data and reusable runtime hooks wherever possible, with one-off hardcoding kept to a minimum.
 
 ## v2 Requirements
 
@@ -61,10 +67,13 @@
 | PRESENT-02 | Phase 15 | Planned |
 | PRESENT-03 | Phase 15 | Planned |
 | PRESENT-04 | Phase 15 | Planned |
+| GUIDE-01 | Phase 13 | Planned |
+| GUIDE-02 | Phase 14 | Planned |
+| GUIDE-03 | Phase 15 | Planned |
 
 **Coverage:**
-- v1.3 requirements: 12 total
-- Mapped to phases: 12
+- v1.3 requirements: 15 total
+- Mapped to phases: 15
 - Unmapped: 0
 
 ---

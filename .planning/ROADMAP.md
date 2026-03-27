@@ -2,7 +2,7 @@
 
 ## Overview
 
-Milestone `v1.0` established the Discord-first local-DM runtime with deterministic rules, persistence, diagnostics, and a starter packaged adventure. Milestone `v1.1` introduced a formal module runtime and shipped `疯狂之馆` as the first structured full-length module. Milestone `v1.2` added ready-gated startup, mature dice integration, and true Discord streaming. Milestone `v1.3` now focuses on the part players feel most directly during live play: better judgement about when rolls should happen, better hint and clue timing, and scene presentation that feels closer to a real human Keeper/DM running `疯狂之馆`.
+Milestone `v1.0` established the Discord-first local-DM runtime with deterministic rules, persistence, diagnostics, and a starter packaged adventure. Milestone `v1.1` introduced a formal module runtime and shipped `疯狂之馆` as the first structured full-length module. Milestone `v1.2` added ready-gated startup, mature dice integration, and true Discord streaming. Milestone `v1.3` now focuses on the part players feel most directly during live play: better judgement about when rolls should happen, light guidance with clear boundaries, and scene presentation that feels closer to a real human Keeper/DM while still improving the reusable prompt, parsing, and module pipeline for future adventures.
 
 ## Phases
 
@@ -28,46 +28,46 @@ Decimal phases appear between their surrounding integers in numeric order.
 ## Milestone v1.3 Planned Work
 
 ### Phase 13: Structured Judgement And Roll Prompting
-**Goal**: Make the runtime act more like a real Keeper by deciding when a roll is needed, when it is not, and how to prompt the table clearly.
+**Goal**: Make the runtime act more like a real Keeper by deciding when a roll is needed, when it is not, and how to prompt the table clearly, while expressing those decisions through reusable prompt and runtime structures.
 **Depends on**: Phase 12
-**Requirements**: JUDGE-01, JUDGE-02, JUDGE-03, JUDGE-04
+**Requirements**: JUDGE-01, JUDGE-02, JUDGE-03, JUDGE-04, GUIDE-01
 **Success Criteria** (what must be TRUE):
   1. `疯狂之馆` interactions can distinguish between automatic success, blocked action, clarification-needed action, and formal roll-needed action through structured runtime logic.
   2. When a roll is needed, the bot can surface a concise DM-facing prompt that identifies the actor, the roll family, and the reason.
   3. Roll-trigger outcomes update canonical state and downstream narration rather than being treated as a purely narrative flourish.
-  4. The design reuses mature tabletop and bot patterns where possible instead of inventing unnecessary new judgement semantics.
+  4. The design reuses mature tabletop and bot patterns where possible instead of inventing unnecessary new judgement semantics, and the prompt/runtime contract is reusable by later modules.
 **Plans**: 2 plans
 Plans:
-- [ ] 13-01-PLAN.md - Add structured action judgement for module interactions and map roll-needed outcomes into the deterministic rules layer.
-- [ ] 13-02-PLAN.md - Surface explicit DM roll prompts and consequence categories through Discord commands and ordinary-message flow.
+- [ ] 13-01-PLAN.md - Add structured action judgement tiers and map roll-needed outcomes into the deterministic rules layer.
+- [ ] 13-02-PLAN.md - Surface explicit DM roll prompts and reusable guidance-tier contracts through prompt and ordinary-message flow.
 
 ### Phase 14: Hint Timing, Clue Flow, And Stall Recovery
-**Goal**: Improve how `疯狂之馆` reveals information, nudges players, and recovers from stalls without spoiling hidden truths.
+**Goal**: Improve how `疯狂之馆` reveals information, nudges players, and recovers from stalls without spoiling hidden truths, while formalizing guidance tiers that future modules can reuse.
 **Depends on**: Phase 13
-**Requirements**: HINT-01, HINT-02, HINT-03, HINT-04
+**Requirements**: HINT-01, HINT-02, HINT-03, HINT-04, GUIDE-02
 **Success Criteria** (what must be TRUE):
-  1. The module can distinguish ambient description from discoverable clues and explicit progression hints.
+  1. The module can distinguish ambient description from discoverable clues, light guidance, and explicit rescue-level hints.
   2. The runtime can detect common stall states or repeated dead-end loops and emit safe next-step guidance.
   3. Major pressure beats and critical module truths are introduced deliberately rather than accidentally drifting into view.
-  4. Hints never bypass canonical reveal gates or expose protected late-stage secrets too early.
+  4. Hints never bypass canonical reveal gates or expose protected late-stage secrets too early, and extracted module data preserves enough metadata to support the same behavior in later adventures.
 **Plans**: 2 plans
 Plans:
-- [ ] 14-01-PLAN.md - Encode context-sensitive hint triggers, clue tiers, and stall detection into the `疯狂之馆` runtime.
-- [ ] 14-02-PLAN.md - Improve DM-facing recap and redirect messaging so players can recover from confusion without raw state inspection.
+- [ ] 14-01-PLAN.md - Encode context-sensitive hint triggers, clue tiers, and stall detection into the runtime and module schema.
+- [ ] 14-02-PLAN.md - Improve DM-facing recap and redirect messaging plus extraction-time clue metadata so players can recover without raw state inspection.
 
 ### Phase 15: Keeper-Style Scene Framing And Consequence Presentation
-**Goal**: Make scene presentation, consequence delivery, and return-to-choice rhythm feel more like a human Keeper running the module.
+**Goal**: Make scene presentation, consequence delivery, and return-to-choice rhythm feel more like a human Keeper running the module, without turning scenes into over-guided walkthroughs.
 **Depends on**: Phase 14
-**Requirements**: PRESENT-01, PRESENT-02, PRESENT-03, PRESENT-04
+**Requirements**: PRESENT-01, PRESENT-02, PRESENT-03, PRESENT-04, GUIDE-03
 **Success Criteria** (what must be TRUE):
   1. Central hall framing, branch-hall introductions, and major set-piece interactions have stronger module-specific DM voice and usable scene structure.
   2. The runtime can present transitions between exploration, roll prompt, consequence, and next choice cleanly enough that the session rhythm feels intentional.
-  3. Scene output highlights salient props, threats, and opportunities without collapsing into either generic prose or menu spam.
-  4. Failed exploration and wrong assumptions still move the table forward because the DM knows when to restate pressure, recap discoveries, and redirect attention.
+  3. Scene output highlights salient props, threats, and opportunities without collapsing into either generic prose, menu spam, or over-explicit solution feeding.
+  4. Failed exploration and wrong assumptions still move the table forward because the DM knows when to restate pressure, recap discoveries, and redirect attention, and the polish remains mostly reusable beyond this single module.
 **Plans**: 2 plans
 Plans:
-- [ ] 15-01-PLAN.md - Refine `疯狂之馆` scene framing and branch introductions using structured presentation templates.
-- [ ] 15-02-PLAN.md - Integrate consequence narration, recap beats, and return-to-choice pacing into live Discord output.
+- [ ] 15-01-PLAN.md - Refine `疯狂之馆` scene framing and branch introductions using structured presentation templates with bounded guidance.
+- [ ] 15-02-PLAN.md - Integrate consequence narration, recap beats, return-to-choice pacing, and reusable prompt/schema hooks into live Discord output.
 
 ## Progress
 
