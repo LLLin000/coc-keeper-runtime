@@ -17,7 +17,14 @@ Run a real multiplayer session in one Discord channel with natural player messag
 Optional:
 
 - `/import_character provider:dicecloud_snapshot external_id:<id>`
-- `/load_adventure adventure_id:starter_crypt`
+- `/load_adventure adventure_id:mad_mansion`
+
+## Recommended Formal Module Flow
+
+1. `/load_adventure adventure_id:mad_mansion`
+2. 用中央大厅开场，把四个分馆和倒计时交代清楚
+3. 玩家直接用普通消息说话、调查、协作，不需要每句 `/turn`
+4. 需要看当前局势时，用 `/debug_status campaign_id:test1`
 
 ## How Players Speak
 
@@ -56,3 +63,9 @@ Examples of ignored messages:
 - `/turn content:我推开门。`
 
 这条命令始终作为保底和调试入口保留。
+
+## Restart Notes
+
+- bot 重启后，绑定频道、已加入成员、以及当前 adventure state 会从 SQLite 恢复
+- 正常情况下不需要重新 `/bind_campaign` 或 `/join_campaign`
+- 如果你怀疑恢复不对，先用 `/debug_status campaign_id:test1` 看当前 scene、clues、time 等状态

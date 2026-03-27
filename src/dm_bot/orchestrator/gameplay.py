@@ -96,6 +96,30 @@ class GameplayOrchestrator:
             },
         }
 
+    def set_adventure_scene(self, scene_id: str) -> None:
+        if self.adventure is None:
+            raise RuntimeError("adventure not loaded")
+        self.adventure.scene_by_id(scene_id)
+        self.adventure_state["scene_id"] = scene_id
+
+    def record_adventure_clue(self, clue_id: str) -> None:
+        clues = list(self.adventure_state.get("clues_found", []))
+        if clue_id not in clues:
+            clues.append(clue_id)
+        self.adventure_state["clues_found"] = clues
+
+    def update_adventure_state(self, **changes: object) -> None:
+        module_state = dict(self.adventure_state.get("module_state", {}))
+        module_state.update(changes)
+        self.adventure_state["module_state"] = module_state
+
+    def set_adventure_ending(self, ending_id: str) -> None:
+        if self.adventure is None:
+            raise RuntimeError("adventure not loaded")
+        if ending_id not in {ending.id for ending in self.adventure.endings}:
+            raise KeyError(ending_id)
+        self.adventure_state["ending_id"] = ending_id
+
     def export_state(self) -> dict[str, object]:
         return {
             "mode": self.mode_state.model_dump(),

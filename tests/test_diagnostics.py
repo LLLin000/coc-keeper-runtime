@@ -37,6 +37,29 @@ def test_diagnostics_service_returns_recent_trace_summary(tmp_path: Path) -> Non
     assert "trace-1" in summary
 
 
+def test_diagnostics_service_reports_adventure_state_summary(tmp_path: Path) -> None:
+    store = PersistenceStore(tmp_path / "diag.sqlite3")
+    store.save_campaign_state(
+        "camp-1",
+        {
+            "adventure_state": {
+                "scene_id": "blood_hall",
+                "clues_found": ["blood_exit_rule", "clock_countdown"],
+                "objectives": ["找到出口"],
+                "module_state": {"time_remaining": 120, "blood_required": 25, "blood_collected": 11},
+                "ending_id": None,
+            }
+        },
+    )
+    service = DiagnosticsService(store)
+
+    summary = service.recent_summary("camp-1")
+
+    assert "blood_hall" in summary
+    assert "120" in summary
+    assert "blood_exit_rule" in summary
+
+
 def test_debug_command_surfaces_recent_events(tmp_path: Path) -> None:
     store = PersistenceStore(tmp_path / "diag.sqlite3")
     store.append_event(campaign_id="camp-1", trace_id="trace-1", event_type="turn.completed", payload={"reply": "ok"})

@@ -49,3 +49,29 @@ class SessionStore:
 
     def get_by_channel(self, channel_id: str) -> CampaignSession | None:
         return self._sessions.get(channel_id)
+
+    def dump_sessions(self) -> dict[str, dict[str, object]]:
+        return {
+            channel_id: {
+                "campaign_id": session.campaign_id,
+                "channel_id": session.channel_id,
+                "guild_id": session.guild_id,
+                "owner_id": session.owner_id,
+                "member_ids": sorted(session.member_ids),
+                "active_characters": dict(session.active_characters),
+            }
+            for channel_id, session in self._sessions.items()
+        }
+
+    def load_sessions(self, payload: dict[str, dict[str, object]]) -> None:
+        self._sessions = {}
+        for channel_id, raw in payload.items():
+            session = CampaignSession(
+                campaign_id=str(raw["campaign_id"]),
+                channel_id=str(raw.get("channel_id", channel_id)),
+                guild_id=str(raw["guild_id"]),
+                owner_id=str(raw["owner_id"]),
+                member_ids=set(raw.get("member_ids", [])),
+                active_characters=dict(raw.get("active_characters", {})),
+            )
+            self._sessions[channel_id] = session

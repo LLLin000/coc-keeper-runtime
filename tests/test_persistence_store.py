@@ -4,6 +4,7 @@ from dm_bot.characters.importer import CharacterImporter
 from dm_bot.characters.sources import DicecloudSnapshotSource
 from dm_bot.gameplay.combat import Combatant
 from dm_bot.orchestrator.gameplay import CharacterRegistry, GameplayOrchestrator
+from dm_bot.orchestrator.session_store import SessionStore
 from dm_bot.persistence.store import PersistenceStore
 from dm_bot.rules.compendium import FixtureCompendium
 from dm_bot.rules.engine import RulesEngine
@@ -81,3 +82,18 @@ def test_persistence_store_appends_trace_linked_events(tmp_path: Path) -> None:
 
     assert len(events) == 1
     assert events[0]["trace_id"] == "trace-1"
+
+
+def test_persistence_store_saves_and_restores_campaign_sessions(tmp_path: Path) -> None:
+    store = PersistenceStore(tmp_path / "campaign.sqlite3")
+    sessions = SessionStore()
+    sessions.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    sessions.join_campaign(channel_id="chan-1", user_id="user-2")
+    sessions.bind_character(channel_id="chan-1", user_id="user-1", character_name="Alice")
+
+    store.save_sessions(sessions.dump_sessions())
+    restored = store.load_sessions()
+
+    assert restored["chan-1"]["campaign_id"] == "camp-1"
+    assert set(restored["chan-1"]["member_ids"]) == {"user-1", "user-2"}
+    assert restored["chan-1"]["active_characters"]["user-1"] == "Alice"

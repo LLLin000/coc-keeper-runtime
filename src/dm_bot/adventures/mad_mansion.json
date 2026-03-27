@@ -1,0 +1,119 @@
+{
+  "slug": "mad_mansion",
+  "title": "疯狂之馆",
+  "premise": "调查员在睡梦中被拖入一间白色密室，必须在倒计时结束前探索四个分馆、承担代价，并找到离开的方法。",
+  "start_scene_id": "central_hall",
+  "objectives": [
+    "查明四个分馆的代价与线索",
+    "找到离开密室的方法",
+    "在倒计时结束前让至少一名调查员存活"
+  ],
+  "state_fields": [
+    { "key": "time_remaining", "default": 179, "visibility": "public" },
+    { "key": "blood_required", "default": 25, "visibility": "public" },
+    { "key": "blood_collected", "default": 0, "visibility": "secret" },
+    { "key": "saint_candidate", "default": "", "visibility": "secret" },
+    { "key": "administrator_truth", "default": "管理员少女是奈亚拉托提普的化身", "visibility": "gm_only" },
+    { "key": "countdown_active", "default": true, "visibility": "public" },
+    { "key": "blood_exit_open", "default": false, "visibility": "public" }
+  ],
+  "scenes": [
+    {
+      "id": "central_hall",
+      "title": "中央大厅",
+      "summary": "纯白大厅中央刺眼的吊灯照得人心神不宁，四面光幕分别通向贪欲、生命、死亡与鲜血之馆。墙上的数字钟正在倒计时。",
+      "clues": [
+        "四道光幕各自通往不同分馆",
+        "墙上的数字钟正在倒计时",
+        "强光中的幻视暗示最后可能需要鲜血祭品"
+      ],
+      "reveals": [
+        "每道光幕都会把触碰者传送到对应分馆",
+        "时间耗尽时除了圣子外所有调查员都会死亡"
+      ],
+      "combat": false,
+      "exits": ["greed_hall", "life_hall", "death_hall", "blood_hall"]
+    },
+    {
+      "id": "greed_hall",
+      "title": "贪欲之馆",
+      "summary": "白得发光的房间里摆着红木桌，一名持扇少女坐在其后，自称管理员与商人，愿意以理智为代价售卖各种物品。",
+      "clues": [
+        "管理员愿意用理智值换取道具",
+        "她会曲解购买内容并故意放大代价",
+        "旧笔记暗示管理员并非不可杀死"
+      ],
+      "reveals": [
+        "管理员的交易原则始终是代价大于收获",
+        "与管理员冲突可能引出远超常规的存在"
+      ],
+      "combat": false,
+      "exits": ["central_hall"]
+    },
+    {
+      "id": "life_hall",
+      "title": "生命之馆",
+      "summary": "触手人体雕像立在大厅中央，书架上摆着诡异图书与一本旧笔记本。石板承诺可用灵性换取完好的身体。",
+      "clues": [
+        "《奈亚的五个房间》记载了生门与死门的隐晦关系",
+        "旧笔记本写着管理员是可以被杀死的",
+        "叩拜雕像可回满生命，但会随机失去一项感官"
+      ],
+      "reveals": [
+        "书架被破坏会提高逃生所需鲜血条件",
+        "感官剥夺是可恢复的假性残疾"
+      ],
+      "combat": false,
+      "exits": ["central_hall"]
+    },
+    {
+      "id": "death_hall",
+      "title": "死亡之馆",
+      "summary": "漆黑房间中躺着三具干枯尸体，墙角的十字架状祭具静静地等着新的牺牲者。",
+      "clues": [
+        "尸体会流尽血液并最终消失",
+        "十字架会要求牺牲者献血来增加同伴生机",
+        "自愿接受献祭的人会成为无法受伤的圣子"
+      ],
+      "reveals": [
+        "拒绝牺牲或被强迫上十字架会直接走向死亡结局",
+        "死亡与献祭流失的生命都会补进鲜血之馆的开门条件"
+      ],
+      "combat": false,
+      "exits": ["central_hall"]
+    },
+    {
+      "id": "blood_hall",
+      "title": "鲜血之馆",
+      "summary": "腥臭血池缓缓蠕动，对岸墙上刻着离开的条件。只有足够的伤痛之血，才能令池底的出口显现。",
+      "clues": [
+        "墙上的文字说明唯有伤痛后的鲜血能打开出去的路",
+        "默认的开门条件是累计流失 25 点人类 HP",
+        "血池下方潜藏着机械锁门与向下的楼梯"
+      ],
+      "reveals": [
+        "当累计鲜血达到阈值时，整个房间会震动，池底楼梯显现",
+        "潜水与开锁也可能绕过部分条件直接打开出口"
+      ],
+      "combat": false,
+      "exits": ["central_hall"]
+    }
+  ],
+  "endings": [
+    {
+      "id": "survive",
+      "title": "存活结局",
+      "summary": "调查员从血池底部楼梯离开后在现实中醒来，确认这场经历并非单纯梦境。"
+    },
+    {
+      "id": "death",
+      "title": "死亡结局",
+      "summary": "调查员在密室内死去，抱着梦醒的错觉彻底沉入黑暗。"
+    },
+    {
+      "id": "sea_escape",
+      "title": "破墙逃生",
+      "summary": "调查员以重武器破开墙壁，从南海的急流中求得一线生机。"
+    }
+  ]
+}

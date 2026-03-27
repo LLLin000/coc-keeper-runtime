@@ -1,5 +1,6 @@
 import asyncio
 
+from dm_bot.adventures.loader import load_adventure
 from dm_bot.adventures.models import AdventurePackage
 from dm_bot.discord_bot.commands import BotCommands
 from dm_bot.gameplay.combat import CombatEncounter, Combatant
@@ -131,3 +132,20 @@ def test_gameplay_loads_formal_adventure_and_exports_public_and_gm_state() -> No
     assert snapshot["public"]["state"]["time_remaining"] == 180
     assert "administrator_truth" not in snapshot["public"]["state"]
     assert snapshot["gm"]["state"]["administrator_truth"] == "奈亚化身"
+
+
+def test_gameplay_can_progress_mad_mansion_module_state() -> None:
+    gameplay = build_gameplay()
+    gameplay.load_adventure(load_adventure("mad_mansion"))
+
+    gameplay.set_adventure_scene("blood_hall")
+    gameplay.record_adventure_clue("blood_exit_rule")
+    gameplay.update_adventure_state(time_remaining=120, blood_required=25, blood_collected=11)
+    gameplay.set_adventure_ending("survive")
+
+    snapshot = gameplay.adventure_snapshot()
+    assert snapshot["public"]["current_scene"]["id"] == "blood_hall"
+    assert "blood_exit_rule" in gameplay.adventure_state["clues_found"]
+    assert snapshot["public"]["state"]["time_remaining"] == 120
+    assert snapshot["gm"]["state"]["blood_collected"] == 11
+    assert gameplay.adventure_state["ending_id"] == "survive"

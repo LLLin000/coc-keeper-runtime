@@ -64,3 +64,19 @@ def test_load_adventure_from_path_supports_custom_package(tmp_path: Path) -> Non
     assert adventure.slug == "custom_module"
     assert adventure.state_defaults()["alarm_level"] == 0
     assert adventure.state_defaults()["true_mastermind"] == "少女"
+
+
+def test_load_mad_mansion_formal_module() -> None:
+    adventure = load_adventure("mad_mansion")
+
+    assert adventure.title == "疯狂之馆"
+    assert adventure.start_scene_id == "central_hall"
+    assert {scene.id for scene in adventure.scenes} >= {
+        "central_hall",
+        "greed_hall",
+        "life_hall",
+        "death_hall",
+        "blood_hall",
+    }
+    assert "time_remaining" in adventure.state_defaults()
+    assert any(ending.id == "survive" for ending in adventure.endings)

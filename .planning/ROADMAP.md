@@ -118,6 +118,9 @@ Plans:
   2. Countdown pressure, room-specific costs, blood progression, sensory loss, saint-state style transformations, and similar script mechanics mutate canonical module state deterministically.
   3. The DM reveals clues and hidden information according to scripted triggers and discoveries, while still retaining full module knowledge internally.
   4. The run can conclude through multiple endings that depend on accumulated state and choices rather than a single scripted exit.
+**Plans**: 1 plan
+Plans:
+- [x] 07-01-PLAN.md - Encode 疯狂之馆 as a formal package and add thin progression helpers.
 
 ### Phase 8: Module UX, Session Continuity, and Operator Guidance
 **Goal**: Make packaged adventure play reliable after restarts and understandable to a small real group using ordinary Discord messages.
@@ -128,6 +131,9 @@ Plans:
   2. Joined players can play packaged adventures through ordinary channel messages with clear OOC filtering, combat gating, and feedback when input is ignored or blocked.
   3. Commands or debug surfaces clearly report the current room, objectives, known clues, pressure, and blocked progression so the operator does not have to inspect raw state files.
   4. The repository contains docs and examples that let an operator load `疯狂之馆`, understand the gameplay loop, and author the next structured module without reverse-engineering the code.
+**Plans**: 1 plan
+Plans:
+- [x] 08-01-PLAN.md - Persist sessions, restore packaged-adventure runtime state, and update operator guidance.
 
 ## Progress
 
@@ -142,5 +148,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 4. Persistence, Recovery & Diagnostics | 2/2 | Completed | 2026-03-27 |
 | 5. Multiplayer usability, natural message intake, and starter adventure | 2/2 | Completed | 2026-03-27 |
 | 6. Structured Module Runtime | 1/1 | Completed | 2026-03-27 |
-| 7. 疯狂之馆 Formal Module | 0/0 | Planned | — |
-| 8. Module UX, Session Continuity, and Operator Guidance | 0/0 | Planned | — |
+| 7. 疯狂之馆 Formal Module | 1/1 | Completed | 2026-03-27 |
+| 8. Module UX, Session Continuity, and Operator Guidance | 1/1 | Completed | 2026-03-27 |

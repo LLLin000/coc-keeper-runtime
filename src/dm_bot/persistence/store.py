@@ -17,6 +17,9 @@ class PersistenceStore:
                 "create table if not exists campaign_state (campaign_id text primary key, state_json text not null)"
             )
             conn.execute(
+                "create table if not exists campaign_sessions (id integer primary key check (id = 1), sessions_json text not null)"
+            )
+            conn.execute(
                 "create table if not exists campaign_events (id integer primary key autoincrement, campaign_id text not null, trace_id text not null, event_type text not null, payload_json text not null)"
             )
 
@@ -34,6 +37,19 @@ class PersistenceStore:
                 "select state_json from campaign_state where campaign_id = ?",
                 (campaign_id,),
             ).fetchone()
+        return json.loads(row[0]) if row else {}
+
+    def save_sessions(self, sessions: dict[str, dict[str, object]]) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                "insert into campaign_sessions(id, sessions_json) values(1, ?) "
+                "on conflict(id) do update set sessions_json=excluded.sessions_json",
+                (json.dumps(sessions, ensure_ascii=False),),
+            )
+
+    def load_sessions(self) -> dict[str, dict[str, object]]:
+        with self._connect() as conn:
+            row = conn.execute("select sessions_json from campaign_sessions where id = 1").fetchone()
         return json.loads(row[0]) if row else {}
 
     def append_event(self, *, campaign_id: str, trace_id: str, event_type: str, payload: dict[str, object]) -> None:

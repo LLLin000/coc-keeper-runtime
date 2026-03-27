@@ -3,6 +3,7 @@ import asyncio
 from dm_bot.config import Settings
 from dm_bot.discord_bot.commands import BotCommands
 from dm_bot.orchestrator.session_store import SessionStore
+from dm_bot.persistence.store import PersistenceStore
 
 
 class FakeResponse:
@@ -91,3 +92,20 @@ def test_turn_command_defers_and_sends_followup_reply() -> None:
     assert interaction.response.deferred is True
     assert interaction.followup.messages == ["地牢里传来低语。"]
     assert turn_service.calls == [("camp-1", "chan-1", "user-1", "我推开门。")]
+
+
+def test_bind_command_persists_session_binding(tmp_path) -> None:
+    store = SessionStore()
+    persistence = PersistenceStore(tmp_path / "commands.sqlite3")
+    commands = BotCommands(
+        settings=Settings(),
+        session_store=store,
+        turn_coordinator=StubTurnService(),
+        persistence_store=persistence,
+    )
+    interaction = FakeInteraction(channel_id="chan-1", guild_id="guild-1", user_id="owner")
+
+    asyncio.run(commands.bind_campaign(interaction, campaign_id="camp-1"))
+
+    restored = persistence.load_sessions()
+    assert restored["chan-1"]["campaign_id"] == "camp-1"

@@ -6,12 +6,22 @@ from dm_bot.runtime.health import build_health_snapshot
 
 
 class BotCommands:
-    def __init__(self, *, settings: Settings | None, session_store, turn_coordinator, gameplay=None, diagnostics=None) -> None:
+    def __init__(
+        self,
+        *,
+        settings: Settings | None,
+        session_store,
+        turn_coordinator,
+        gameplay=None,
+        diagnostics=None,
+        persistence_store=None,
+    ) -> None:
         self._settings = settings or get_settings()
         self._session_store = session_store
         self._turn_coordinator = turn_coordinator
         self._gameplay = gameplay
         self._diagnostics = diagnostics
+        self._persistence_store = persistence_store
 
     async def setup_check(self, interaction) -> None:
         snapshot = build_health_snapshot(self._settings)
@@ -27,6 +37,7 @@ class BotCommands:
             guild_id=str(interaction.guild_id),
             owner_id=str(interaction.user.id),
         )
+        self._persist_sessions()
         await interaction.response.send_message(
             f"campaign `{campaign_id}` bound to channel `{interaction.channel_id}`",
             ephemeral=True,
@@ -37,6 +48,7 @@ class BotCommands:
             channel_id=str(interaction.channel_id),
             user_id=str(interaction.user.id),
         )
+        self._persist_sessions()
         await interaction.response.send_message(
             f"joined campaign `{session.campaign_id}`",
             ephemeral=True,
@@ -47,6 +59,7 @@ class BotCommands:
             channel_id=str(interaction.channel_id),
             user_id=str(interaction.user.id),
         )
+        self._persist_sessions()
         await interaction.response.send_message(
             f"left campaign `{session.campaign_id}`",
             ephemeral=True,
@@ -66,12 +79,14 @@ class BotCommands:
         if blocked:
             await interaction.followup.send(blocked, ephemeral=True)
             return
+        self._load_campaign_state(session.campaign_id)
         result = await self._dispatch_turn(
             campaign_id=session.campaign_id,
             channel_id=str(interaction.channel_id),
             user_id=str(interaction.user.id),
             content=content,
         )
+        self._save_campaign_state(session.campaign_id)
         await interaction.followup.send(result.reply)
 
     async def import_character(self, interaction, *, provider: str, external_id: str) -> None:
@@ -92,6 +107,7 @@ class BotCommands:
                 user_id=str(interaction.user.id),
                 character_name=character.name,
             )
+            self._persist_sessions()
         await interaction.response.send_message(
             f"imported `{character.name}` from `{character.source.provider}` ({character.source.label})",
             ephemeral=True,
@@ -103,6 +119,7 @@ class BotCommands:
             return
         parsed = [item.strip() for item in speakers.split(",") if item.strip()]
         self._gameplay.enter_scene(speakers=parsed)
+        self._save_state_for_channel(str(interaction.channel_id))
         await interaction.response.send_message(
             f"scene mode enabled for {', '.join(parsed)}",
             ephemeral=True,
@@ -113,6 +130,7 @@ class BotCommands:
             await interaction.response.send_message("gameplay is not configured", ephemeral=True)
             return
         self._gameplay.end_scene()
+        self._save_state_for_channel(str(interaction.channel_id))
         await interaction.response.send_message("returned to DM mode", ephemeral=True)
 
     async def start_combat(self, interaction, *, combatants: str) -> None:
@@ -133,6 +151,7 @@ class BotCommands:
                 )
             )
         encounter = self._gameplay.start_combat(combatants=parsed)
+        self._save_state_for_channel(str(interaction.channel_id))
         await interaction.response.send_message(
             f"combat started; active turn: {encounter.active_combatant.name}",
             ephemeral=True,
@@ -152,6 +171,7 @@ class BotCommands:
         if encounter is None:
             await interaction.response.send_message("combat not active", ephemeral=True)
             return
+        self._save_state_for_channel(str(interaction.channel_id))
         await interaction.response.send_message(
             f"当前轮到 {encounter.active_combatant.name}",
             ephemeral=True,
@@ -165,6 +185,7 @@ class BotCommands:
 
         adventure = load_adventure(adventure_id)
         self._gameplay.load_adventure(adventure)
+        self._save_state_for_channel(str(interaction.channel_id))
         await interaction.response.send_message(
             f"loaded adventure `{adventure.title}`",
             ephemeral=True,
@@ -202,12 +223,14 @@ class BotCommands:
         if blocked:
             return blocked
 
+        self._load_campaign_state(session.campaign_id)
         result = await self._dispatch_turn(
             campaign_id=session.campaign_id,
             channel_id=channel_id,
             user_id=user_id,
             content=content,
         )
+        self._save_campaign_state(session.campaign_id)
         return result.reply
 
     async def _dispatch_turn(self, *, campaign_id: str, channel_id: str, user_id: str, content: str):
@@ -228,3 +251,28 @@ class BotCommands:
         if actor_name == active_name:
             return None
         return f"当前轮到 {active_name} 行动。"
+
+    def _persist_sessions(self) -> None:
+        if self._persistence_store is None or self._session_store is None:
+            return
+        self._persistence_store.save_sessions(self._session_store.dump_sessions())
+
+    def _save_state_for_channel(self, channel_id: str) -> None:
+        if self._session_store is None:
+            return
+        session = self._session_store.get_by_channel(channel_id)
+        if session is None:
+            return
+        self._save_campaign_state(session.campaign_id)
+
+    def _save_campaign_state(self, campaign_id: str) -> None:
+        if self._persistence_store is None or self._gameplay is None:
+            return
+        self._persistence_store.save_campaign_state(campaign_id, self._gameplay.export_state())
+
+    def _load_campaign_state(self, campaign_id: str) -> None:
+        if self._persistence_store is None or self._gameplay is None:
+            return
+        state = self._persistence_store.load_campaign_state(campaign_id)
+        if state:
+            self._gameplay.import_state(state)

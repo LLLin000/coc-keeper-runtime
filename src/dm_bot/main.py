@@ -57,6 +57,7 @@ def build_runtime(settings: Settings | None = None) -> RuntimeBundle:
         gameplay=gameplay,
     )
     session_store = SessionStore()
+    session_store.load_sessions(persistence_store.load_sessions())
     turn_coordinator = TurnCoordinator(turn_runner=turn_runner, persistence_store=persistence_store)
     handlers = BotCommands(
         settings=settings,
@@ -64,6 +65,7 @@ def build_runtime(settings: Settings | None = None) -> RuntimeBundle:
         turn_coordinator=turn_coordinator,
         gameplay=gameplay,
         diagnostics=DiagnosticsService(persistence_store),
+        persistence_store=persistence_store,
     )
     return RuntimeBundle(
         settings=settings,

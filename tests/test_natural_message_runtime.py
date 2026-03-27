@@ -4,6 +4,7 @@ from dm_bot.discord_bot.commands import BotCommands
 from dm_bot.gameplay.combat import Combatant
 from dm_bot.orchestrator.gameplay import CharacterRegistry, GameplayOrchestrator
 from dm_bot.orchestrator.session_store import SessionStore
+from dm_bot.persistence.store import PersistenceStore
 from dm_bot.rules.compendium import FixtureCompendium
 from dm_bot.rules.engine import RulesEngine
 
@@ -95,3 +96,34 @@ def test_natural_message_rejects_non_active_combatant() -> None:
     assert "当前轮到" in reply
     assert "Hero" in reply
     assert coordinator.calls == []
+
+
+def test_natural_message_works_after_session_restore(tmp_path) -> None:
+    persistence = PersistenceStore(tmp_path / "runtime.sqlite3")
+    original_store = SessionStore()
+    original_store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    persistence.save_sessions(original_store.dump_sessions())
+
+    restored_store = SessionStore()
+    restored_store.load_sessions(persistence.load_sessions())
+    coordinator = StubTurnCoordinator()
+    commands = BotCommands(
+        settings=None,
+        session_store=restored_store,
+        turn_coordinator=coordinator,
+        gameplay=build_gameplay(),
+        persistence_store=persistence,
+    )
+
+    reply = asyncio.run(
+        commands.handle_channel_message(
+            channel_id="chan-1",
+            guild_id="guild-1",
+            user_id="user-1",
+            content="我检查钟表。",
+            mention_count=0,
+        )
+    )
+
+    assert reply == "DM reply"
+    assert coordinator.calls == [("camp-1", "chan-1", "user-1", "我检查钟表。")]
