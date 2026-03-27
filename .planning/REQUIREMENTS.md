@@ -1,35 +1,35 @@
-# Requirements: Discord AI DM
+# Requirements: Discord AI Keeper
 
 **Defined:** 2026-03-28
-**Core Value:** Run a real multiplayer D&D session in Discord where a local AI DM can narrate, roleplay multiple characters, and enforce heavy rules flow without constant manual bookkeeping.
+**Core Value:** Run a real multiplayer Call of Cthulhu session in Discord where a local AI Keeper can narrate, roleplay multiple characters, and enforce investigation-heavy rules flow without constant manual bookkeeping.
 
-## v1.5 Requirements
+## v1.6 Requirements
 
-### Generic Trigger Schema
+### COC Runtime Foundations
 
-- [x] **TRIG-01**: The runtime should support a reusable trigger tree schema that can express chained conditions and outcomes rather than one-shot prompts.
-- [x] **TRIG-02**: Trigger definitions should be mostly declarative so future adventures can reuse them without bespoke code for common cases.
-- [x] **TRIG-03**: The schema should support actions, roll outcomes, state comparisons, location context, clue state, and trigger history as conditions.
-- [x] **TRIG-04**: The engine should still allow a limited code-hook escape hatch for exceptional mechanics that are too awkward or brittle to express declaratively.
+- [ ] **COC-01**: The rules runtime should model core COC 7th investigation checks, including regular/hard/extreme success tiers and failure without relying on freeform narrator interpretation.
+- [ ] **COC-02**: The runtime should support bonus dice, penalty dice, pushed rolls, opposed rolls, and combined rolls in ways that can feed deterministic consequences.
+- [ ] **COC-03**: SAN, temporary pressure, and key COC investigator state should become first-class structured runtime concepts instead of ad hoc narrative text.
+- [ ] **COC-04**: Keeper-facing resolution should support “what happens on success/failure/push failure” patterns common to COC modules.
 
-### Consequence Engine
+### COC Asset And Character Intake
 
-- [x] **CONS-01**: Trigger resolution should be able to update module state, room state, clue state, reachable paths, interactable availability, and ending progress.
-- [x] **CONS-02**: Roll results should feed into the consequence engine so success, failure, partial success, and threshold outcomes cause structured downstream changes.
-- [x] **CONS-03**: Chained outcomes should be deterministic, auditable, and persistable so the same action never depends on narrator improvisation alone.
-- [x] **CONS-04**: The engine should emit table-facing consequence summaries that narration can build on, rather than only mutating hidden state.
+- [ ] **ASSET-01**: Local COC rulebooks should be ingested into a reviewable knowledge layer so prompts and extraction flows can reference stable structured rule concepts.
+- [ ] **ASSET-02**: Pregenerated investigators and blank investigator templates should have a viable intake path even when source PDFs are dynamic forms or otherwise hard to text-extract.
+- [ ] **ASSET-03**: The system should support a canonical COC investigator data model aligned with local assets rather than D&D sheet assumptions.
+- [ ] **ASSET-04**: Curated ecosystem references such as COC community sites should enrich metadata and context, but the runtime must preserve local-first, reviewable truth.
 
-### Reusable Extraction Contract
+### COC Module And Keeper Experience
 
-- [x] **EXE-01**: AI-first module extraction should be able to draft trigger trees in the same reusable schema used by runtime execution.
-- [x] **EXE-02**: Extracted trigger drafts should clearly separate declarative nodes from places that require human review or code hooks.
-- [x] **EXE-03**: Trigger extraction should remain portable across future scripts instead of learning only `疯狂之馆`.
+- [ ] **KP-01**: Module extraction and runtime prompts should shift from D&D/DM framing to COC/Keeper framing, especially around investigation, clue gating, terror escalation, and hidden truth.
+- [ ] **KP-02**: The room graph and trigger engine should remain reusable for future COC modules rather than overfitting to a single adventure.
+- [ ] **KP-03**: Player-facing guidance should feel like a Keeper orienting investigators toward leads and risks without collapsing into scripted walkthroughs.
+- [ ] **KP-04**: Operator-facing diagnostics should surface COC-relevant state such as SAN pressure, clue status, pending push consequences, and location-based danger.
 
-### 疯狂之馆 Trigger Migration
+### Migration And Compatibility
 
-- [x] **MIG-01**: `疯狂之馆` should migrate its key progress beats into the new trigger engine rather than handling them as shallow prompt text or ad hoc checks.
-- [x] **MIG-02**: Key actions such as inspecting landmarks, entering halls, major investigations, and blood-exit logic should produce structured consequence chains.
-- [x] **MIG-03**: The migrated module should feel more like a tabletop session because roll outcomes and decisions visibly change what becomes possible next.
+- [ ] **MIG-01**: Existing Discord, room-graph, trigger, and streaming infrastructure should remain intact while COC-first semantics are introduced on top.
+- [ ] **MIG-02**: The system should provide a migration path away from D&D-specific concepts in prompts, schemas, and runtime assumptions without breaking current module tooling.
 
 ## v2 Requirements
 
@@ -44,35 +44,35 @@
 
 | Feature | Reason |
 |---------|--------|
-| Rewriting the entire module runtime around imperative Python logic | This milestone is explicitly about a mostly declarative trigger engine. |
-| Making every trigger purely declarative with no escape hatch | Some mechanics need limited hook support to stay sane and maintainable. |
-| Limiting the trigger system to `疯狂之馆` only | The whole point of this milestone is reuse across future adventures. |
-| Replacing room graphs with trigger trees as the primary spatial model | Trigger trees should build on room graphs, not displace them. |
+| Keeping D&D-first terminology and sheet assumptions as the project center | This milestone explicitly pivots the product toward COC/Keeper-first play. |
+| Treating community web references as canonical runtime truth | Local rulebooks and reviewable structured assets should stay authoritative. |
+| Rebuilding the whole bot from scratch for COC | The Discord, room graph, trigger, persistence, and streaming foundations should be reused. |
+| Solving every future COC module in this milestone | This round establishes the reusable COC base, not total content parity. |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TRIG-01 | Phase 19 | Complete |
-| TRIG-02 | Phase 19 | Complete |
-| TRIG-03 | Phase 19 | Complete |
-| TRIG-04 | Phase 19 | Complete |
-| CONS-01 | Phase 20 | Complete |
-| CONS-02 | Phase 20 | Complete |
-| CONS-03 | Phase 20 | Complete |
-| CONS-04 | Phase 20 | Complete |
-| EXE-01 | Phase 20 | Complete |
-| EXE-02 | Phase 20 | Complete |
-| EXE-03 | Phase 20 | Complete |
-| MIG-01 | Phase 21 | Complete |
-| MIG-02 | Phase 21 | Complete |
-| MIG-03 | Phase 21 | Complete |
+| COC-01 | Phase 22 | Planned |
+| COC-02 | Phase 22 | Planned |
+| COC-03 | Phase 22 | Planned |
+| COC-04 | Phase 22 | Planned |
+| ASSET-01 | Phase 23 | Planned |
+| ASSET-02 | Phase 23 | Planned |
+| ASSET-03 | Phase 23 | Planned |
+| ASSET-04 | Phase 23 | Planned |
+| KP-01 | Phase 24 | Planned |
+| KP-02 | Phase 24 | Planned |
+| KP-03 | Phase 24 | Planned |
+| KP-04 | Phase 24 | Planned |
+| MIG-01 | Phase 24 | Planned |
+| MIG-02 | Phase 24 | Planned |
 
 **Coverage:**
-- v1.5 requirements: 14 total
-- Completed: 14
+- v1.6 requirements: 14 total
+- Completed: 0
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-28*
-*Last updated: 2026-03-28 after milestone v1.5 execution*
+*Last updated: 2026-03-28 after milestone v1.6 kickoff*

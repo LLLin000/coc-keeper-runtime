@@ -1,8 +1,8 @@
-# Roadmap: Discord AI DM
+# Roadmap: Discord AI Keeper
 
 ## Overview
 
-Milestone `v1.0` established the Discord-first local-DM runtime with deterministic rules, persistence, diagnostics, and a starter packaged adventure. Milestone `v1.1` introduced a formal module runtime and shipped `疯狂之馆` as the first structured full-length module. Milestone `v1.2` added ready-gated startup, mature dice integration, and true Discord streaming. Milestone `v1.3` polished live-play feel through structured judgement, bounded guidance, and keeper-style scene framing. Milestone `v1.4` introduced room graphs, AI-first extraction drafts, and location-driven play. Milestone `v1.5` completed the missing execution layer with a reusable trigger tree and consequence engine.
+Milestone `v1.0` established the Discord-first local-DM runtime with deterministic rules, persistence, diagnostics, and a starter packaged adventure. Milestone `v1.1` introduced a formal module runtime and shipped `疯狂之馆` as the first structured full-length module. Milestone `v1.2` added ready-gated startup, mature dice integration, and true Discord streaming. Milestone `v1.3` polished live-play feel through structured judgement, bounded guidance, and keeper-style scene framing. Milestone `v1.4` introduced room graphs, AI-first extraction drafts, and location-driven play. Milestone `v1.5` completed the missing execution layer with a reusable trigger tree and consequence engine. Milestone `v1.6` pivots that foundation into a COC/Keeper-first runtime using local rulebooks, investigator assets, and COC module semantics.
 
 ## Phases
 
@@ -33,32 +33,34 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 19: Generic Trigger And Consequence Schema** - Introduce a reusable trigger tree schema with declarative conditions, effects, and hook boundaries.
 - [x] **Phase 20: Runtime Trigger Engine** - Execute trigger trees into persisted consequence chains and event logs.
 - [x] **Phase 21: 疯狂之馆 Trigger Migration** - Migrate key `疯狂之馆` beats onto the generic trigger engine.
+- [ ] **Phase 22: COC Runtime Foundations** - Add COC 7th keeper-facing checks, SAN-aware resolution, and non-D&D runtime semantics on top of the existing engine.
+- [ ] **Phase 23: COC Asset And Character Intake** - Build reviewable knowledge and investigator intake paths from local rulebooks, pregens, templates, and curated COC references.
+- [ ] **Phase 24: COC Module And Keeper Experience Migration** - Reframe prompts, diagnostics, and module extraction around COC investigation flow and reusable keeper-style play.
 
-## Milestone v1.5 Delivery Summary
+## Milestone v1.6 Delivery Plan
 
-### Phase 19: Generic Trigger And Consequence Schema
-**Delivered**:
-- Added reusable trigger node, condition, and effect models inside the formal adventure schema.
-- Kept the engine mostly declarative while preserving limited escape hatches for future complexity.
-- Made triggers attachable to interactables and location connections without discarding older module fields.
+### Phase 22: COC Runtime Foundations
+**Planned**:
+- Introduce COC success tiers, bonus and penalty dice, pushed rolls, opposed rolls, combined rolls, and SAN-aware runtime handling.
+- Replace D&D-first rule language in runtime services with keeper-facing concepts that feed the existing trigger engine.
+- Define the minimum structured investigator state needed for COC module play.
 
-### Phase 20: Runtime Trigger Engine
-**Delivered**:
-- Added a generic `TriggerEngine` that evaluates action and roll events into chained effects.
-- Trigger effects now update module state, location state, clue state, and pending-roll state.
-- Consequence execution now emits auditable event-log entries and table-facing summaries.
-- Extraction drafts now include trigger draft outputs, not only topology summaries.
+### Phase 23: COC Asset And Character Intake
+**Planned**:
+- Create a reviewable ingestion path for local COC rulebooks into structured knowledge assets.
+- Define a practical intake route for pregenerated investigators and blank templates, including dynamic-form PDFs that resist plain-text extraction.
+- Add curated community-reference mapping so ecosystem knowledge can enrich, but not override, canonical local assets.
 
-### Phase 21: 疯狂之馆 Trigger Migration
-**Delivered**:
-- Migrated key `疯狂之馆` actions such as inspecting the clock, reading the blood-hall wall text, and life-hall book research onto trigger definitions.
-- Roll outcomes for the life-hall investigation now apply structured aftermath instead of returning a bare number only.
-- Diagnostics now surface location, pending rolls, and recent trigger events more clearly.
+### Phase 24: COC Module And Keeper Experience Migration
+**Planned**:
+- Rework prompts, diagnostics, and extraction contracts to fit Keeper investigation pacing, clue safety, and terror escalation.
+- Ensure the current room-graph and trigger runtime remain reusable for future COC modules instead of a single-script conversion.
+- Improve player and operator surfaces so they expose COC-relevant states such as clues, danger, SAN pressure, and pending push outcomes.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16 -> 17 -> 18 -> 19 -> 20 -> 21
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16 -> 17 -> 18 -> 19 -> 20 -> 21 -> 22 -> 23 -> 24
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -83,3 +85,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 19. Generic Trigger And Consequence Schema | 2/2 | Completed | 2026-03-28 |
 | 20. Runtime Trigger Engine | 2/2 | Completed | 2026-03-28 |
 | 21. 疯狂之馆 Trigger Migration | 2/2 | Completed | 2026-03-28 |
+| 22. COC Runtime Foundations | 0/0 | Not started | — |
+| 23. COC Asset And Character Intake | 0/0 | Not started | — |
+| 24. COC Module And Keeper Experience Migration | 0/0 | Not started | — |

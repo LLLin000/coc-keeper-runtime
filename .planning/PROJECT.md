@@ -1,14 +1,14 @@
-# Discord AI DM
+# Discord AI Keeper
 
 ## What This Is
 
-This project is a Discord-native Dungeons & Dragons DM system powered by local models. Multiple real players can participate in the same session, the bot acts as the DM, and the system can switch between normal DM-led play and multi-character performance scenes where the bot speaks as several NPCs or enemies.
+This project is a Discord-native Call of Cthulhu keeper system powered by local models. Multiple real players can participate in the same session, the bot acts as the Keeper, and the runtime manages investigation flow, hidden information, scene pressure, consequence chains, and multi-character performance inside Discord.
 
-The target is not a lightweight chat toy. It should be reliable enough to run short-to-medium campaigns with strong rules support, persistent state, and external character data connected through the simplest viable integration path.
+The target is not a lightweight chat toy. It should be reliable enough to run short-to-medium COC modules with strong rules support, persistent state, reusable structured module data, and operator-facing control surfaces that keep the Keeper logic deterministic.
 
 ## Core Value
 
-Run a real multiplayer D&D session in Discord where a local AI DM can narrate, roleplay multiple characters, and enforce heavy rules flow without constant manual bookkeeping.
+Run a real multiplayer Call of Cthulhu session in Discord where a local AI Keeper can narrate, roleplay multiple characters, enforce COC-style investigation and sanity pressure, and keep canonical module state without constant manual bookkeeping.
 
 ## Requirements
 
@@ -37,7 +37,7 @@ Run a real multiplayer D&D session in Discord where a local AI DM can narrate, r
 
 ### Active
 
-- [ ] The next milestone should deepen operator-facing control by turning trigger and event state into stronger GM-facing runtime surfaces, channel routing, and trace visibility.
+- [ ] The next milestone should pivot the runtime from D&D-first assumptions to a COC/Keeper-first rules and asset model built around local rulebooks, pregens, and module-heavy play.
 
 ### Out of Scope
 
@@ -52,6 +52,15 @@ Run a real multiplayer D&D session in Discord where a local AI DM can narrate, r
 
 `v1.5` completed the missing execution layer after room graphs. The runtime now supports declarative trigger definitions, consequence effects, pending-roll handoff into consequence resolution, trigger event logging, and trigger-aware extraction drafts. `疯狂之馆` uses the new engine for some of its key investigation beats so roll outcomes and actions can now unlock clues and structured aftermath instead of only producing prose.
 
+## Current Milestone: v1.6 COC/KP 基础运行时与模组资产接入
+
+**Goal:** Pivot the project into a COC/Keeper-first runtime that can load COC rules knowledge, investigator assets, and module-facing structures while preserving the existing Discord, room-graph, and trigger-engine foundations.
+
+**Target features:**
+- Add a reusable COC 7th runtime layer with SAN, difficulty tiers, opposed/combined checks, bonus and penalty dice, pushed rolls, and keeper-facing consequence handling.
+- Build intake paths for COC assets from local rulebooks, pregenerated investigators, blank templates, and curated community references so the bot can operate on stable structured data.
+- Rework prompts, schemas, and module extraction to favor Keeper-style investigation pacing, hidden truth control, and COC module portability over D&D-first assumptions.
+
 ## Context
 
 The system will run on Discord and use a dual-model architecture on local inference. The finalized default model split is:
@@ -61,9 +70,9 @@ The system will run on Discord and use a dual-model architecture on local infere
 
 This model split is chosen for local hardware fit and reliability on a machine in the class of `RTX 5060 8GB VRAM + 32GB RAM`. Larger narration models remain possible later, but are not the default because they raise latency and deployment friction on the target setup.
 
-The project should preferentially reuse mature external components instead of inventing custom equivalents. Current candidate references include `DND5E-MCP` as an AI-facing rules/lookup skill, `5e-srd-api` as a stable SRD-backed rules data source, and `Avrae` as a reference implementation for interaction patterns and D&D automation design rather than as the core embedded runtime. For dice resolution, the next milestone should adopt a mature parser and roller such as the Python `d20` ecosystem already used by established Discord D&D tooling instead of expanding the placeholder local roller.
+The project should preferentially reuse mature external components instead of inventing custom equivalents. Mature Discord TRPG products remain valuable references for interaction and operator design, but the new runtime should shift away from D&D-specific assumptions and toward COC/Keeper patterns grounded in the local COC rulebooks, pregenerated investigator assets, and curated reference sources such as [克苏鲁公社](https://www.cthulhuclub.com).
 
-The first release proved the core Discord gameplay loop end-to-end: player input, orchestration, rule/tool invocation, state updates, and narrated DM output. The second milestone turned that into a formal module runtime and then closed the startup, dice, and streaming gaps. `v1.3` shifted from infrastructure quality to live-play craft: judgement about when to call for rolls, deliberate clue timing, bounded light guidance, stronger scene framing, and recovery when players stall or misread the situation. `v1.4` then changed the underlying representation so those behaviors are not tied to sequence-first script chunks: source adventures can now be interpreted as maps of rooms and locations, with interactables, adjacency, reveal-safe movement, and reviewable extraction drafts attached to places. `v1.5` completed the missing trigger execution layer by adding a chainable consequence engine that evaluates declarative conditions, applies effects, and logs auditable events while still allowing limited code hooks for edge mechanics.
+The first releases proved the core Discord gameplay loop end-to-end: player input, orchestration, state updates, and narrated output. The next three milestones replaced shallow prompt play with a formal module runtime, startup and streaming polish, room graphs, and a generic trigger engine. That foundation is reusable, but it still carries D&D-first language and rule assumptions. `v1.6` should turn the same architecture into a COC/Keeper runtime by centering investigation flow, hidden knowledge, sanity pressure, structured clue discovery, and COC investigator data.
 
 ## Constraints
 
@@ -71,7 +80,7 @@ The first release proved the core Discord gameplay loop end-to-end: player input
 - **Inference**: Local models — narration and control should run through local model infrastructure rather than a hosted LLM dependency.
 - **Target Hardware**: Consumer local machine — the default stack should remain practical on `8GB`-class consumer GPUs with `32GB` system RAM.
 - **Architecture**: Reuse mature projects first — stable existing tools, APIs, and datasets should be integrated before writing custom subsystems.
-- **Rules Scope**: Heavy rules support in v1 — combat, initiative, HP, conditions, spells, and resource tracking are not optional side features.
+- **Rules Scope**: Heavy rules support should now follow COC 7th priorities — skill checks, SAN, injuries, pressure, hidden information, and investigation consequences matter more than D&D combat breadth.
 - **Delivery**: First release should optimize for campaign-usable reliability over maximal scope — reducing integration and debugging cost is a priority.
 
 ## Key Decisions
@@ -79,7 +88,7 @@ The first release proved the core Discord gameplay loop end-to-end: player input
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Discord is the primary platform | It supports the desired multiplayer session format better than Telegram for this project | — Pending |
-| The gameplay style is hybrid DM + multi-character performance | The desired experience is DM-led play with scene-based switching into NPC ensemble dialogue | — Pending |
+| The gameplay style is hybrid Keeper + multi-character performance | The desired experience is Keeper-led play with scene-based switching into NPC ensemble dialogue | — Pending |
 | Multiple real players and bot-played roles are both required | The system must support real group play while also animating the world through NPCs and enemies | — Pending |
 | Rules support should be heavy rather than lightweight | The goal is to reduce manual bookkeeping and allow campaign-grade play | — Pending |
 | v1 should prioritize end-to-end gameplay over perfect character integration | A playable Discord session loop matters more than building an elaborate character platform first | — Pending |
@@ -87,6 +96,9 @@ The first release proved the core Discord gameplay loop end-to-end: player input
 | The default narrator should fit 8GB-class local GPUs | Lower deployment friction matters more than marginal prose quality gains from larger local models | `qwen3:4b-instruct-2507-q4_K_M` selected |
 | Router and narrator should remain separate | Roleplay-tuned narration models are not trusted as the sole authority for structured tool routing | `qwen3:1.7b` router retained |
 | Formal adventures must be structured data, not raw uploaded prose | Hidden-state modules need deterministic triggers, reveal control, and reusable runtime hooks | ✓ Good |
+| The project should now pivot to COC/Keeper-first runtime semantics | The available local rulebooks, pregens, and target module ecosystem are all COC-centric | v1.6 should replace D&D-first assumptions with COC structures |
+| Local COC books and pregenerated characters are first-class project assets | They provide the canonical basis for rules, roles, and module handling | v1.6 should build extraction and intake paths around them |
+| Community COC references should supplement, not replace, canonical local assets | Websites are useful for ecosystem patterns and metadata, but runtime truth must remain reviewable and local-first | v1.6 should use curated references as secondary inputs |
 | `疯狂之馆` is the first official module target | It is rich enough to force a real schema while still being a bounded first module | ✓ Good |
 | New runtime subsystems should reuse mature prior art where possible | This reduces debugging cost and keeps the bot aligned with proven Discord D&D workflows | `d20`-style dice integration prioritized for v1.2 |
 | Live-play feel now matters more than new runtime primitives | The next milestone should polish judgement, hinting, and scene presentation before expanding breadth | `疯狂之馆` experience polish prioritized for v1.3 |
@@ -115,4 +127,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-28 after milestone v1.5 execution*
+*Last updated: 2026-03-28 after milestone v1.6 kickoff*
