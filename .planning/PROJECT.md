@@ -33,7 +33,12 @@ Run a real multiplayer D&D session in Discord where a local AI DM can narrate, r
 
 ## Context
 
-The system will run on Discord and use a dual-model architecture on local inference. `L3-8B-Stheno-v3.2` is intended to handle narration, DM voice, and multi-character roleplay. A smaller fast model will handle routing and structured control decisions.
+The system will run on Discord and use a dual-model architecture on local inference. The finalized default model split is:
+
+- `qwen3:1.7b` for fast routing, structured intent classification, and tool decision output
+- `collective-v0.1-chinese-roleplay-8b` for Chinese DM narration, NPC voice, and multi-character roleplay
+
+This model split is chosen for local hardware fit and reliability on a machine in the class of `RTX 5060 8GB VRAM + 32GB RAM`. Larger 14B narration models remain possible later, but are not the default v1 choice because they raise latency and deployment friction on the target setup.
 
 The project should preferentially reuse mature external components instead of inventing custom equivalents. Current candidate references include `DND5E-MCP` as an AI-facing rules/lookup skill, `5e-srd-api` as a stable SRD-backed rules data source, and `Avrae` as a reference implementation for interaction patterns and D&D automation design rather than as the core embedded runtime.
 
@@ -43,6 +48,7 @@ The first release should prioritize running the full Discord gameplay loop end-t
 
 - **Platform**: Discord-first — the system must work naturally in Discord channels or threads because that is the chosen runtime surface.
 - **Inference**: Local models — narration and control should run through local model infrastructure rather than a hosted LLM dependency.
+- **Target Hardware**: Consumer local machine — the default stack should remain practical on `8GB`-class consumer GPUs with `32GB` system RAM.
 - **Architecture**: Reuse mature projects first — stable existing tools, APIs, and datasets should be integrated before writing custom subsystems.
 - **Rules Scope**: Heavy rules support in v1 — combat, initiative, HP, conditions, spells, and resource tracking are not optional side features.
 - **Delivery**: First release should optimize for campaign-usable reliability over maximal scope — reducing integration and debugging cost is a priority.
@@ -57,6 +63,8 @@ The first release should prioritize running the full Discord gameplay loop end-t
 | Rules support should be heavy rather than lightweight | The goal is to reduce manual bookkeeping and allow campaign-grade play | — Pending |
 | v1 should prioritize end-to-end gameplay over perfect character integration | A playable Discord session loop matters more than building an elaborate character platform first | — Pending |
 | Mature external projects should be reused wherever practical | This reduces implementation risk and debugging cost | — Pending |
+| The default narrator should fit 8GB-class local GPUs | Lower deployment friction matters more than marginal prose quality gains from larger local models | `collective-v0.1-chinese-roleplay-8b` selected |
+| Router and narrator should remain separate | Roleplay-tuned narration models are not trusted as the sole authority for structured tool routing | `qwen3:1.7b` router retained |
 
 ## Evolution
 
