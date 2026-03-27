@@ -1,14 +1,15 @@
 import json
 
-from dm_bot.config import Settings
+from dm_bot.config import Settings, get_settings
 from dm_bot.runtime.health import build_health_snapshot
 
 
 class BotCommands:
-    def __init__(self, *, settings: Settings, session_store, turn_coordinator) -> None:
-        self._settings = settings
+    def __init__(self, *, settings: Settings | None, session_store, turn_coordinator, gameplay=None) -> None:
+        self._settings = settings or get_settings()
         self._session_store = session_store
         self._turn_coordinator = turn_coordinator
+        self._gameplay = gameplay
 
     async def setup_check(self, interaction) -> None:
         snapshot = build_health_snapshot(self._settings)
@@ -56,3 +57,20 @@ class BotCommands:
             content=content,
         )
         await interaction.followup.send(result.reply)
+
+    async def import_character(self, interaction, *, provider: str, external_id: str) -> None:
+        if self._gameplay is None:
+            await interaction.response.send_message(
+                "character import is not configured",
+                ephemeral=True,
+            )
+            return
+        character = self._gameplay.import_character(
+            user_id=str(interaction.user.id),
+            provider=provider,
+            external_id=external_id,
+        )
+        await interaction.response.send_message(
+            f"imported `{character.name}` from `{character.source.provider}` ({character.source.label})",
+            ephemeral=True,
+        )

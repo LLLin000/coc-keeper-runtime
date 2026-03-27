@@ -13,7 +13,7 @@ This roadmap keeps v1 narrow: deliver a Discord-first D&D runtime that can run a
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Discord Runtime & Dual-Model Control** - Establish the Discord session surface, async interaction flow, and local dual-model orchestration.
-- [ ] **Phase 2: Character Import & Rules Authority** - Add one low-friction character path and a deterministic 2014 SRD rules backbone.
+- [x] **Phase 2: Character Import & Rules Authority** - Add one low-friction character path and a deterministic 2014 SRD rules backbone.
 - [ ] **Phase 3: Gameplay Loop & Combat Play** - Deliver DM narration, multi-character scenes, and heavy-rules combat inside Discord.
 - [ ] **Phase 4: Persistence, Recovery & Diagnostics** - Harden the runtime for campaign reuse, replayability, and operator visibility.
 
@@ -43,7 +43,11 @@ Plans:
   2. Imported character data is normalized into a local gameplay model that can support later rolls, attacks, saves, spells, and resource usage, and the system clearly labels whether the source is snapshot-based or live-sync.
   3. Players or operators can look up rules, spells, monsters, classes, and equipment from a structured compendium source constrained to 2014 SRD content.
   4. State-changing mechanics are applied by deterministic rules logic, and malformed model actions are rejected or flagged instead of mutating canonical state silently.
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [x] 02-01-PLAN.md - Add one snapshot character import path and normalize imported gameplay models.
+- [x] 02-02-PLAN.md - Build the 2014 SRD compendium adapter and deterministic rules engine.
+- [x] 02-03-PLAN.md - Integrate character and rules foundations into the existing turn/runtime pipeline.
 
 ### Phase 3: Gameplay Loop & Combat Play
 **Goal**: A live Discord session can run normal DM narration, multi-character performance scenes, and heavy-rules combat without losing context.
@@ -75,6 +79,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Discord Runtime & Dual-Model Control | 3/3 | Completed | 2026-03-27 |
-| 2. Character Import & Rules Authority | 0/TBD | Not started | - |
+| 2. Character Import & Rules Authority | 3/3 | Completed | 2026-03-27 |
 | 3. Gameplay Loop & Combat Play | 0/TBD | Not started | - |
 | 4. Persistence, Recovery & Diagnostics | 0/TBD | Not started | - |

@@ -29,6 +29,11 @@ class DiscordDmBot(commands.Bot):
         async def turn(interaction: discord.Interaction, content: str) -> None:
             await self.handlers.take_turn(interaction, content=content)
 
+        @self.tree.command(name="import_character", description="Import a snapshot character for the current player")
+        @app_commands.describe(provider="Character source provider", external_id="External character identifier")
+        async def import_character(interaction: discord.Interaction, provider: str, external_id: str) -> None:
+            await self.handlers.import_character(interaction, provider=provider, external_id=external_id)
+
 
 def create_discord_bot(*, handlers) -> commands.Bot:
     return DiscordDmBot(handlers=handlers)
