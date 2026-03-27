@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 .env
 *.sqlite3
+bot.stdout.log
+bot.stderr.log

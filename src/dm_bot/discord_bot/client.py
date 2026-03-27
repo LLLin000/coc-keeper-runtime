@@ -15,6 +15,8 @@ class DiscordDmBot(commands.Bot):
         if self.sync_guild_id:
             guild = discord.Object(id=int(self.sync_guild_id))
             self.tree.copy_global_to(guild=guild)
+            self.tree.clear_commands(guild=None)
+            await self.tree.sync()
             await self.tree.sync(guild=guild)
         else:
             await self.tree.sync()
