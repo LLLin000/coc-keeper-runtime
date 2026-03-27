@@ -74,3 +74,37 @@ class BotCommands:
             f"imported `{character.name}` from `{character.source.provider}` ({character.source.label})",
             ephemeral=True,
         )
+
+    async def enter_scene(self, interaction, *, speakers: str) -> None:
+        if self._gameplay is None:
+            await interaction.response.send_message("gameplay is not configured", ephemeral=True)
+            return
+        parsed = [item.strip() for item in speakers.split(",") if item.strip()]
+        self._gameplay.enter_scene(speakers=parsed)
+        await interaction.response.send_message(
+            f"scene mode enabled for {', '.join(parsed)}",
+            ephemeral=True,
+        )
+
+    async def start_combat(self, interaction, *, combatants: str) -> None:
+        if self._gameplay is None:
+            await interaction.response.send_message("gameplay is not configured", ephemeral=True)
+            return
+        parsed = []
+        from dm_bot.gameplay.combat import Combatant
+
+        for raw in combatants.split(","):
+            name, initiative, hit_points, armor_class = [part.strip() for part in raw.split(":")]
+            parsed.append(
+                Combatant(
+                    name=name,
+                    initiative=int(initiative),
+                    hit_points=int(hit_points),
+                    armor_class=int(armor_class),
+                )
+            )
+        encounter = self._gameplay.start_combat(combatants=parsed)
+        await interaction.response.send_message(
+            f"combat started; active turn: {encounter.active_combatant.name}",
+            ephemeral=True,
+        )

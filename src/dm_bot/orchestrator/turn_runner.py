@@ -1,3 +1,4 @@
+from dm_bot.gameplay.scene_formatter import format_scene_output
 from pydantic import BaseModel, Field
 
 from dm_bot.models.schemas import TurnEnvelope
@@ -35,4 +36,5 @@ class TurnRunner:
                 plan=plan,
             )
         )
+        reply = format_scene_output(plan=plan, raw_output=reply)
         return TurnResult(plan=plan, reply=reply)

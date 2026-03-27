@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Discord Runtime & Dual-Model Control** - Establish the Discord session surface, async interaction flow, and local dual-model orchestration.
 - [x] **Phase 2: Character Import & Rules Authority** - Add one low-friction character path and a deterministic 2014 SRD rules backbone.
-- [ ] **Phase 3: Gameplay Loop & Combat Play** - Deliver DM narration, multi-character scenes, and heavy-rules combat inside Discord.
+- [x] **Phase 3: Gameplay Loop & Combat Play** - Deliver DM narration, multi-character scenes, and heavy-rules combat inside Discord.
 - [ ] **Phase 4: Persistence, Recovery & Diagnostics** - Harden the runtime for campaign reuse, replayability, and operator visibility.
 
 ## Phase Details
@@ -58,7 +58,11 @@ Plans:
   2. Combat can track initiative, turn order, HP changes, conditions, concentration, death saves, and basic resource counters without corrupting state.
   3. The DM can switch from normal narration into scene-based multi-character performance with explicit speaker attribution and return to DM-led play without losing scene, combat, or actor context.
   4. Final DM and NPC output is Chinese-first and suitable for scene framing, storytelling, and dialogue during active play.
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [x] 03-01-PLAN.md - Add gameplay mode state and scene speaker formatting.
+- [x] 03-02-PLAN.md - Build initiative-driven combat state and deterministic combat flow.
+- [x] 03-03-PLAN.md - Integrate scene and combat play into the existing runtime.
 
 ### Phase 4: Persistence, Recovery & Diagnostics
 **Goal**: Sessions become campaign-usable through durable state, replayable history, resumability, and operator diagnostics.
@@ -80,5 +84,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Discord Runtime & Dual-Model Control | 3/3 | Completed | 2026-03-27 |
 | 2. Character Import & Rules Authority | 3/3 | Completed | 2026-03-27 |
-| 3. Gameplay Loop & Combat Play | 0/TBD | Not started | - |
+| 3. Gameplay Loop & Combat Play | 3/3 | Completed | 2026-03-27 |
 | 4. Persistence, Recovery & Diagnostics | 0/TBD | Not started | - |

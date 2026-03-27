@@ -18,3 +18,4 @@ class TurnPlan(BaseModel):
     tool_calls: list[ToolCall] = Field(default_factory=list)
     state_intents: list[StateIntent] = Field(default_factory=list)
     narration_brief: str = Field(min_length=1)
+    speaker_hints: list[str] = Field(default_factory=list)

@@ -34,6 +34,16 @@ class DiscordDmBot(commands.Bot):
         async def import_character(interaction: discord.Interaction, provider: str, external_id: str) -> None:
             await self.handlers.import_character(interaction, provider=provider, external_id=external_id)
 
+        @self.tree.command(name="enter_scene", description="Enter multi-character scene mode")
+        @app_commands.describe(speakers="Comma-separated speaker list")
+        async def enter_scene(interaction: discord.Interaction, speakers: str) -> None:
+            await self.handlers.enter_scene(interaction, speakers=speakers)
+
+        @self.tree.command(name="start_combat", description="Start a combat encounter")
+        @app_commands.describe(combatants="Comma-separated combatants as name:init:hp:ac")
+        async def start_combat(interaction: discord.Interaction, combatants: str) -> None:
+            await self.handlers.start_combat(interaction, combatants=combatants)
+
 
 def create_discord_bot(*, handlers) -> commands.Bot:
     return DiscordDmBot(handlers=handlers)

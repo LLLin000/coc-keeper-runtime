@@ -38,6 +38,8 @@ class RulesEngine:
         roll = self._roll_resolver("1d20")
         attack_bonus = int(action.parameters["attack_bonus"])
         total = roll + attack_bonus
+        damage_expression = str(action.parameters.get("damage_expression", "0"))
+        damage = self._roll_resolver(damage_expression) if total >= action.target.armor_class else 0
         return {
             "action": "attack_roll",
             "actor": action.actor.name,
@@ -46,5 +48,6 @@ class RulesEngine:
             "roll": roll,
             "attack_bonus": attack_bonus,
             "total": total,
+            "damage": damage,
             "hit": total >= action.target.armor_class,
         }
