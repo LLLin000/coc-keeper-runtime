@@ -17,14 +17,16 @@ Run a real multiplayer D&D session in Discord where a local AI DM can narrate, r
 - ✓ Discord bot can run a bound multiplayer campaign in one channel with slash-command setup and local-model orchestration — v1.0 Phases 1-5
 - ✓ Router and narrator are separated so structured decisions and final prose do not share authority — v1.0 Phase 1
 - ✓ Deterministic rules, combat state, persistence, diagnostics, natural message intake, and a starter packaged adventure exist as the current baseline — v1.0 Phases 2-5
+- ✓ The system can load a formal structured adventure package with reusable schema, state variables, triggers, reveal policy, and branching outcomes — v1.1 Phase 6
+- ✓ `疯狂之馆` is the first full-length official module, playable end-to-end with room logic, countdown pressure, hidden information, and multiple endings — v1.1 Phase 7
+- ✓ The AI can act as an omniscient DM for packaged modules while reveal-safe state stays gated by current discoveries and canonical module state — v1.1 Phases 6-7
+- ✓ Discord play survives restarts through durable campaign bindings, restored natural-message intake, and clearer packaged-adventure status guidance — v1.1 Phase 8
 
 ### Active
 
-- [ ] The system can load a formal structured adventure package with reusable schema, state variables, triggers, reveal policy, and branching outcomes.
-- [ ] `疯狂之馆` becomes the first full-length official module, playable end-to-end with its room logic, countdown pressure, hidden information, and multiple endings.
-- [ ] The AI operates as an omniscient DM for packaged modules, but only reveals hidden information according to scripted triggers, discoveries, and current state.
-- [ ] Discord interaction becomes campaign-usable after restarts, including durable campaign bindings, reliable natural-message intake, and clearer multiplayer guidance.
-- [ ] The module system remains reusable so future adventures can be loaded without rewriting core runtime code.
+- [ ] The module system supports a second formal adventure package without adding one-off runtime code for that script.
+- [ ] The operator can selectively reveal secret or private information to subsets of players instead of only table-wide narration.
+- [ ] The DM runtime can surface richer structured progression controls for module-specific triggers, puzzle states, and branching overrides.
 
 ### Out of Scope
 
@@ -35,14 +37,9 @@ Run a real multiplayer D&D session in Discord where a local AI DM can narrate, r
 - A full visual adventure authoring tool in this milestone — this round is about one formal module plus reusable schema, not a general editor UI.
 - NSFW-specific behavior in this milestone — module and runtime quality take precedence.
 
-## Current Milestone: v1.1 疯狂之馆首个正式模组
+## Current State
 
-**Goal:** Make `疯狂之馆` the first formally structured, fully runnable adventure module while hardening Discord interaction and session continuity around that style of play.
-
-**Target features:**
-- Introduce a reusable structured adventure package format with state, triggers, reveal policy, and ending support.
-- Encode `疯狂之馆` as the first full module, including hub-and-wing progression, hidden information, countdown pressure, special statuses, and branching outcomes.
-- Improve campaign interaction so ordinary channel play survives bot restarts and gives players clearer status and next-step guidance.
+`v1.1` shipped the first formal packaged adventure milestone. The runtime now supports structured modules with canonical state, reveal-safe narration context, and a fully encoded `疯狂之馆` package that survives bot restarts and can continue through ordinary Discord channel play.
 
 ## Context
 
@@ -78,8 +75,8 @@ The first release proved the core Discord gameplay loop end-to-end: player input
 | Mature external projects should be reused wherever practical | This reduces implementation risk and debugging cost | — Pending |
 | The default narrator should fit 8GB-class local GPUs | Lower deployment friction matters more than marginal prose quality gains from larger local models | `qwen3:4b-instruct-2507-q4_K_M` selected |
 | Router and narrator should remain separate | Roleplay-tuned narration models are not trusted as the sole authority for structured tool routing | `qwen3:1.7b` router retained |
-| Formal adventures must be structured data, not raw uploaded prose | Hidden-state modules need deterministic triggers, reveal control, and reusable runtime hooks | — Pending |
-| `疯狂之馆` is the first official module target | It is rich enough to force a real schema while still being a bounded first module | — Pending |
+| Formal adventures must be structured data, not raw uploaded prose | Hidden-state modules need deterministic triggers, reveal control, and reusable runtime hooks | ✓ Good |
+| `疯狂之馆` is the first official module target | It is rich enough to force a real schema while still being a bounded first module | ✓ Good |
 
 ## Evolution
 
@@ -99,4 +96,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 after starting milestone v1.1*
+*Last updated: 2026-03-27 after v1.1 milestone*
