@@ -229,3 +229,57 @@ def test_natural_message_scene_transition_adds_scene_framing() -> None:
     assert "贪欲之馆" in reply
     assert "现在最值得留意" in reply
     assert coordinator.calls == []
+
+
+def test_inline_roll_command_beats_adventure_guidance() -> None:
+    from dm_bot.adventures.loader import load_adventure
+
+    store = SessionStore()
+    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    coordinator = StubTurnCoordinator()
+    gameplay = build_gameplay()
+    gameplay.load_adventure(load_adventure("mad_mansion"))
+    gameplay.begin_adventure()
+    gameplay.set_adventure_scene("life_hall")
+    commands = BotCommands(settings=None, session_store=store, turn_coordinator=coordinator, gameplay=gameplay)
+
+    reply = asyncio.run(
+        commands.handle_channel_message(
+            channel_id="chan-1",
+            guild_id="guild-1",
+            user_id="user-1",
+            content="check LibraryUse 4",
+            mention_count=0,
+        )
+    )
+
+    assert "LibraryUse" in reply
+    assert "总计" in reply
+    assert coordinator.calls == []
+
+
+def test_natural_message_can_return_to_central_hall() -> None:
+    from dm_bot.adventures.loader import load_adventure
+
+    store = SessionStore()
+    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    coordinator = StubTurnCoordinator()
+    gameplay = build_gameplay()
+    gameplay.load_adventure(load_adventure("mad_mansion"))
+    gameplay.begin_adventure()
+    gameplay.set_adventure_scene("life_hall")
+    commands = BotCommands(settings=None, session_store=store, turn_coordinator=coordinator, gameplay=gameplay)
+
+    reply = asyncio.run(
+        commands.handle_channel_message(
+            channel_id="chan-1",
+            guild_id="guild-1",
+            user_id="user-1",
+            content="我回到中央大厅。",
+            mention_count=0,
+        )
+    )
+
+    assert "中央大厅" in reply
+    assert "先从最显眼的事物开始" in reply
+    assert coordinator.calls == []

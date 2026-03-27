@@ -107,6 +107,14 @@
           "keywords": ["少女", "管理员", "商人", "交谈", "问", "说"],
           "judgement": "auto",
           "result_text": "少女轻轻摇着扇子，笑意浮在嘴角，却没有半点温度。她显然愿意谈，但每一句话都像在等你们先暴露欲望。"
+        },
+        {
+          "id": "return_central_from_greed",
+          "title": "返回中央大厅",
+          "keywords": ["回到大厅", "回中央大厅", "中央大厅", "离开这里", "出去"],
+          "judgement": "auto",
+          "result_text": "你们暂时压下交易的念头，重新退回那片刺眼白光之中。再睁眼时，中央大厅已经在面前展开。",
+          "transition_scene_id": "central_hall"
         }
       ],
       "clues": [
@@ -151,6 +159,14 @@
           "keywords": ["雕像", "石像", "触手"],
           "judgement": "auto",
           "result_text": "你绕着雕像观察，越看越不舒服。它不像单纯的艺术品，更像某种等待回应的祭祀媒介。"
+        },
+        {
+          "id": "return_central_from_life",
+          "title": "返回中央大厅",
+          "keywords": ["回到大厅", "回中央大厅", "中央大厅", "离开这里", "出去"],
+          "judgement": "auto",
+          "result_text": "你们从生命之馆后退几步，那片白得刺眼的边界再次吞没视线。下一瞬，你们已回到中央大厅。",
+          "transition_scene_id": "central_hall"
         }
       ],
       "clues": [
@@ -193,6 +209,14 @@
           "keywords": ["十字架", "祭具", "架子"],
           "judgement": "auto",
           "result_text": "那东西并不是宗教象征，而是某种专门用来固定、放血、等待选择的装置。"
+        },
+        {
+          "id": "return_central_from_death",
+          "title": "返回中央大厅",
+          "keywords": ["回到大厅", "回中央大厅", "中央大厅", "离开这里", "出去"],
+          "judgement": "auto",
+          "result_text": "你们从死亡之馆退回白光边界，黑暗骤然散开，中央大厅那片刺目的白色再次包围了你们。",
+          "transition_scene_id": "central_hall"
         }
       ],
       "clues": [
@@ -238,6 +262,14 @@
           "roll_type": "ability_check",
           "roll_label": "SpotHidden",
           "prompt_text": "如果你要仔细确认池底结构或潜水寻找出口，先做一次侦查检定。"
+        },
+        {
+          "id": "return_central_from_blood",
+          "title": "返回中央大厅",
+          "keywords": ["回到大厅", "回中央大厅", "中央大厅", "离开这里", "出去"],
+          "judgement": "auto",
+          "result_text": "你们压下血池翻涌带来的不适，退回来时，那股腥气才慢慢被大厅冷白的空气取代。",
+          "transition_scene_id": "central_hall"
         }
       ],
       "clues": [

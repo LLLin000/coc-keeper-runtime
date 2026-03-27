@@ -332,11 +332,6 @@ class BotCommands:
         if onboarding_block:
             return onboarding_block
 
-        adventure_response = self._handle_adventure_guidance(content=content)
-        if adventure_response is not None:
-            self._save_campaign_state(session.campaign_id)
-            return adventure_response
-
         inline_roll = self._try_inline_roll(
             channel_id=channel_id,
             user_id=user_id,
@@ -345,6 +340,11 @@ class BotCommands:
         if inline_roll is not None:
             self._save_campaign_state(session.campaign_id)
             return inline_roll
+
+        adventure_response = self._handle_adventure_guidance(content=content)
+        if adventure_response is not None:
+            self._save_campaign_state(session.campaign_id)
+            return adventure_response
 
         blocked = self._combat_gate_message(channel_id=channel_id, user_id=user_id)
         if blocked:
@@ -385,16 +385,16 @@ class BotCommands:
             await message.channel.send(onboarding_block)
             return
 
-        adventure_response = self._handle_adventure_guidance(content=content)
-        if adventure_response is not None:
-            self._save_campaign_state(session.campaign_id)
-            await message.channel.send(adventure_response)
-            return
-
         inline_roll = self._try_inline_roll(channel_id=channel_id, user_id=user_id, content=content)
         if inline_roll is not None:
             self._save_campaign_state(session.campaign_id)
             await message.channel.send(inline_roll)
+            return
+
+        adventure_response = self._handle_adventure_guidance(content=content)
+        if adventure_response is not None:
+            self._save_campaign_state(session.campaign_id)
+            await message.channel.send(adventure_response)
             return
 
         blocked = self._combat_gate_message(channel_id=channel_id, user_id=user_id)
