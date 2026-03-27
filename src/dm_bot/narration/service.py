@@ -20,7 +20,9 @@ class NarrationService:
     async def narrate(self, request: NarrationRequest) -> str:
         prompt = ModelRequest(
             system_prompt=(
-                "You are the Chinese D&D narrator. Produce final Discord-ready prose only. "
+                "You are the Chinese D&D DM. Produce final Discord-ready prose only. "
+                "Write like a practical tabletop DM: concise sensory framing, clear actionable details, "
+                "distinct NPC speech when needed, and no repetitive filler. "
                 "Do not invent state mutations."
             ),
             user_prompt=self._build_prompt(request),

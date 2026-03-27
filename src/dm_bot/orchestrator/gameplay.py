@@ -3,6 +3,7 @@ from dm_bot.gameplay.modes import GameModeState
 from dm_bot.characters.models import CharacterRecord
 from dm_bot.router.contracts import TurnPlan
 from dm_bot.rules.actions import LookupAction, RuleAction
+from dm_bot.adventures.models import AdventurePackage
 
 
 class CharacterRegistry:
@@ -23,6 +24,8 @@ class GameplayOrchestrator:
         self._rules_engine = rules_engine
         self.mode_state = GameModeState()
         self.combat: CombatEncounter | None = None
+        self.adventure: AdventurePackage | None = None
+        self.adventure_state: dict[str, object] = {}
 
     def import_character(self, *, user_id: str, provider: str, external_id: str) -> CharacterRecord:
         character = self._importer.import_character(provider, external_id)
@@ -42,6 +45,34 @@ class GameplayOrchestrator:
         self.mode_state.mode = "combat"
         return encounter
 
+    def end_scene(self) -> None:
+        self.mode_state.enter_dm()
+
+    def next_combat_turn(self) -> CombatEncounter | None:
+        if self.combat is None:
+            return None
+        self.combat.advance_turn()
+        return self.combat
+
+    def active_combatant_name(self) -> str | None:
+        if self.combat is None:
+            return None
+        return self.combat.active_combatant.name
+
+    def combat_summary(self) -> str:
+        if self.combat is None:
+            return "combat not active"
+        return self.combat.summary()
+
+    def load_adventure(self, adventure: AdventurePackage) -> None:
+        self.adventure = adventure
+        self.adventure_state = {
+            "adventure_slug": adventure.slug,
+            "scene_id": adventure.scenes[0].id if adventure.scenes else None,
+            "clues_found": [],
+            "objectives": list(adventure.objectives),
+        }
+
     def export_state(self) -> dict[str, object]:
         return {
             "mode": self.mode_state.model_dump(),
@@ -50,6 +81,7 @@ class GameplayOrchestrator:
                 user_id: character.model_dump()
                 for user_id, character in self.registry._characters.items()
             },
+            "adventure_state": self.adventure_state,
         }
 
     def import_state(self, state: dict[str, object]) -> None:
@@ -60,6 +92,7 @@ class GameplayOrchestrator:
         for user_id, payload in dict(state.get("registry", {})).items():
             registry[user_id] = CharacterRecord.model_validate(payload)
         self.registry._characters = registry
+        self.adventure_state = dict(state.get("adventure_state", {}))
 
     def resolve_plan(self, plan: TurnPlan) -> list[dict[str, object]]:
         results: list[dict[str, object]] = []

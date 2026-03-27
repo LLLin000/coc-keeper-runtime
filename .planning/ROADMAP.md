@@ -80,8 +80,24 @@ Plans:
 
 ## Progress
 
+### Phase 5: Multiplayer usability, natural message intake, and starter adventure
+**Goal**: Make the bot genuinely runnable by a small group through natural channel input, cleaner multiplayer flow, Chinese DM voice refinement, and a packaged starter one-shot.
+**Depends on**: Phase 4
+**Requirements**: DISC-01, DISC-02, PLAY-01, PLAY-02, PLAY-03, PLAY-04, RULE-03
+**Success Criteria** (what must be TRUE):
+  1. Joined players in a bound campaign channel can play through ordinary channel messages without using `/turn` for every action.
+  2. The runtime ignores obvious OOC and player-to-player social chatter while still accepting action declarations that mention teammates.
+  3. Combat communicates the active actor clearly and rejects natural-message turns from non-active combatants.
+  4. Operators can load a packaged starter adventure and follow updated docs to run a real multiplayer test session quickly.
+**Plans**: 2 plans
+Plans:
+- [x] 05-01-PLAN.md - Add multiplayer runtime helpers, natural message intake, and combat gating.
+- [x] 05-02-PLAN.md - Improve DM narration, ship a starter adventure, and rewrite operator docs.
+
+## Progress
+
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -89,13 +105,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 2. Character Import & Rules Authority | 3/3 | Completed | 2026-03-27 |
 | 3. Gameplay Loop & Combat Play | 3/3 | Completed | 2026-03-27 |
 | 4. Persistence, Recovery & Diagnostics | 2/2 | Completed | 2026-03-27 |
-
-### Phase 5: Multiplayer usability, natural message intake, and starter adventure
-
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 4
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd:plan-phase 5 to break down)
+| 5. Multiplayer usability, natural message intake, and starter adventure | 2/2 | Completed | 2026-03-27 |

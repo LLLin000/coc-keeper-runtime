@@ -36,7 +36,7 @@ Run a real multiplayer D&D session in Discord where a local AI DM can narrate, r
 The system will run on Discord and use a dual-model architecture on local inference. The finalized default model split is:
 
 - `qwen3:1.7b` for fast routing, structured intent classification, and tool decision output
-- `collective-v0.1-chinese-roleplay-8b` for Chinese DM narration, NPC voice, and multi-character roleplay
+- `qwen3:8b` for Chinese DM narration, NPC voice, and multi-character roleplay
 
 This model split is chosen for local hardware fit and reliability on a machine in the class of `RTX 5060 8GB VRAM + 32GB RAM`. Larger 14B narration models remain possible later, but are not the default v1 choice because they raise latency and deployment friction on the target setup.
 
@@ -63,7 +63,7 @@ The first release should prioritize running the full Discord gameplay loop end-t
 | Rules support should be heavy rather than lightweight | The goal is to reduce manual bookkeeping and allow campaign-grade play | — Pending |
 | v1 should prioritize end-to-end gameplay over perfect character integration | A playable Discord session loop matters more than building an elaborate character platform first | — Pending |
 | Mature external projects should be reused wherever practical | This reduces implementation risk and debugging cost | — Pending |
-| The default narrator should fit 8GB-class local GPUs | Lower deployment friction matters more than marginal prose quality gains from larger local models | `collective-v0.1-chinese-roleplay-8b` selected |
+| The default narrator should fit 8GB-class local GPUs | Lower deployment friction matters more than marginal prose quality gains from larger local models | `qwen3:8b` selected |
 | Router and narrator should remain separate | Roleplay-tuned narration models are not trusted as the sole authority for structured tool routing | `qwen3:1.7b` router retained |
 
 ## Evolution

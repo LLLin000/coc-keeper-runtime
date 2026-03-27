@@ -32,6 +32,18 @@ def test_session_store_binds_and_tracks_members() -> None:
     assert store.get_by_channel("chan-1") is session
 
 
+def test_session_store_can_leave_and_bind_active_character() -> None:
+    store = SessionStore()
+    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    store.join_campaign(channel_id="chan-1", user_id="user-2")
+
+    store.bind_character(channel_id="chan-1", user_id="user-2", character_name="Lia")
+    session = store.leave_campaign(channel_id="chan-1", user_id="user-2")
+
+    assert "user-2" not in session.member_ids
+    assert session.active_characters == {}
+
+
 def test_turn_coordinator_serializes_turns_per_campaign() -> None:
     runner = StubTurnRunner()
     coordinator = TurnCoordinator(turn_runner=runner)
@@ -52,4 +64,3 @@ def test_turn_coordinator_serializes_turns_per_campaign() -> None:
     assert replies == ["reply:先攻", "reply:攻击"]
     assert runner.max_active == 1
     assert all(call.trace_id for call in runner.calls)
-

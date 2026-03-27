@@ -1,6 +1,7 @@
 import json
 
 from dm_bot.config import Settings, get_settings
+from dm_bot.orchestrator.message_filters import MessageDisposition, classify_message
 from dm_bot.runtime.health import build_health_snapshot
 
 
@@ -41,6 +42,16 @@ class BotCommands:
             ephemeral=True,
         )
 
+    async def leave_campaign(self, interaction) -> None:
+        session = self._session_store.leave_campaign(
+            channel_id=str(interaction.channel_id),
+            user_id=str(interaction.user.id),
+        )
+        await interaction.response.send_message(
+            f"left campaign `{session.campaign_id}`",
+            ephemeral=True,
+        )
+
     async def take_turn(self, interaction, *, content: str) -> None:
         session = self._session_store.get_by_channel(str(interaction.channel_id))
         if session is None:
@@ -51,7 +62,11 @@ class BotCommands:
             return
 
         await interaction.response.defer(thinking=True)
-        result = await self._turn_coordinator.handle_turn(
+        blocked = self._combat_gate_message(channel_id=str(interaction.channel_id), user_id=str(interaction.user.id))
+        if blocked:
+            await interaction.followup.send(blocked, ephemeral=True)
+            return
+        result = await self._dispatch_turn(
             campaign_id=session.campaign_id,
             channel_id=str(interaction.channel_id),
             user_id=str(interaction.user.id),
@@ -71,6 +86,12 @@ class BotCommands:
             provider=provider,
             external_id=external_id,
         )
+        if self._session_store is not None:
+            self._session_store.bind_character(
+                channel_id=str(interaction.channel_id),
+                user_id=str(interaction.user.id),
+                character_name=character.name,
+            )
         await interaction.response.send_message(
             f"imported `{character.name}` from `{character.source.provider}` ({character.source.label})",
             ephemeral=True,
@@ -86,6 +107,13 @@ class BotCommands:
             f"scene mode enabled for {', '.join(parsed)}",
             ephemeral=True,
         )
+
+    async def end_scene(self, interaction) -> None:
+        if self._gameplay is None:
+            await interaction.response.send_message("gameplay is not configured", ephemeral=True)
+            return
+        self._gameplay.end_scene()
+        await interaction.response.send_message("returned to DM mode", ephemeral=True)
 
     async def start_combat(self, interaction, *, combatants: str) -> None:
         if self._gameplay is None:
@@ -110,6 +138,38 @@ class BotCommands:
             ephemeral=True,
         )
 
+    async def show_combat(self, interaction) -> None:
+        if self._gameplay is None:
+            await interaction.response.send_message("gameplay is not configured", ephemeral=True)
+            return
+        await interaction.response.send_message(self._gameplay.combat_summary(), ephemeral=True)
+
+    async def next_turn(self, interaction) -> None:
+        if self._gameplay is None:
+            await interaction.response.send_message("gameplay is not configured", ephemeral=True)
+            return
+        encounter = self._gameplay.next_combat_turn()
+        if encounter is None:
+            await interaction.response.send_message("combat not active", ephemeral=True)
+            return
+        await interaction.response.send_message(
+            f"当前轮到 {encounter.active_combatant.name}",
+            ephemeral=True,
+        )
+
+    async def load_adventure(self, interaction, *, adventure_id: str) -> None:
+        if self._gameplay is None:
+            await interaction.response.send_message("gameplay is not configured", ephemeral=True)
+            return
+        from dm_bot.adventures.loader import load_adventure
+
+        adventure = load_adventure(adventure_id)
+        self._gameplay.load_adventure(adventure)
+        await interaction.response.send_message(
+            f"loaded adventure `{adventure.title}`",
+            ephemeral=True,
+        )
+
     async def debug_status(self, interaction, *, campaign_id: str) -> None:
         if self._diagnostics is None:
             await interaction.response.send_message("diagnostics are not configured", ephemeral=True)
@@ -118,3 +178,53 @@ class BotCommands:
             self._diagnostics.recent_summary(campaign_id),
             ephemeral=True,
         )
+
+    async def handle_channel_message(
+        self,
+        *,
+        channel_id: str,
+        guild_id: str,
+        user_id: str,
+        content: str,
+        mention_count: int,
+    ) -> str | None:
+        if self._session_store is None or self._turn_coordinator is None:
+            return None
+        session = self._session_store.get_by_channel(channel_id)
+        if session is None or session.guild_id != guild_id or user_id not in session.member_ids:
+            return None
+
+        disposition = classify_message(content, mention_count=mention_count)
+        if disposition != MessageDisposition.PROCESS:
+            return None
+
+        blocked = self._combat_gate_message(channel_id=channel_id, user_id=user_id)
+        if blocked:
+            return blocked
+
+        result = await self._dispatch_turn(
+            campaign_id=session.campaign_id,
+            channel_id=channel_id,
+            user_id=user_id,
+            content=content,
+        )
+        return result.reply
+
+    async def _dispatch_turn(self, *, campaign_id: str, channel_id: str, user_id: str, content: str):
+        return await self._turn_coordinator.handle_turn(
+            campaign_id=campaign_id,
+            channel_id=channel_id,
+            user_id=user_id,
+            content=content,
+        )
+
+    def _combat_gate_message(self, *, channel_id: str, user_id: str) -> str | None:
+        if self._gameplay is None or self._session_store is None:
+            return None
+        active_name = self._gameplay.active_combatant_name()
+        if active_name is None:
+            return None
+        actor_name = self._session_store.active_character_for(channel_id=channel_id, user_id=user_id)
+        if actor_name == active_name:
+            return None
+        return f"当前轮到 {active_name} 行动。"

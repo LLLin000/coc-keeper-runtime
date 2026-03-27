@@ -29,6 +29,16 @@ class CombatEncounter(BaseModel):
     def advance_turn(self) -> None:
         self.active_index = (self.active_index + 1) % len(self.order)
 
+    def summary(self) -> str:
+        pieces = []
+        for index, name in enumerate(self.order):
+            combatant = self.combatants[name]
+            marker = "->" if index == self.active_index else "  "
+            pieces.append(
+                f"{marker} {combatant.name} HP {combatant.hit_points} AC {combatant.armor_class}"
+            )
+        return "\n".join(pieces)
+
     def resolve_attack(self, engine, action: RuleAction) -> dict[str, object]:
         result = engine.execute(action)
         if result["hit"]:
