@@ -4,8 +4,8 @@ milestone: v2.1
 milestone_name: 交付检查与角色治理
 status: planning
 stopped_at: Defined milestone v2.1 for local smoke checks, single-active archive profiles, and admin character governance
-last_updated: "2026-03-28T23:59:00.000Z"
-last_activity: 2026-03-28 - Milestone v2.1 initialized
+last_updated: "2026-03-29T00:20:00.000Z"
+last_activity: 2026-03-29 - Project-wide milestone summary and README architecture refresh
 progress:
   total_phases: 36
   completed_phases: 33
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-28)
 Phase: Milestone planning
 Plan: Define and execute Phases 37-39
 Status: Active
-Last activity: 2026-03-28 - Milestone v2.1 initialized
+Last activity: 2026-03-29 - Project-wide milestone summary and README architecture refresh
 
 Progress: [█████████░] 92%
 
@@ -83,6 +83,7 @@ None yet.
 - Roadmap now marks Phases 31-33 complete for milestone v1.9, covering adaptive builder interviews, richer identity capture, and archive writeback.
 - Phases 34-36 were added for milestone v2.0 to deepen archive schema, archive presentation, and COC-bounded finishing logic.
 - Phases 37-39 were added for milestone v2.1 to harden delivery checks and govern long-lived character identity.
+- A project-wide summary report and GitHub-facing README architecture overview were generated to support external collaborators.
 
 ### Blockers/Concerns
 
@@ -96,6 +97,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T23:45:00.000Z
-Stopped at: Defined milestone v2.1 for local smoke checks, single-active archive profiles, and admin character governance
+Last session: 2026-03-29T00:20:00.000Z
+Stopped at: Generated project-wide milestone summary and rewrote README for GitHub collaboration onboarding
 Resume file: .planning/PROJECT.md
