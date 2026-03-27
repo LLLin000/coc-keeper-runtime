@@ -1,5 +1,13 @@
 # Milestones
 
+## v1.8 角色档案分层与 COC 对话建卡系统 (In Progress)
+
+**Goal:**
+
+- Separate Discord archive and live-play channel responsibilities, add a conversational but rules-grounded COC investigator builder, and split long-lived archive identities from campaign-specific role instances.
+
+---
+
 ## v1.7 调查员面板与复杂 COC 模组运行时 (Shipped: 2026-03-28)
 
 **Goal:**

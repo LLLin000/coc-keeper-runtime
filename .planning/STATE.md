@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.7
-milestone_name: 调查员面板与复杂 COC 模组运行时
-status: completed
-stopped_at: Completed milestone v1.7 execution for investigator panels, private knowledge graphs, and 覆辙 migration
-last_updated: "2026-03-28T18:35:00.000Z"
-last_activity: 2026-03-28 - Milestone v1.7 executed and verified
+milestone: v1.8
+milestone_name: 角色档案分层与 COC 对话建卡系统
+status: defining requirements
+stopped_at: Started milestone v1.8 for channel discipline, conversational character building, and archive-to-campaign projection
+last_updated: "2026-03-28T20:15:00.000Z"
+last_activity: 2026-03-28 - Milestone v1.8 started
 progress:
-  total_phases: 27
+  total_phases: 30
   completed_phases: 27
   total_plans: 56
   completed_plans: 56
-  percent: 100
+  percent: 90
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-28)
 
 **Core value:** Run a real multiplayer Call of Cthulhu session in Discord where a local AI Keeper can narrate, roleplay multiple characters, and enforce investigation-heavy rules flow without constant manual bookkeeping.
-**Current focus:** v1.7 complete; next work can build richer Keeper UX on top of persistent investigator panels and complex-module runtime
+**Current focus:** Defining v1.8 for channel-scoped Discord UX, conversational COC character building, and archive/campaign separation
 
 ## Current Position
 
-Phase: Milestone complete
-Plan: All planned v1.7 phases executed
-Status: Completed
-Last activity: 2026-03-28 - Milestone v1.7 executed and verified
+Phase: Not started (defining requirements)
+Plan: -
+Status: Defining requirements
+Last activity: 2026-03-28 - Milestone v1.8 started
 
-Progress: [██████████] 100%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
@@ -79,16 +79,17 @@ None yet.
 
 ### Roadmap Evolution
 
-- Roadmap now marks Phases 25-27 complete for milestone v1.7.
+- Roadmap now extends through Phases 28-30 for milestone v1.8.
 
 ### Blockers/Concerns
 
 - Dynamic-form investigator PDFs may still need a non-text-extraction intake path for broader character import.
 - Community COC sites remain useful ecosystem references, but canonical runtime truth should stay local and reviewable.
 - Future UI work should distinguish what fits native bot interactions from what warrants a Discord Activity.
+- Conversational character generation must remain anchored to canonical COC generation rules rather than replacing them.
 
 ## Session Continuity
 
-Last session: 2026-03-28T18:35:00.000Z
-Stopped at: Completed milestone v1.7 execution for investigator panels, private knowledge graphs, and 覆辙 migration
+Last session: 2026-03-28T20:15:00.000Z
+Stopped at: Started milestone v1.8 for channel discipline, conversational character building, and archive-to-campaign projection
 Resume file: .planning/PROJECT.md

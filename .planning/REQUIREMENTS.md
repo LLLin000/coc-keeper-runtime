@@ -3,32 +3,32 @@
 **Defined:** 2026-03-28
 **Core Value:** Run a real multiplayer Call of Cthulhu session in Discord where a local AI Keeper can narrate, roleplay multiple characters, and enforce investigation-heavy rules flow without constant manual bookkeeping.
 
-## v1.7 Requirements
+## v1.8 Requirements
 
-### Investigator Panels
+### Discord Channel Discipline
 
-- [x] **PANEL-01**: Each player should have a persistent investigator panel that surfaces canonical COC investigator data and scenario-linked mutable state.
-- [x] **PANEL-02**: Investigator panels should support both standard investigators and structured alternate templates such as `覆辙`'s investigation and magical-girl tracks.
-- [x] **PANEL-03**: Scenario outcomes such as SAN changes, injuries, resource shifts, and explicit module-specific effects should write back into the investigator panel.
-- [x] **PANEL-04**: Investigator panel fields should map back to local COC rules or explicit module metadata rather than freeform prompt invention.
+- [ ] **CHAN-01**: The system should support distinct Discord channel roles for character archives, live-play game halls, and optional keeper/trace output.
+- [ ] **CHAN-02**: Character/archive commands should be discouraged or blocked in live-play halls, with clear redirect messaging instead of silent failure.
+- [ ] **CHAN-03**: Live-play channels should stay focused on campaign actions, narration, and rules resolution rather than profile management noise.
 
-### Private Knowledge And Complex Module Graphs
+### Conversational Character Builder
 
-- [x] **GRAPH-01**: The runtime should support mixed room/scene/event graphs so more complex COC modules are not forced into a room-only shape.
-- [x] **GRAPH-02**: The runtime should support private and group-scoped clues, truths, and tasking so different players can know different things.
-- [x] **GRAPH-03**: Multiple entry tracks and role-specific onboarding should be expressible structurally rather than hard-coded into one adventure.
-- [x] **GRAPH-04**: All added graph and knowledge features should stay reusable across future COC modules, not only `覆辙`.
+- [ ] **BUILD-01**: The bot should support conversational investigator creation that feels like a Keeper-guided interview rather than a raw form.
+- [ ] **BUILD-02**: Core attributes must be generated through canonical COC rules or explicit supported generation modes, not freeform prompt invention.
+- [ ] **BUILD-03**: The conversational layer should shape occupation, background, skill leaning, portrait/persona summary, and recommended finishing choices without breaking rules validity.
+- [ ] **BUILD-04**: Character creation should support private-first operation through ephemeral replies or DM, while still allowing an archive-channel mode.
+
+### Long-Lived Profiles And Campaign Projection
+
+- [ ] **PROF-01**: Players should own long-lived investigator archives that remain independent of any single module.
+- [ ] **PROF-02**: Campaigns should project an archive character into a module-specific instance whose SAN, injuries, secrets, and role state do not overwrite the archive base.
+- [ ] **PROF-03**: Complex modules should be able to add explicit role overlays, such as `覆辙`'s magical-girl track, on top of a projected archive character.
 
 ### COC Rule Discipline
 
-- [x] **RULE-01**: New runtime mechanics should be grounded in the supplied local COC 7th rulebooks wherever the base system covers them.
-- [x] **RULE-02**: When a module introduces special behavior not covered by base COC rules, that behavior should be recorded as explicit module-specific rules rather than implied prompt behavior.
-- [x] **RULE-03**: Diagnostics and operator surfaces should distinguish canonical COC rules from module-specific overrides.
-
-### 覆辙 Migration
-
-- [x] **FUZHE-01**: `覆辙` should be migrated as the first complex-module sample, including its dual entry tracks, asymmetrical truths, and scenario-specific long-state consequences.
-- [x] **FUZHE-02**: The migration should reveal any missing runtime primitives needed for future complex COC modules and fold them back into reusable abstractions.
+- [ ] **RULE-01**: Character generation and projection must stay grounded in the supplied local COC 7th rulebooks wherever the base system covers them.
+- [ ] **RULE-02**: Any scenario-specific modifications to a projected character must be recorded as explicit module metadata or runtime state, not as hidden prompt behavior.
+- [ ] **RULE-03**: Operator and player surfaces should be able to distinguish base investigator data from campaign-instance state.
 
 ## v2 Requirements
 
@@ -47,30 +47,31 @@
 | Treating `覆辙` as a one-off special case with bespoke runtime hacks | This milestone is explicitly about reusable support for more complex COC modules. |
 | Replacing the current room-graph/trigger foundations wholesale | The milestone should extend the runtime, not discard the foundation that already works. |
 | Full visual parity with the public character generator in one round | The first goal is persistent player panels and runtime linkage, not a pixel-perfect website clone. |
+| Replacing canonical COC generation with pure personality questionnaires | Questioning may shape the character, but stats and card validity must remain rules-grounded. |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PANEL-01 | Phase 25 | Completed |
-| PANEL-02 | Phase 25 | Completed |
-| PANEL-03 | Phase 25 | Completed |
-| PANEL-04 | Phase 25 | Completed |
-| GRAPH-01 | Phase 26 | Completed |
-| GRAPH-02 | Phase 26 | Completed |
-| GRAPH-03 | Phase 26 | Completed |
-| GRAPH-04 | Phase 26 | Completed |
-| RULE-01 | Phase 26 | Completed |
-| RULE-02 | Phase 26 | Completed |
-| RULE-03 | Phase 26 | Completed |
-| FUZHE-01 | Phase 27 | Completed |
-| FUZHE-02 | Phase 27 | Completed |
+| CHAN-01 | Phase 28 | Planned |
+| CHAN-02 | Phase 28 | Planned |
+| CHAN-03 | Phase 28 | Planned |
+| BUILD-01 | Phase 29 | Planned |
+| BUILD-02 | Phase 29 | Planned |
+| BUILD-03 | Phase 29 | Planned |
+| BUILD-04 | Phase 29 | Planned |
+| PROF-01 | Phase 30 | Planned |
+| PROF-02 | Phase 30 | Planned |
+| PROF-03 | Phase 30 | Planned |
+| RULE-01 | Phase 29 | Planned |
+| RULE-02 | Phase 30 | Planned |
+| RULE-03 | Phase 30 | Planned |
 
 **Coverage:**
-- v1.7 requirements: 13 total
-- Completed: 13
+- v1.8 requirements: 13 total
+- Completed: 0
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-28*
-*Last updated: 2026-03-28 after milestone v1.7 execution*
+*Last updated: 2026-03-28 after milestone v1.8 kickoff*
