@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: complete
-stopped_at: Completed milestone
-last_updated: "2026-03-27T08:30:00.000Z"
-last_activity: 2026-03-27 - Completed Phase 4 persistence, recovery, and diagnostics
+status: active
+stopped_at: Added Phase 5 for multiplayer usability and starter adventure
+last_updated: "2026-03-27T15:58:00.000Z"
+last_activity: 2026-03-27 - Added Phase 5 multiplayer usability, natural message intake, and starter adventure
 progress:
-  total_phases: 4
+  total_phases: 5
   completed_phases: 4
   total_plans: 11
   completed_plans: 11
-  percent: 100
+  percent: 80
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Run a real multiplayer D&D session in Discord where a local AI DM can narrate, roleplay multiple characters, and enforce heavy rules flow without constant manual bookkeeping.
-**Current focus:** Milestone complete
+**Current focus:** Phase 5 planning
 
 ## Current Position
 
-Phase: 4 of 4 (Persistence, Recovery & Diagnostics)
-Plan: 2 of 2 in current phase
-Status: Completed
-Last activity: 2026-03-27 - Completed Phase 4 persistence, recovery, and diagnostics
+Phase: 5 of 5 (Multiplayer usability, natural message intake, and starter adventure)
+Plan: 0 of 0 in current phase
+Status: Added, not planned
+Last activity: 2026-03-27 - Added Phase 5 multiplayer usability, natural message intake, and starter adventure
 
-Progress: [██████████] 100%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
@@ -48,6 +48,7 @@ Progress: [██████████] 100%
 | 2 | 3 | - | - |
 | 3 | 3 | - | - |
 | 4 | 2 | - | - |
+| 5 | 0 | - | - |
 
 **Recent Trend:**
 
@@ -70,6 +71,10 @@ Recent decisions affecting current work:
 
 None yet.
 
+### Roadmap Evolution
+
+- Phase 5 added: Multiplayer usability, natural message intake, and starter adventure
+
 ### Blockers/Concerns
 
 - Character import source must stay low-friction and mature; do not expand into a sheet platform.
@@ -77,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T08:30:00.000Z
-Stopped at: Completed milestone
+Last session: 2026-03-27T15:58:00.000Z
+Stopped at: Added Phase 5 for multiplayer usability and starter adventure
 Resume file: .planning/ROADMAP.md

@@ -89,3 +89,13 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 2. Character Import & Rules Authority | 3/3 | Completed | 2026-03-27 |
 | 3. Gameplay Loop & Combat Play | 3/3 | Completed | 2026-03-27 |
 | 4. Persistence, Recovery & Diagnostics | 2/2 | Completed | 2026-03-27 |
+
+### Phase 5: Multiplayer usability, natural message intake, and starter adventure
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 4
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 5 to break down)
