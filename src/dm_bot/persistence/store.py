@@ -22,6 +22,9 @@ class PersistenceStore:
             conn.execute(
                 "create table if not exists campaign_events (id integer primary key autoincrement, campaign_id text not null, trace_id text not null, event_type text not null, payload_json text not null)"
             )
+            conn.execute(
+                "create table if not exists archive_profiles (id integer primary key check (id = 1), profiles_json text not null)"
+            )
 
     def save_campaign_state(self, campaign_id: str, state: dict[str, object]) -> None:
         with self._connect() as conn:
@@ -73,3 +76,16 @@ class PersistenceStore:
             }
             for trace_id, event_type, payload_json in rows
         ]
+
+    def save_archive_profiles(self, profiles: dict[str, object]) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                "insert into archive_profiles(id, profiles_json) values(1, ?) "
+                "on conflict(id) do update set profiles_json=excluded.profiles_json",
+                (json.dumps(profiles, ensure_ascii=False),),
+            )
+
+    def load_archive_profiles(self) -> dict[str, object]:
+        with self._connect() as conn:
+            row = conn.execute("select profiles_json from archive_profiles where id = 1").fetchone()
+        return json.loads(row[0]) if row else {}

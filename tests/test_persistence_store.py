@@ -2,6 +2,7 @@ from pathlib import Path
 
 from dm_bot.characters.importer import CharacterImporter
 from dm_bot.characters.sources import DicecloudSnapshotSource
+from dm_bot.coc.archive import InvestigatorArchiveRepository
 from dm_bot.gameplay.combat import Combatant
 from dm_bot.orchestrator.gameplay import CharacterRegistry, GameplayOrchestrator
 from dm_bot.orchestrator.session_store import SessionStore
@@ -90,6 +91,8 @@ def test_persistence_store_saves_and_restores_campaign_sessions(tmp_path: Path) 
     sessions.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
     sessions.join_campaign(channel_id="chan-1", user_id="user-2")
     sessions.bind_character(channel_id="chan-1", user_id="user-1", character_name="Alice")
+    sessions.bind_archive_channel(guild_id="guild-1", channel_id="archive-1")
+    sessions.select_archive_profile(channel_id="chan-1", user_id="user-1", profile_id="profile-1")
 
     store.save_sessions(sessions.dump_sessions())
     restored = store.load_sessions()
@@ -97,3 +100,28 @@ def test_persistence_store_saves_and_restores_campaign_sessions(tmp_path: Path) 
     assert restored["chan-1"]["campaign_id"] == "camp-1"
     assert set(restored["chan-1"]["member_ids"]) == {"user-1", "user-2"}
     assert restored["chan-1"]["active_characters"]["user-1"] == "Alice"
+    assert restored["chan-1"]["selected_profiles"]["user-1"] == "profile-1"
+    assert restored["_meta"]["archive_channels"]["guild-1"] == "archive-1"
+
+
+def test_persistence_store_saves_and_restores_archive_profiles(tmp_path: Path) -> None:
+    store = PersistenceStore(tmp_path / "campaign.sqlite3")
+    repo = InvestigatorArchiveRepository()
+    profile = repo.create_profile(
+        user_id="user-1",
+        name="林秋",
+        occupation="记者",
+        age=26,
+        background="夜班记者",
+        disposition="冷静",
+        favored_skills=["图书馆使用", "聆听"],
+        generation={"str": 50, "con": 55, "dex": 60, "app": 65, "pow": 70, "siz": 50, "int": 75, "edu": 80, "luck": 45},
+    )
+
+    store.save_archive_profiles(repo.export_state())
+    restored = InvestigatorArchiveRepository()
+    restored.import_state(store.load_archive_profiles())
+
+    restored_profile = restored.get_profile("user-1", profile.profile_id)
+    assert restored_profile.name == "林秋"
+    assert restored_profile.coc.occupation == "记者"

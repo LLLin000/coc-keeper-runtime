@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: 角色档案分层与 COC 对话建卡系统
-status: defining requirements
-stopped_at: Started milestone v1.8 for channel discipline, conversational character building, and archive-to-campaign projection
-last_updated: "2026-03-28T20:15:00.000Z"
-last_activity: 2026-03-28 - Milestone v1.8 started
+status: completed
+stopped_at: Completed milestone v1.8 execution for channel discipline, conversational builder, and archive projection
+last_updated: "2026-03-28T21:20:00.000Z"
+last_activity: 2026-03-28 - Milestone v1.8 executed and verified
 progress:
   total_phases: 30
-  completed_phases: 27
+  completed_phases: 30
   total_plans: 56
   completed_plans: 56
-  percent: 90
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-28)
 
 **Core value:** Run a real multiplayer Call of Cthulhu session in Discord where a local AI Keeper can narrate, roleplay multiple characters, and enforce investigation-heavy rules flow without constant manual bookkeeping.
-**Current focus:** Defining v1.8 for channel-scoped Discord UX, conversational COC character building, and archive/campaign separation
+**Current focus:** v1.8 complete; next work can deepen Keeper UX, richer archive tooling, or Activity-based surfaces on top of the new archive/builder split
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: -
-Status: Defining requirements
-Last activity: 2026-03-28 - Milestone v1.8 started
+Phase: Milestone complete
+Plan: All planned v1.8 phases executed
+Status: Completed
+Last activity: 2026-03-28 - Milestone v1.8 executed and verified
 
-Progress: [█████████░] 90%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -79,7 +79,7 @@ None yet.
 
 ### Roadmap Evolution
 
-- Roadmap now extends through Phases 28-30 for milestone v1.8.
+- Roadmap now marks Phases 28-30 complete for milestone v1.8.
 
 ### Blockers/Concerns
 
@@ -87,9 +87,10 @@ None yet.
 - Community COC sites remain useful ecosystem references, but canonical runtime truth should stay local and reviewable.
 - Future UI work should distinguish what fits native bot interactions from what warrants a Discord Activity.
 - Conversational character generation must remain anchored to canonical COC generation rules rather than replacing them.
+- Richer panel UX may eventually fit better in a Discord Activity, but the current bot-native archive/builder flow is the supported baseline.
 
 ## Session Continuity
 
-Last session: 2026-03-28T20:15:00.000Z
-Stopped at: Started milestone v1.8 for channel discipline, conversational character building, and archive-to-campaign projection
+Last session: 2026-03-28T21:20:00.000Z
+Stopped at: Completed milestone v1.8 execution for channel discipline, conversational builder, and archive projection
 Resume file: .planning/PROJECT.md

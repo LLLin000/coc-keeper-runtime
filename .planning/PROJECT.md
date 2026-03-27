@@ -40,7 +40,7 @@ Run a real multiplayer Call of Cthulhu session in Discord where a local AI Keepe
 
 ### Active
 
-- [ ] The next milestone should separate Discord channel responsibilities, add a rule-grounded conversational investigator builder, and split long-lived character archives from per-module role instances.
+- [ ] The next milestone should build richer Keeper/operator UX on top of the new archive/builder split, including better profile browsing, finishing choices, and optional Activity-grade surfaces.
 
 ### Out of Scope
 
@@ -53,7 +53,7 @@ Run a real multiplayer Call of Cthulhu session in Discord where a local AI Keepe
 
 ## Current State
 
-`v1.6` completed the project pivot from D&D-first semantics to a COC/Keeper-first base. `v1.7` extended that base with persistent investigator panels, player-private and role-scoped knowledge flow, mixed room/scene/event graph support, and the first structured `覆辙` sample module. The next milestone should turn that foundation into a cleaner player-facing product by separating archive channels from live-play channels, adding a conversational but rules-grounded character builder, and splitting long-lived investigator identities from campaign-specific module instances.
+`v1.6` completed the project pivot from D&D-first semantics to a COC/Keeper-first base. `v1.7` extended that base with persistent investigator panels, player-private and role-scoped knowledge flow, mixed room/scene/event graph support, and the first structured `覆辙` sample module. `v1.8` then separated archive channels from live-play channels, added a rules-grounded conversational character builder, and split long-lived investigator identities from campaign-specific module instances.
 
 ## Context
 
@@ -95,9 +95,9 @@ The first releases proved the core Discord gameplay loop end-to-end: player inpu
 | Community COC references should supplement, not replace, canonical local assets | Websites are useful for ecosystem patterns and metadata, but runtime truth must remain reviewable and local-first | v1.6 should use curated references as secondary inputs |
 | Complex COC modules require player-private state and mixed graph structure | Modules like `覆辙` include asymmetrical truths, multiple tracks, and event-driven progression that public room summaries cannot express alone | v1.7 added investigator panels, private knowledge flow, and mixed room/scene/event graph support |
 | Discord native bot UI should be the first delivery target, with Activity reserved for later | Native slash commands, ephemeral replies, threads, and streaming are enough for a first practical panel flow; full custom UI can follow | v1.7 focused on bot-native investigator panels and left Activity for a future milestone |
-| Discord channel roles should be explicit instead of mixing archive and live-play concerns | Players need a clean game hall while still retaining access to character archives, sheets, and builder flows elsewhere | v1.8 should define channel-scoped command discipline |
-| Character creation should be conversational but numerically constrained by COC rules | Freeform roleplay answers are useful for personality and background, but the resulting sheet must remain valid under canonical generation rules | v1.8 should pair a conversational builder with deterministic COC character generation |
-| Long-lived character identity must remain separate from module-specific instances | Players should carry independent personas across modules while each module tracks its own SAN, secrets, and entry-track state | v1.8 should split archive profiles from campaign projections |
+| Discord channel roles should be explicit instead of mixing archive and live-play concerns | Players need a clean game hall while still retaining access to character archives, sheets, and builder flows elsewhere | v1.8 added archive-channel bindings and command redirection |
+| Character creation should be conversational but numerically constrained by COC rules | Freeform roleplay answers are useful for personality and background, but the resulting sheet must remain valid under canonical generation rules | v1.8 paired a conversational builder with deterministic COC character generation |
+| Long-lived character identity must remain separate from module-specific instances | Players should carry independent personas across modules while each module tracks its own SAN, secrets, and entry-track state | v1.8 split archive profiles from campaign projections |
 | `疯狂之馆` is the first official module target | It is rich enough to force a real schema while still being a bounded first module | ✓ Good |
 | New runtime subsystems should reuse mature prior art where possible | This reduces debugging cost and keeps the bot aligned with proven Discord D&D workflows | `d20`-style dice integration prioritized for v1.2 |
 | Live-play feel now matters more than new runtime primitives | The next milestone should polish judgement, hinting, and scene presentation before expanding breadth | `疯狂之馆` experience polish prioritized for v1.3 |
@@ -126,4 +126,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-28 after milestone v1.8 kickoff*
+*Last updated: 2026-03-28 after milestone v1.8 execution*

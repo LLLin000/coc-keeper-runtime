@@ -1,10 +1,18 @@
 # Milestones
 
-## v1.8 角色档案分层与 COC 对话建卡系统 (In Progress)
+## v1.8 角色档案分层与 COC 对话建卡系统 (Shipped: 2026-03-28)
 
 **Goal:**
 
 - Separate Discord archive and live-play channel responsibilities, add a conversational but rules-grounded COC investigator builder, and split long-lived archive identities from campaign-specific role instances.
+
+**Phases completed:** 3 phases total
+
+**Key accomplishments:**
+
+- Added archive-channel and trace-channel bindings so profile/archive operations can be redirected away from live-play halls.
+- Added a private-first conversational investigator builder that generates canonical COC attributes and turns player answers into occupation/background/persona summaries.
+- Added long-lived investigator archive profiles and per-campaign profile selection so module play can project mutable instances without mutating the archive base.
 
 ---
 

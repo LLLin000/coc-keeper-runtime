@@ -18,6 +18,8 @@ class BotCommands:
         diagnostics=None,
         persistence_store=None,
         coc_assets=None,
+        archive_repository=None,
+        character_builder=None,
     ) -> None:
         self._settings = settings or get_settings()
         self._session_store = session_store
@@ -26,6 +28,8 @@ class BotCommands:
         self._diagnostics = diagnostics
         self._persistence_store = persistence_store
         self._coc_assets = coc_assets
+        self._archive_repository = archive_repository
+        self._character_builder = character_builder
 
     async def setup_check(self, interaction) -> None:
         snapshot = build_health_snapshot(self._settings)
@@ -46,6 +50,16 @@ class BotCommands:
             f"campaign `{campaign_id}` bound to channel `{interaction.channel_id}`",
             ephemeral=True,
         )
+
+    async def bind_archive_channel(self, interaction) -> None:
+        self._session_store.bind_archive_channel(guild_id=str(interaction.guild_id), channel_id=str(interaction.channel_id))
+        self._persist_sessions()
+        await interaction.response.send_message("当前频道已绑定为角色档案频道。", ephemeral=True)
+
+    async def bind_trace_channel(self, interaction) -> None:
+        self._session_store.bind_trace_channel(guild_id=str(interaction.guild_id), channel_id=str(interaction.channel_id))
+        self._persist_sessions()
+        await interaction.response.send_message("当前频道已绑定为 KP/trace 频道。", ephemeral=True)
 
     async def join_campaign(self, interaction) -> None:
         session = self._session_store.join_campaign(
@@ -81,6 +95,56 @@ class BotCommands:
             role=role,
         )
         await interaction.response.send_message(f"角色定位已设为 `{role}`", ephemeral=True)
+
+    async def start_character_builder(self, interaction, *, visibility: str = "private") -> None:
+        if self._character_builder is None:
+            await interaction.response.send_message("character builder is not configured", ephemeral=True)
+            return
+        prompt = self._character_builder.start(user_id=str(interaction.user.id), visibility=visibility)
+        await interaction.response.send_message(prompt, ephemeral=visibility == "private")
+
+    async def builder_reply(self, interaction, *, answer: str) -> None:
+        if self._character_builder is None or self._archive_repository is None:
+            await interaction.response.send_message("character builder is not configured", ephemeral=True)
+            return
+        prompt, profile = self._character_builder.answer(user_id=str(interaction.user.id), answer=answer)
+        self._persist_archives()
+        ephemeral = True
+        if profile is None:
+            await interaction.response.send_message(prompt, ephemeral=ephemeral)
+            return
+        await interaction.response.send_message(
+            f"{prompt}\n你现在可以在档案频道使用 `/profiles` 或在游戏大厅里 `/select_profile profile_id:{profile.profile_id}`。",
+            ephemeral=ephemeral,
+        )
+
+    async def list_profiles(self, interaction) -> None:
+        if self._archive_repository is None:
+            await interaction.response.send_message("archive repository is not configured", ephemeral=True)
+            return
+        profiles = self._archive_repository.list_profiles(str(interaction.user.id))
+        if not profiles:
+            await interaction.response.send_message("你还没有长期调查员档案。先用 `/start_builder` 建一张。", ephemeral=True)
+            return
+        lines = [f"{item.profile_id} | {item.name} | {item.coc.occupation} | SAN {item.coc.san}" for item in profiles]
+        await interaction.response.send_message("\n".join(lines), ephemeral=True)
+
+    async def select_profile(self, interaction, *, profile_id: str) -> None:
+        if self._archive_repository is None:
+            await interaction.response.send_message("archive repository is not configured", ephemeral=True)
+            return
+        session = self._session_store.get_by_channel(str(interaction.channel_id))
+        if session is None:
+            await interaction.response.send_message("no campaign bound to this channel", ephemeral=True)
+            return
+        profile = self._archive_repository.get_profile(str(interaction.user.id), profile_id)
+        self._session_store.select_archive_profile(
+            channel_id=str(interaction.channel_id),
+            user_id=str(interaction.user.id),
+            profile_id=profile.profile_id,
+        )
+        self._persist_sessions()
+        await interaction.response.send_message(f"已为本团选择档案角色 `{profile.name}`。", ephemeral=True)
 
     async def take_turn(self, interaction, *, content: str) -> None:
         session = self._session_store.get_by_channel(str(interaction.channel_id))
@@ -238,6 +302,7 @@ class BotCommands:
         if session is None:
             await interaction.response.send_message("no campaign bound to this channel", ephemeral=True)
             return
+        resolved_name = character_name.strip()
         if character_name.strip():
             self._session_store.bind_character(
                 channel_id=str(interaction.channel_id),
@@ -245,10 +310,36 @@ class BotCommands:
                 character_name=character_name.strip(),
             )
             self._persist_sessions()
+        elif self._archive_repository is not None:
+            selected_profile_id = self._session_store.selected_profile_for(
+                channel_id=str(interaction.channel_id),
+                user_id=str(interaction.user.id),
+            )
+            if selected_profile_id:
+                profile = self._archive_repository.get_profile(str(interaction.user.id), selected_profile_id)
+                resolved_name = profile.name
+                self._session_store.bind_character(
+                    channel_id=str(interaction.channel_id),
+                    user_id=str(interaction.user.id),
+                    character_name=profile.name,
+                )
+                self._persist_sessions()
+                if self._gameplay is not None:
+                    panel = self._gameplay.ensure_investigator_panel(
+                        user_id=str(interaction.user.id),
+                        display_name=profile.name,
+                        role=self._session_store.active_role_for(channel_id=str(interaction.channel_id), user_id=str(interaction.user.id)) or "investigator",
+                    )
+                    panel.occupation = profile.coc.occupation
+                    panel.san = profile.coc.san
+                    panel.hp = profile.coc.hp
+                    panel.mp = profile.coc.mp
+                    panel.luck = profile.coc.luck
+                    panel.skills = dict(profile.coc.skills)
         role = self._session_store.active_role_for(channel_id=str(interaction.channel_id), user_id=str(interaction.user.id)) or "investigator"
         self._gameplay.ensure_investigator_panel(
             user_id=str(interaction.user.id),
-            display_name=character_name.strip() or getattr(interaction.user, "display_name", f"玩家{interaction.user.id}"),
+            display_name=resolved_name or getattr(interaction.user, "display_name", f"玩家{interaction.user.id}"),
             role=role,
         )
         seeded = self._gameplay.seed_role_knowledge(user_id=str(interaction.user.id), role=role)
@@ -399,6 +490,13 @@ class BotCommands:
     async def show_sheet(self, interaction) -> None:
         if self._gameplay is None:
             await interaction.response.send_message("gameplay is not configured", ephemeral=True)
+            return
+        archive_channel = self._session_store.archive_channel_for(str(interaction.guild_id)) if self._session_store else None
+        if archive_channel and str(interaction.channel_id) != archive_channel:
+            await interaction.response.send_message(
+                f"请到角色档案频道 `<#{archive_channel}>` 查看长期角色信息。",
+                ephemeral=True,
+            )
             return
         snapshot = self._gameplay.investigator_panel_snapshot(str(interaction.user.id))
         knowledge_titles = [item.get("title", "") for item in snapshot.get("knowledge", []) if item.get("title")]
@@ -562,6 +660,11 @@ class BotCommands:
         if self._persistence_store is None or self._session_store is None:
             return
         self._persistence_store.save_sessions(self._session_store.dump_sessions())
+
+    def _persist_archives(self) -> None:
+        if self._persistence_store is None or self._archive_repository is None:
+            return
+        self._persistence_store.save_archive_profiles(self._archive_repository.export_state())
 
     def _save_state_for_channel(self, channel_id: str) -> None:
         if self._session_store is None:

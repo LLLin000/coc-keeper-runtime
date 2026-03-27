@@ -7,28 +7,28 @@
 
 ### Discord Channel Discipline
 
-- [ ] **CHAN-01**: The system should support distinct Discord channel roles for character archives, live-play game halls, and optional keeper/trace output.
-- [ ] **CHAN-02**: Character/archive commands should be discouraged or blocked in live-play halls, with clear redirect messaging instead of silent failure.
-- [ ] **CHAN-03**: Live-play channels should stay focused on campaign actions, narration, and rules resolution rather than profile management noise.
+- [x] **CHAN-01**: The system should support distinct Discord channel roles for character archives, live-play game halls, and optional keeper/trace output.
+- [x] **CHAN-02**: Character/archive commands should be discouraged or blocked in live-play halls, with clear redirect messaging instead of silent failure.
+- [x] **CHAN-03**: Live-play channels should stay focused on campaign actions, narration, and rules resolution rather than profile management noise.
 
 ### Conversational Character Builder
 
-- [ ] **BUILD-01**: The bot should support conversational investigator creation that feels like a Keeper-guided interview rather than a raw form.
-- [ ] **BUILD-02**: Core attributes must be generated through canonical COC rules or explicit supported generation modes, not freeform prompt invention.
-- [ ] **BUILD-03**: The conversational layer should shape occupation, background, skill leaning, portrait/persona summary, and recommended finishing choices without breaking rules validity.
-- [ ] **BUILD-04**: Character creation should support private-first operation through ephemeral replies or DM, while still allowing an archive-channel mode.
+- [x] **BUILD-01**: The bot should support conversational investigator creation that feels like a Keeper-guided interview rather than a raw form.
+- [x] **BUILD-02**: Core attributes must be generated through canonical COC rules or explicit supported generation modes, not freeform prompt invention.
+- [x] **BUILD-03**: The conversational layer should shape occupation, background, skill leaning, portrait/persona summary, and recommended finishing choices without breaking rules validity.
+- [x] **BUILD-04**: Character creation should support private-first operation through ephemeral replies or DM, while still allowing an archive-channel mode.
 
 ### Long-Lived Profiles And Campaign Projection
 
-- [ ] **PROF-01**: Players should own long-lived investigator archives that remain independent of any single module.
-- [ ] **PROF-02**: Campaigns should project an archive character into a module-specific instance whose SAN, injuries, secrets, and role state do not overwrite the archive base.
-- [ ] **PROF-03**: Complex modules should be able to add explicit role overlays, such as `覆辙`'s magical-girl track, on top of a projected archive character.
+- [x] **PROF-01**: Players should own long-lived investigator archives that remain independent of any single module.
+- [x] **PROF-02**: Campaigns should project an archive character into a module-specific instance whose SAN, injuries, secrets, and role state do not overwrite the archive base.
+- [x] **PROF-03**: Complex modules should be able to add explicit role overlays, such as `覆辙`'s magical-girl track, on top of a projected archive character.
 
 ### COC Rule Discipline
 
-- [ ] **RULE-01**: Character generation and projection must stay grounded in the supplied local COC 7th rulebooks wherever the base system covers them.
-- [ ] **RULE-02**: Any scenario-specific modifications to a projected character must be recorded as explicit module metadata or runtime state, not as hidden prompt behavior.
-- [ ] **RULE-03**: Operator and player surfaces should be able to distinguish base investigator data from campaign-instance state.
+- [x] **RULE-01**: Character generation and projection must stay grounded in the supplied local COC 7th rulebooks wherever the base system covers them.
+- [x] **RULE-02**: Any scenario-specific modifications to a projected character must be recorded as explicit module metadata or runtime state, not as hidden prompt behavior.
+- [x] **RULE-03**: Operator and player surfaces should be able to distinguish base investigator data from campaign-instance state.
 
 ## v2 Requirements
 
@@ -53,25 +53,25 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CHAN-01 | Phase 28 | Planned |
-| CHAN-02 | Phase 28 | Planned |
-| CHAN-03 | Phase 28 | Planned |
-| BUILD-01 | Phase 29 | Planned |
-| BUILD-02 | Phase 29 | Planned |
-| BUILD-03 | Phase 29 | Planned |
-| BUILD-04 | Phase 29 | Planned |
-| PROF-01 | Phase 30 | Planned |
-| PROF-02 | Phase 30 | Planned |
-| PROF-03 | Phase 30 | Planned |
-| RULE-01 | Phase 29 | Planned |
-| RULE-02 | Phase 30 | Planned |
-| RULE-03 | Phase 30 | Planned |
+| CHAN-01 | Phase 28 | Completed |
+| CHAN-02 | Phase 28 | Completed |
+| CHAN-03 | Phase 28 | Completed |
+| BUILD-01 | Phase 29 | Completed |
+| BUILD-02 | Phase 29 | Completed |
+| BUILD-03 | Phase 29 | Completed |
+| BUILD-04 | Phase 29 | Completed |
+| PROF-01 | Phase 30 | Completed |
+| PROF-02 | Phase 30 | Completed |
+| PROF-03 | Phase 30 | Completed |
+| RULE-01 | Phase 29 | Completed |
+| RULE-02 | Phase 30 | Completed |
+| RULE-03 | Phase 30 | Completed |
 
 **Coverage:**
 - v1.8 requirements: 13 total
-- Completed: 0
+- Completed: 13
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-28*
-*Last updated: 2026-03-28 after milestone v1.8 kickoff*
+*Last updated: 2026-03-28 after milestone v1.8 execution*

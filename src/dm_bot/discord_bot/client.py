@@ -50,6 +50,14 @@ class DiscordDmBot(commands.Bot):
         async def bind_campaign(interaction: discord.Interaction, campaign_id: str) -> None:
             await self.handlers.bind_campaign(interaction, campaign_id=campaign_id)
 
+        @self.tree.command(name="bind_archive_channel", description="Bind this channel as the archive/profile channel")
+        async def bind_archive_channel(interaction: discord.Interaction) -> None:
+            await self.handlers.bind_archive_channel(interaction)
+
+        @self.tree.command(name="bind_trace_channel", description="Bind this channel as the keeper trace channel")
+        async def bind_trace_channel(interaction: discord.Interaction) -> None:
+            await self.handlers.bind_trace_channel(interaction)
+
         @self.tree.command(name="join_campaign", description="Join the campaign bound to this channel or thread")
         async def join_campaign(interaction: discord.Interaction) -> None:
             await self.handlers.join_campaign(interaction)
@@ -62,6 +70,25 @@ class DiscordDmBot(commands.Bot):
         @app_commands.describe(role="Role such as investigator or magical_girl")
         async def set_role(interaction: discord.Interaction, role: str) -> None:
             await self.handlers.set_role(interaction, role=role)
+
+        @self.tree.command(name="start_builder", description="Start conversational COC character creation")
+        @app_commands.describe(visibility="private or public")
+        async def start_builder(interaction: discord.Interaction, visibility: str = "private") -> None:
+            await self.handlers.start_character_builder(interaction, visibility=visibility)
+
+        @self.tree.command(name="builder_reply", description="Answer the current builder question")
+        @app_commands.describe(answer="Your answer to the current question")
+        async def builder_reply(interaction: discord.Interaction, answer: str) -> None:
+            await self.handlers.builder_reply(interaction, answer=answer)
+
+        @self.tree.command(name="profiles", description="List your archive investigator profiles")
+        async def profiles(interaction: discord.Interaction) -> None:
+            await self.handlers.list_profiles(interaction)
+
+        @self.tree.command(name="select_profile", description="Select an archive profile for this campaign")
+        @app_commands.describe(profile_id="Archive profile id")
+        async def select_profile(interaction: discord.Interaction, profile_id: str) -> None:
+            await self.handlers.select_profile(interaction, profile_id=profile_id)
 
         @self.tree.command(name="turn", description="Submit a player turn into the active campaign")
         @app_commands.describe(content="Player action text")
