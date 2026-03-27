@@ -30,7 +30,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. On hardware in the class of 8GB VRAM and 32GB RAM, routing uses the small router for structured mode and tool decisions while the narrator separately produces final prose.
 **Plans**: 3 plans
 Plans:
-- [ ] 01-01-PLAN.md - Bootstrap the Python runtime shell, typed config, and setup or health workflow.
+- [x] 01-01-PLAN.md - Bootstrap the Python runtime shell, typed config, and setup or health workflow.
 - [ ] 01-02-PLAN.md - Implement Discord session binding, deferred interactions, and campaign-scoped turn serialization.
 - [ ] 01-03-PLAN.md - Implement dual-model router and narrator orchestration with model health checks.
 
@@ -74,7 +74,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Discord Runtime & Dual-Model Control | 0/3 | Planned | - |
+| 1. Discord Runtime & Dual-Model Control | 1/3 | In Progress|  |
 | 2. Character Import & Rules Authority | 0/TBD | Not started | - |
 | 3. Gameplay Loop & Combat Play | 0/TBD | Not started | - |
 | 4. Persistence, Recovery & Diagnostics | 0/TBD | Not started | - |
