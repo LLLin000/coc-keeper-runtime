@@ -1,6 +1,4 @@
-from dm_bot.adventures.loader import load_adventure
-
-
+import asyncio
 import json
 from pathlib import Path
 
@@ -9,6 +7,7 @@ from pydantic import ValidationError
 
 from dm_bot.adventures.loader import load_adventure
 from dm_bot.adventures.models import AdventurePackage
+from dm_bot.adventures.extraction import extract_room_graph_draft
 
 
 def test_load_starter_adventure() -> None:
@@ -82,6 +81,46 @@ def test_load_mad_mansion_formal_module() -> None:
     assert any(ending.id == "survive" for ending in adventure.endings)
     assert adventure.scene_by_id("central_hall").guidance.light_hint
     assert adventure.scene_by_id("central_hall").interactables
+    assert adventure.start_location_id == "central_hall"
+    assert adventure.location_by_id("central_hall").connections
+
+
+def test_adventure_package_supports_room_graph_locations() -> None:
+    adventure = AdventurePackage.model_validate(
+        {
+            "slug": "graph_module",
+            "title": "Graph Module",
+            "premise": "Test graph.",
+            "start_scene_id": "hall",
+            "start_location_id": "hall",
+            "scenes": [
+                {"id": "hall", "title": "大厅", "summary": "白色大厅。"},
+                {"id": "library", "title": "图书馆", "summary": "旧书散落一地。"},
+            ],
+            "locations": [
+                {
+                    "id": "hall",
+                    "scene_id": "hall",
+                    "title": "大厅",
+                    "aliases": ["中央大厅"],
+                    "landmarks": ["石钟", "门"],
+                    "connections": [
+                        {
+                            "to_location_id": "library",
+                            "keywords": ["图书馆", "门"],
+                            "travel_text": "你穿过木门，进入图书馆。",
+                            "observe_text": "门后隐约传来纸张摩擦声。",
+                        }
+                    ],
+                },
+                {"id": "library", "scene_id": "library", "title": "图书馆"},
+            ],
+        }
+    )
+
+    hall = adventure.location_by_id("hall")
+    assert hall.connections[0].to_location_id == "library"
+    assert hall.landmarks == ["石钟", "门"]
 
 
 def test_adventure_package_supports_guidance_tiers_and_interactables() -> None:
@@ -118,3 +157,43 @@ def test_adventure_package_supports_guidance_tiers_and_interactables() -> None:
     scene = adventure.scene_by_id("intro")
     assert scene.guidance.light_hint == "先看看最显眼的装置。"
     assert scene.interactables[0].judgement == "auto"
+
+
+class StubExtractionLLM:
+    def __init__(self, payload: str) -> None:
+        self.payload = payload
+        self.prompts: list[str] = []
+
+    async def extract_json(self, prompt: str) -> str:
+        self.prompts.append(prompt)
+        return self.payload
+
+
+def test_extract_room_graph_draft_returns_reviewable_structure() -> None:
+    llm = StubExtractionLLM(
+        json.dumps(
+            {
+                "source_name": "疯狂之馆",
+                "topology_summary": "中央大厅连接四个分馆。",
+                "locations": [
+                    {"id": "central_hall", "title": "中央大厅", "summary": "倒计时大厅。", "neighbors": ["greed_hall"]},
+                    {"id": "greed_hall", "title": "贪欲之馆", "summary": "管理员在等交易。", "neighbors": ["central_hall"]},
+                ],
+                "trigger_trees": [
+                    {
+                        "location_id": "central_hall",
+                        "root_trigger": "调查数字钟",
+                        "outcomes": ["揭露倒计时", "引导进入分馆"],
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        )
+    )
+
+    draft = asyncio.run(extract_room_graph_draft("source text", source_name="疯狂之馆", llm=llm))
+
+    assert draft.source_name == "疯狂之馆"
+    assert draft.locations[0].id == "central_hall"
+    assert draft.trigger_trees[0].location_id == "central_hall"
+    assert "room graph" in llm.prompts[0].lower()

@@ -210,3 +210,22 @@ def test_gameplay_evaluates_scene_actions_with_guidance_and_roll_prompts() -> No
     assert "观察石钟" in str(miss1["message"])
     assert miss2["kind"] == "hint"
     assert "最稳妥的推进方向" in str(miss2["message"])
+
+
+def test_gameplay_tracks_locations_and_distinguishes_observe_vs_enter() -> None:
+    gameplay = build_gameplay()
+    gameplay.load_adventure(load_adventure("mad_mansion"))
+
+    snapshot = gameplay.adventure_snapshot()
+    assert snapshot["public"]["current_location"]["id"] == "central_hall"
+    assert "greed_hall" in {item["to_location_id"] for item in snapshot["public"]["reachable_locations"]}
+
+    observe = gameplay.evaluate_scene_action("我打量一下贪欲之馆的光幕，不进去。")
+    assert gameplay.adventure_state["location_id"] == "central_hall"
+    enter = gameplay.evaluate_scene_action("我走进贪欲之馆。")
+
+    assert observe["kind"] == "auto"
+    assert "没有立刻踏进去" in str(observe["message"])
+    assert gameplay.adventure_state["location_id"] == "greed_hall"
+    assert enter["kind"] == "auto"
+    assert "贪欲之馆" in str(enter["message"])

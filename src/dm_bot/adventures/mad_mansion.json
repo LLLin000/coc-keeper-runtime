@@ -17,6 +17,102 @@
     { "key": "countdown_active", "default": true, "visibility": "public" },
     { "key": "blood_exit_open", "default": false, "visibility": "public" }
   ],
+  "start_location_id": "central_hall",
+  "locations": [
+    {
+      "id": "central_hall",
+      "scene_id": "central_hall",
+      "title": "中央大厅",
+      "aliases": ["大厅", "中央大厅"],
+      "landmarks": ["数字钟", "四道光幕", "吊灯"],
+      "connections": [
+        {
+          "to_location_id": "greed_hall",
+          "keywords": ["贪欲之馆", "贪欲", "贪欲光幕", "贪欲的光幕"],
+          "travel_text": "当你真正迈入那道光幕，刺眼的白光立刻吞没视野。下一瞬，你已经站在贪欲之馆之中。",
+          "observe_text": "你靠近贪欲之馆的光幕，没有立刻踏进去。那层白光像在无声地等待你把欲望说出口。"
+        },
+        {
+          "to_location_id": "life_hall",
+          "keywords": ["生命之馆", "生命", "生命光幕", "生命的光幕"],
+          "travel_text": "你刚触到那层白光，脚下的重力感就像被抽走一样。再睁眼时，你已经进入生命之馆。",
+          "observe_text": "你打量生命之馆的光幕，没有贸然进入。白光后隐约能看见高大轮廓，像一尊站立的雕像。"
+        },
+        {
+          "to_location_id": "death_hall",
+          "keywords": ["死亡之馆", "死亡", "死亡光幕", "死亡的光幕"],
+          "travel_text": "你碰上光幕的瞬间，四周亮得发白，随后黑暗猛地压了下来。你已经来到死亡之馆。",
+          "observe_text": "你只是站在死亡之馆的光幕前观察。那片白光后没有任何温度，像是把声音都吸走了。"
+        },
+        {
+          "to_location_id": "blood_hall",
+          "keywords": ["鲜血之馆", "鲜血", "血池", "鲜血光幕", "鲜血的光幕"],
+          "travel_text": "你朝那片光幕迈步，鼻腔里立刻钻进一股腥甜气味。回过神来，你已经站在鲜血之馆前。",
+          "observe_text": "你在鲜血之馆的光幕前停下，没有马上进去。仅仅是靠近，那股若有若无的腥味就已经贴上鼻腔。"
+        }
+      ]
+    },
+    {
+      "id": "greed_hall",
+      "scene_id": "greed_hall",
+      "title": "贪欲之馆",
+      "aliases": ["贪欲之馆"],
+      "landmarks": ["红木桌", "管理员少女", "折扇"],
+      "connections": [
+        {
+          "to_location_id": "central_hall",
+          "keywords": ["回到大厅", "回中央大厅", "中央大厅", "离开这里", "出去", "返回大厅"],
+          "travel_text": "你们暂时压下交易的念头，重新退回那片刺眼白光之中。再睁眼时，中央大厅已经在面前展开。",
+          "observe_text": "你朝出口方向看去，刺眼的白光仍旧在原地，像随时可以把你们送回大厅。"
+        }
+      ]
+    },
+    {
+      "id": "life_hall",
+      "scene_id": "life_hall",
+      "title": "生命之馆",
+      "aliases": ["生命之馆"],
+      "landmarks": ["书架", "旧笔记", "雕像", "石板"],
+      "connections": [
+        {
+          "to_location_id": "central_hall",
+          "keywords": ["回到大厅", "回中央大厅", "中央大厅", "离开这里", "出去", "返回大厅"],
+          "travel_text": "你们从生命之馆后退几步，那片白得刺眼的边界再次吞没视线。下一瞬，你们已回到中央大厅。",
+          "observe_text": "你回头看向出口，白光边界仍在那里，像在提醒你们随时还能折返。"
+        }
+      ]
+    },
+    {
+      "id": "death_hall",
+      "scene_id": "death_hall",
+      "title": "死亡之馆",
+      "aliases": ["死亡之馆"],
+      "landmarks": ["干尸", "十字架状祭具", "黑暗"],
+      "connections": [
+        {
+          "to_location_id": "central_hall",
+          "keywords": ["回到大厅", "回中央大厅", "中央大厅", "离开这里", "出去", "返回大厅"],
+          "travel_text": "你们从死亡之馆退回白光边界，黑暗骤然散开，中央大厅那片刺目的白色再次包围了你们。",
+          "observe_text": "你看向出口方向，白光的轮廓仍勉强浮在黑暗尽头。"
+        }
+      ]
+    },
+    {
+      "id": "blood_hall",
+      "scene_id": "blood_hall",
+      "title": "鲜血之馆",
+      "aliases": ["鲜血之馆"],
+      "landmarks": ["墙上刻字", "血池", "池底结构"],
+      "connections": [
+        {
+          "to_location_id": "central_hall",
+          "keywords": ["回到大厅", "回中央大厅", "中央大厅", "离开这里", "出去", "返回大厅"],
+          "travel_text": "你们压下血池翻涌带来的不适，退回来时，那股腥气才慢慢被大厅冷白的空气取代。",
+          "observe_text": "你往回望去，出口还在，像是这间房最后一点不带血腥味的方向。"
+        }
+      ]
+    }
+  ],
   "scenes": [
     {
       "id": "central_hall",

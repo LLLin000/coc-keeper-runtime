@@ -231,6 +231,33 @@ def test_natural_message_scene_transition_adds_scene_framing() -> None:
     assert coordinator.calls == []
 
 
+def test_natural_message_can_observe_portal_without_forced_entry() -> None:
+    from dm_bot.adventures.loader import load_adventure
+
+    store = SessionStore()
+    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    coordinator = StubTurnCoordinator()
+    gameplay = build_gameplay()
+    gameplay.load_adventure(load_adventure("mad_mansion"))
+    gameplay.begin_adventure()
+    commands = BotCommands(settings=None, session_store=store, turn_coordinator=coordinator, gameplay=gameplay)
+
+    reply = asyncio.run(
+        commands.handle_channel_message(
+            channel_id="chan-1",
+            guild_id="guild-1",
+            user_id="user-1",
+            content="我走到贪欲之馆的光幕前，先不进去，只是打量那层白光。",
+            mention_count=0,
+        )
+    )
+
+    assert "没有立刻踏进去" in reply
+    assert "贪欲之馆" in reply
+    assert gameplay.adventure_state["location_id"] == "central_hall"
+    assert coordinator.calls == []
+
+
 def test_inline_roll_command_beats_adventure_guidance() -> None:
     from dm_bot.adventures.loader import load_adventure
 

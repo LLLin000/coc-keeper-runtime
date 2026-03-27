@@ -3,7 +3,7 @@ from dm_bot.gameplay.modes import GameModeState
 from dm_bot.characters.models import CharacterRecord
 from dm_bot.router.contracts import TurnPlan
 from dm_bot.rules.actions import LookupAction, RuleAction, StatBlock
-from dm_bot.adventures.models import AdventurePackage
+from dm_bot.adventures.models import AdventureLocationConnection, AdventurePackage
 
 
 class CharacterRegistry:
@@ -69,6 +69,7 @@ class GameplayOrchestrator:
         self.adventure_state = {
             "adventure_slug": adventure.slug,
             "scene_id": adventure.start_scene_id,
+            "location_id": adventure.start_location_id or adventure.start_scene_id,
             "clues_found": [],
             "objectives": list(adventure.objectives),
             "module_state": adventure.state_defaults(),
@@ -83,14 +84,17 @@ class GameplayOrchestrator:
     def adventure_snapshot(self) -> dict[str, object]:
         if self.adventure is None:
             return {}
-        scene_id = str(self.adventure_state.get("scene_id", self.adventure.start_scene_id))
+        scene_id = self._current_scene_id()
         scene = self.adventure.scene_by_id(scene_id)
+        location = self._current_location()
         module_state = dict(self.adventure_state.get("module_state", {}))
         return {
             "public": {
                 "slug": self.adventure.slug,
                 "title": self.adventure.title,
                 "current_scene": scene.model_dump(),
+                "current_location": location.model_dump(),
+                "reachable_locations": [connection.model_dump() for connection in location.connections],
                 "objectives": list(self.adventure_state.get("objectives", [])),
                 "state": self.adventure.public_state(module_state),
                 "guidance": self.adventure_guidance_snapshot(),
@@ -105,7 +109,7 @@ class GameplayOrchestrator:
     def adventure_guidance_snapshot(self) -> dict[str, object]:
         if self.adventure is None:
             return {}
-        scene = self.adventure.scene_by_id(str(self.adventure_state.get("scene_id", self.adventure.start_scene_id)))
+        scene = self.adventure.scene_by_id(self._current_scene_id())
         return {
             "ambient_focus": list(scene.guidance.ambient_focus),
             "light_hint": scene.guidance.light_hint,
@@ -116,7 +120,7 @@ class GameplayOrchestrator:
     def scene_frame_text(self, *, scene_id: str | None = None) -> str:
         if self.adventure is None:
             return ""
-        resolved_scene_id = scene_id or str(self.adventure_state.get("scene_id", self.adventure.start_scene_id))
+        resolved_scene_id = scene_id or self._current_scene_id()
         scene = self.adventure.scene_by_id(resolved_scene_id)
         lines = [f"【{scene.title}】", scene.summary]
         if scene.presentation.entry_text:
@@ -134,6 +138,18 @@ class GameplayOrchestrator:
             raise RuntimeError("adventure not loaded")
         self.adventure.scene_by_id(scene_id)
         self.adventure_state["scene_id"] = scene_id
+        if self.adventure.locations:
+            for location in self.adventure.locations:
+                if location.scene_id == scene_id:
+                    self.adventure_state["location_id"] = location.id
+                    break
+
+    def set_adventure_location(self, location_id: str) -> None:
+        if self.adventure is None:
+            raise RuntimeError("adventure not loaded")
+        location = self.adventure.location_by_id(location_id)
+        self.adventure_state["location_id"] = location.id
+        self.adventure_state["scene_id"] = location.scene_id
 
     def record_adventure_clue(self, clue_id: str) -> None:
         clues = list(self.adventure_state.get("clues_found", []))
@@ -193,8 +209,12 @@ class GameplayOrchestrator:
     def evaluate_scene_action(self, content: str) -> dict[str, object]:
         if self.adventure is None:
             return {"kind": "none"}
-        scene = self.adventure.scene_by_id(str(self.adventure_state.get("scene_id", self.adventure.start_scene_id)))
+        scene = self.adventure.scene_by_id(self._current_scene_id())
+        location = self._current_location()
         lowered = content.lower()
+        connection_result = self._evaluate_location_connections(content=content, lowered=lowered, location=location)
+        if connection_result is not None:
+            return connection_result
         scored_matches: list[tuple[int, object]] = []
         for interactable in scene.interactables:
             score = sum(1 for keyword in interactable.keywords if keyword.lower() in lowered)
@@ -256,6 +276,65 @@ class GameplayOrchestrator:
             "guidance": f"现在最值得留意的是：{'、'.join(scene.guidance.ambient_focus)}。" if scene.guidance.ambient_focus else "",
             "tier": "rescue" if miss_count >= 2 and scene.guidance.rescue_hint else "light",
         }
+
+    def _current_scene_id(self) -> str:
+        if self.adventure is None:
+            raise RuntimeError("adventure not loaded")
+        return str(self.adventure_state.get("scene_id", self.adventure.start_scene_id))
+
+    def _current_location(self):
+        if self.adventure is None:
+            raise RuntimeError("adventure not loaded")
+        return self.adventure.location_by_id(str(self.adventure_state.get("location_id", self.adventure.start_location_id or self.adventure.start_scene_id)))
+
+    def _evaluate_location_connections(self, *, content: str, lowered: str, location) -> dict[str, object] | None:
+        scored_connections: list[tuple[int, AdventureLocationConnection]] = []
+        for connection in location.connections:
+            score = sum(1 for keyword in connection.keywords if keyword.lower() in lowered)
+            if score > 0:
+                scored_connections.append((score, connection))
+        if not scored_connections:
+            return None
+
+        scored_connections.sort(key=lambda item: item[0], reverse=True)
+        top_score = scored_connections[0][0]
+        matches = [connection for score, connection in scored_connections if score == top_score]
+        if len(matches) > 1:
+            return {
+                "kind": "clarify",
+                "message": f"你想朝哪边移动：{', '.join(self.adventure.location_by_id(item.to_location_id).title for item in matches)}？",
+            }
+
+        connection = matches[0]
+        if self._is_observation_only(content):
+            return {
+                "kind": "auto",
+                "message": connection.observe_text or f"你靠近后暂时没有立刻踏进去，而是先观察通往 {self.adventure.location_by_id(connection.to_location_id).title} 的入口。",
+                "guidance": "",
+            }
+        if self._is_travel_intent(content):
+            self.set_adventure_location(connection.to_location_id)
+            self.adventure_state["scene_miss_count"] = 0
+            return {
+                "kind": "auto",
+                "message": f"{connection.travel_text}\n{self.scene_frame_text()}",
+                "guidance": "",
+            }
+        return None
+
+    def _is_observation_only(self, content: str) -> bool:
+        lowered = content.lower()
+        if any(marker in lowered for marker in ("不进去", "先不进", "先不进去", "只是打量", "只是观察", "先看看")):
+            return True
+        observe_verbs = ("看", "观察", "打量", "端详", "试探", "靠近")
+        travel_verbs = ("进入", "走进", "进去", "踏入", "迈进", "穿过", "回到", "返回", "离开", "出去")
+        return any(verb in content for verb in observe_verbs) and not any(verb in content for verb in travel_verbs)
+
+    def _is_travel_intent(self, content: str) -> bool:
+        return any(
+            verb in content
+            for verb in ("进入", "走进", "进去", "踏入", "迈进", "穿过", "回到", "返回", "离开", "出去", "去")
+        )
 
     def resolve_manual_roll(
         self,
