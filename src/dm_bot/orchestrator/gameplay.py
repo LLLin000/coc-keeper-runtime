@@ -401,6 +401,14 @@ class GameplayOrchestrator:
         label: str = "",
         modifier: int = 0,
         advantage: str = "none",
+        value: int = 0,
+        difficulty: str = "regular",
+        bonus_dice: int = 0,
+        penalty_dice: int = 0,
+        current_san: int = 0,
+        loss_on_success: str = "0",
+        loss_on_failure: str = "1",
+        pushed: bool = False,
         damage_type: str = "untyped",
         target_name: str = "",
         target_ac: int = 10,
@@ -415,6 +423,23 @@ class GameplayOrchestrator:
             parameters = {"expression": expression or ""}
         elif action in {"ability_check", "saving_throw"}:
             parameters = {"label": label, "modifier": modifier, "advantage": advantage}
+        elif action == "coc_skill_check":
+            parameters = {
+                "label": label,
+                "value": value,
+                "difficulty": difficulty,
+                "bonus_dice": bonus_dice,
+                "penalty_dice": penalty_dice,
+                "pushed": pushed,
+            }
+        elif action == "coc_sanity_check":
+            parameters = {
+                "current_san": current_san,
+                "loss_on_success": loss_on_success,
+                "loss_on_failure": loss_on_failure,
+                "bonus_dice": bonus_dice,
+                "penalty_dice": penalty_dice,
+            }
         elif action == "damage_roll":
             parameters = {"damage_expression": damage_expression or expression or "", "damage_type": damage_type}
         elif action == "attack_roll":
@@ -509,6 +534,10 @@ class GameplayOrchestrator:
                 result = self._rules_engine.execute(RuleAction.model_validate({"action": "saving_throw", **call.arguments}))
             elif call.name == "rules.damage_roll":
                 result = self._rules_engine.execute(RuleAction.model_validate({"action": "damage_roll", **call.arguments}))
+            elif call.name == "rules.coc_skill_check":
+                result = self._rules_engine.execute(RuleAction.model_validate({"action": "coc_skill_check", **call.arguments}))
+            elif call.name == "rules.coc_sanity_check":
+                result = self._rules_engine.execute(RuleAction.model_validate({"action": "coc_sanity_check", **call.arguments}))
             elif call.name == "rules.raw_roll":
                 result = self._rules_engine.execute(RuleAction.model_validate({"action": "raw_roll", **call.arguments}))
             else:

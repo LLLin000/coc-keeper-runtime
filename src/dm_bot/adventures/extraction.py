@@ -35,11 +35,11 @@ class AdventureExtractionDraft(BaseModel):
 
 async def extract_room_graph_draft(source_text: str, *, source_name: str, llm) -> AdventureExtractionDraft:
     prompt = (
-        "Read the source script and extract a reviewable room graph draft. "
+        "Read the source script as a Keeper-facing module and extract a reviewable room graph draft. "
         "Return JSON with: source_name, topology_summary, locations[{id,title,summary,neighbors,landmarks}], "
         "trigger_trees[{location_id,root_trigger,outcomes}], "
         "trigger_drafts[{id,event_kind,action_id,pending_roll_id,summary}]. "
-        "Preserve geographic layout and local trigger logic instead of summarizing the script linearly.\n\n"
+        "Preserve geographic layout, local trigger logic, and hidden information boundaries instead of summarizing the script linearly.\n\n"
         f"Source name: {source_name}\n"
         f"Source text:\n{source_text}"
     )

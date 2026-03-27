@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     ollama_base_url: str = Field(default="http://localhost:11434/v1")
     router_model: str = Field(default="qwen3:1.7b")
     narrator_model: str = Field(default="qwen3:8b")
+    coc_asset_root: str = Field(default="C:/Users/Lin/Downloads/COC")
 
 
 def get_settings() -> Settings:

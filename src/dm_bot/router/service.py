@@ -17,7 +17,7 @@ class RouterService:
     async def route(self, envelope: TurnEnvelope) -> TurnPlan:
         request = ModelRequest(
             system_prompt=(
-                "You are the routing model for a Discord D&D DM runtime. "
+                "You are the routing model for a Discord Call of Cthulhu Keeper runtime. "
                 "Return only valid JSON with keys: mode, tool_calls, state_intents, narration_brief, speaker_hints. "
                 "mode must be one of dm, scene, combat. tool_calls and state_intents must be arrays. "
                 "narration_brief must be a short string. speaker_hints must be an array of speaker names."

@@ -43,7 +43,7 @@ def test_narration_service_uses_dm_focused_chinese_prompt() -> None:
     )
 
     request = client.requests[0]
-    assert "Chinese D&D DM" in request.system_prompt
+    assert "Chinese Call of Cthulhu Keeper" in request.system_prompt
     payload = json.loads(request.user_prompt)
     assert payload["player_input"] == "我推开门。"
 

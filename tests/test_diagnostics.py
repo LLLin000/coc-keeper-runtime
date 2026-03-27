@@ -47,7 +47,14 @@ def test_diagnostics_service_reports_adventure_state_summary(tmp_path: Path) -> 
                 "location_id": "blood_hall",
                 "clues_found": ["blood_exit_rule", "clock_countdown"],
                 "objectives": ["找到出口"],
-                "module_state": {"time_remaining": 120, "blood_required": 25, "blood_collected": 11},
+                "module_state": {
+                    "time_remaining": 120,
+                    "blood_required": 25,
+                    "blood_collected": 11,
+                    "san_pressure": 2,
+                    "danger_level": "high",
+                    "pending_push": "life_library_research",
+                },
                 "pending_roll": {"id": "life_library_research", "action": "ability_check"},
                 "ending_id": None,
             }
@@ -61,6 +68,8 @@ def test_diagnostics_service_reports_adventure_state_summary(tmp_path: Path) -> 
     assert "120" in summary
     assert "blood_exit_rule" in summary
     assert "pending_roll=life_library_research" in summary
+    assert "san_pressure=2" in summary
+    assert "danger_level=high" in summary
 
 
 def test_debug_command_surfaces_recent_events(tmp_path: Path) -> None:

@@ -34,10 +34,13 @@ Run a real multiplayer Call of Cthulhu session in Discord where a local AI Keepe
 - ✓ The runtime now includes a reusable trigger tree schema with declarative conditions, effects, and limited hook boundaries for future adventures — v1.5 Phase 19
 - ✓ Trigger execution now produces persisted consequence chains, event-log entries, and table-facing summaries instead of stopping at shallow prompt text — v1.5 Phase 20
 - ✓ `疯狂之馆` now migrates key investigation beats and roll outcomes through the generic trigger engine rather than only bespoke prompt logic — v1.5 Phase 21
+- ✓ The runtime now supports COC-first percentile checks, success tiers, pushed/bonus/penalty roll handling, and sanity-aware resolution on top of the existing Discord and trigger foundations — v1.6 Phase 22
+- ✓ Local COC rulebooks, pregenerated-investigator files, and curated community references can now be discovered through a reviewable asset layer instead of living only outside the runtime — v1.6 Phase 23
+- ✓ Prompts, extraction, commands, and diagnostics now frame play as a Keeper-led COC investigation rather than a D&D-first DM workflow — v1.6 Phase 24
 
 ### Active
 
-- [ ] The next milestone should pivot the runtime from D&D-first assumptions to a COC/Keeper-first rules and asset model built around local rulebooks, pregens, and module-heavy play.
+- [ ] The next milestone should deepen full COC module execution by migrating actual adventures and clue logic onto the new COC-first runtime and investigator assets.
 
 ### Out of Scope
 
@@ -50,16 +53,7 @@ Run a real multiplayer Call of Cthulhu session in Discord where a local AI Keepe
 
 ## Current State
 
-`v1.5` completed the missing execution layer after room graphs. The runtime now supports declarative trigger definitions, consequence effects, pending-roll handoff into consequence resolution, trigger event logging, and trigger-aware extraction drafts. `疯狂之馆` uses the new engine for some of its key investigation beats so roll outcomes and actions can now unlock clues and structured aftermath instead of only producing prose.
-
-## Current Milestone: v1.6 COC/KP 基础运行时与模组资产接入
-
-**Goal:** Pivot the project into a COC/Keeper-first runtime that can load COC rules knowledge, investigator assets, and module-facing structures while preserving the existing Discord, room-graph, and trigger-engine foundations.
-
-**Target features:**
-- Add a reusable COC 7th runtime layer with SAN, difficulty tiers, opposed/combined checks, bonus and penalty dice, pushed rolls, and keeper-facing consequence handling.
-- Build intake paths for COC assets from local rulebooks, pregenerated investigators, blank templates, and curated community references so the bot can operate on stable structured data.
-- Rework prompts, schemas, and module extraction to favor Keeper-style investigation pacing, hidden truth control, and COC module portability over D&D-first assumptions.
+`v1.6` completed the project pivot from D&D-first semantics to a COC/Keeper-first base. The runtime now includes COC-style percentile resolution, a reviewable asset discovery layer for local rulebooks and pregens, and keeper-facing prompts and diagnostics. The Discord, room-graph, trigger, persistence, and streaming foundations remain intact, but the project’s default mental model is now Call of Cthulhu rather than D&D.
 
 ## Context
 
@@ -127,4 +121,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-28 after milestone v1.6 kickoff*
+*Last updated: 2026-03-28 after milestone v1.6 execution*

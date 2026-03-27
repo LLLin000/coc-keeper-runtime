@@ -1,5 +1,17 @@
 # Milestones
 
+## v1.6 COC/KP 基础运行时与模组资产接入 (Shipped: 2026-03-28)
+
+**Phases completed:** 3 phases total
+
+**Key accomplishments:**
+
+- Pivoted the runtime from D&D-first assumptions to COC/Keeper-first percentile checks, sanity handling, and investigator state.
+- Added a reviewable local COC asset layer for rulebooks, pregenerated investigators, templates, and curated community references.
+- Reframed prompts, extraction, commands, and diagnostics around keeper-style investigation flow while preserving the existing Discord, room-graph, trigger, persistence, and streaming foundations.
+
+---
+
 ## v1.5 通用 Trigger Tree 与后果引擎 (Shipped: 2026-03-28)
 
 **Phases completed:** 3 phases total, 6 plans total, 0 tasks

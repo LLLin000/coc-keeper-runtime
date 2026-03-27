@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: COC/KP 基础运行时与模组资产接入
-status: defining requirements
-stopped_at: Started milestone v1.6 from local COC rulebooks, pregens, templates, and curated COC references
-last_updated: "2026-03-28T15:05:00.000Z"
-last_activity: 2026-03-28 - Milestone v1.6 started
+status: completed
+stopped_at: Completed milestone v1.6 with COC-first rules, asset discovery, and keeper-facing prompt/runtime migration
+last_updated: "2026-03-28T16:20:00.000Z"
+last_activity: 2026-03-28 - Completed milestone v1.6 execution
 progress:
   total_phases: 24
-  completed_phases: 21
+  completed_phases: 24
   total_plans: 53
-  completed_plans: 47
-  percent: 88
+  completed_plans: 50
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Run a real multiplayer Call of Cthulhu session in Discord where a local AI Keeper can narrate, roleplay multiple characters, and enforce investigation-heavy rules flow without constant manual bookkeeping.
-**Current focus:** Defining v1.6 to pivot the runtime into a COC/Keeper-first system based on local rulebooks, pregens, templates, and reusable module semantics
+**Current focus:** Preparing the next milestone after completing the COC/Keeper-first runtime pivot
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: -
-Status: Defining requirements
-Last activity: 2026-03-28 - Milestone v1.6 started
+Phase: 24 of 24 (COC Module And Keeper Experience Migration)
+Plan: 1 of 1
+Status: Completed
+Last activity: 2026-03-28 - Completed milestone v1.6 execution
 
-Progress: [████████░░] 88%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -92,7 +92,7 @@ None yet.
 
 ### Roadmap Evolution
 
-- Roadmap now extends through Phases 22-24 for milestone v1.6.
+- Roadmap now includes completed Phases 22-24 for milestone v1.6.
 
 ### Blockers/Concerns
 
@@ -105,12 +105,12 @@ None yet.
 - AI-first extraction must stay reviewable; the system should not silently turn source scripts into opaque runtime blobs.
 - Location graphs should preserve the original script topology and not flatten everything into unordered node soup.
 - Trigger execution must stay reusable across future adventures and cannot collapse into `疯狂之馆`-specific imperative code.
-- The COC pivot must reuse the current Discord, room-graph, persistence, trigger, and streaming foundations instead of starting over.
+- The COC pivot reused the current Discord, room-graph, persistence, trigger, and streaming foundations instead of starting over.
 - Dynamic-form investigator PDFs may need a non-text-extraction intake path.
 - Community COC sites are useful ecosystem references, but canonical runtime truth should stay local and reviewable.
 
 ## Session Continuity
 
-Last session: 2026-03-28T15:05:00.000Z
-Stopped at: Started milestone v1.6 from local COC rulebooks, pregens, templates, and curated COC references
+Last session: 2026-03-28T16:20:00.000Z
+Stopped at: Completed milestone v1.6 with COC-first rules, asset discovery, and keeper-facing prompt/runtime migration
 Resume file: .planning/PROJECT.md

@@ -25,6 +25,12 @@ class DiagnosticsService:
                 lines.append(f"time_remaining={module_state['time_remaining']}")
             if "blood_collected" in module_state and "blood_required" in module_state:
                 lines.append(f"blood={module_state['blood_collected']}/{module_state['blood_required']}")
+            if "san_pressure" in module_state:
+                lines.append(f"san_pressure={module_state['san_pressure']}")
+            if "danger_level" in module_state:
+                lines.append(f"danger_level={module_state['danger_level']}")
+            if "pending_push" in module_state:
+                lines.append(f"pending_push={module_state['pending_push']}")
             pending_roll = dict(adventure_state.get("pending_roll", {}))
             if pending_roll:
                 lines.append(f"pending_roll={pending_roll.get('id', 'unknown')} action={pending_roll.get('action', 'unknown')}")

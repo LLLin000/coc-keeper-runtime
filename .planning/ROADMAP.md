@@ -40,22 +40,22 @@ Decimal phases appear between their surrounding integers in numeric order.
 ## Milestone v1.6 Delivery Plan
 
 ### Phase 22: COC Runtime Foundations
-**Planned**:
-- Introduce COC success tiers, bonus and penalty dice, pushed rolls, opposed rolls, combined rolls, and SAN-aware runtime handling.
-- Replace D&D-first rule language in runtime services with keeper-facing concepts that feed the existing trigger engine.
-- Define the minimum structured investigator state needed for COC module play.
+**Delivered**:
+- Added COC-first percentile checks with regular, hard, and extreme success tiers on top of the existing rules engine.
+- Added COC-specific roll actions and Discord command paths for skill checks and sanity checks without breaking the earlier runtime.
+- Introduced a structured investigator profile for COC state such as SAN, luck, movement, build, and skill values.
 
 ### Phase 23: COC Asset And Character Intake
-**Planned**:
-- Create a reviewable ingestion path for local COC rulebooks into structured knowledge assets.
-- Define a practical intake route for pregenerated investigators and blank templates, including dynamic-form PDFs that resist plain-text extraction.
-- Add curated community-reference mapping so ecosystem knowledge can enrich, but not override, canonical local assets.
+**Delivered**:
+- Added a reviewable COC asset library that discovers local rulebooks, pregenerated-investigator files, and curated community references.
+- Added a COC investigator source and data model to support pregen-oriented imports alongside the older source path.
+- Added runtime configuration and a Discord command for inspecting discovered local COC assets.
 
 ### Phase 24: COC Module And Keeper Experience Migration
-**Planned**:
-- Rework prompts, diagnostics, and extraction contracts to fit Keeper investigation pacing, clue safety, and terror escalation.
-- Ensure the current room-graph and trigger runtime remain reusable for future COC modules instead of a single-script conversion.
-- Improve player and operator surfaces so they expose COC-relevant states such as clues, danger, SAN pressure, and pending push outcomes.
+**Delivered**:
+- Reworked router, narrator, and extraction prompts to frame play as a Keeper-led COC investigation rather than a D&D-first session.
+- Preserved the room-graph and trigger runtime while migrating prompts, rule actions, and diagnostics toward reusable COC semantics.
+- Expanded operator visibility with COC-relevant diagnostics such as SAN pressure, danger level, and pending push state.
 
 ## Progress
 
@@ -85,6 +85,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 19. Generic Trigger And Consequence Schema | 2/2 | Completed | 2026-03-28 |
 | 20. Runtime Trigger Engine | 2/2 | Completed | 2026-03-28 |
 | 21. 疯狂之馆 Trigger Migration | 2/2 | Completed | 2026-03-28 |
-| 22. COC Runtime Foundations | 0/0 | Not started | — |
-| 23. COC Asset And Character Intake | 0/0 | Not started | — |
-| 24. COC Module And Keeper Experience Migration | 0/0 | Not started | — |
+| 22. COC Runtime Foundations | 1/1 | Completed | 2026-03-28 |
+| 23. COC Asset And Character Intake | 1/1 | Completed | 2026-03-28 |
+| 24. COC Module And Keeper Experience Migration | 1/1 | Completed | 2026-03-28 |

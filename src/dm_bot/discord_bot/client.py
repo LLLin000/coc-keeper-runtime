@@ -115,6 +115,59 @@ class DiscordDmBot(commands.Bot):
         async def save(interaction: discord.Interaction, label: str, modifier: int, advantage: str = "none") -> None:
             await self.handlers.save_roll(interaction, label=label, modifier=modifier, advantage=advantage)
 
+        @self.tree.command(name="coc_check", description="Resolve a COC skill check")
+        @app_commands.describe(
+            label="Skill label",
+            value="Target value",
+            difficulty="regular, hard, or extreme",
+            bonus_dice="Bonus dice count",
+            penalty_dice="Penalty dice count",
+            pushed="Whether this is a pushed roll",
+        )
+        async def coc_check(
+            interaction: discord.Interaction,
+            label: str,
+            value: int,
+            difficulty: str = "regular",
+            bonus_dice: int = 0,
+            penalty_dice: int = 0,
+            pushed: bool = False,
+        ) -> None:
+            await self.handlers.coc_check_roll(
+                interaction,
+                label=label,
+                value=value,
+                difficulty=difficulty,
+                bonus_dice=bonus_dice,
+                penalty_dice=penalty_dice,
+                pushed=pushed,
+            )
+
+        @self.tree.command(name="san_check", description="Resolve a COC sanity check")
+        @app_commands.describe(
+            current_san="Current SAN value",
+            loss_on_success="Loss on success",
+            loss_on_failure="Loss on failure",
+            bonus_dice="Bonus dice count",
+            penalty_dice="Penalty dice count",
+        )
+        async def san_check(
+            interaction: discord.Interaction,
+            current_san: int,
+            loss_on_success: str = "0",
+            loss_on_failure: str = "1d6",
+            bonus_dice: int = 0,
+            penalty_dice: int = 0,
+        ) -> None:
+            await self.handlers.san_roll(
+                interaction,
+                current_san=current_san,
+                loss_on_success=loss_on_success,
+                loss_on_failure=loss_on_failure,
+                bonus_dice=bonus_dice,
+                penalty_dice=penalty_dice,
+            )
+
         @self.tree.command(name="attack", description="Resolve an attack roll with optional damage")
         @app_commands.describe(
             target_name="Target name",
@@ -147,6 +200,10 @@ class DiscordDmBot(commands.Bot):
         @app_commands.describe(campaign_id="Campaign identifier")
         async def debug_status(interaction: discord.Interaction, campaign_id: str) -> None:
             await self.handlers.debug_status(interaction, campaign_id=campaign_id)
+
+        @self.tree.command(name="coc_assets", description="Show discovered local COC assets")
+        async def coc_assets(interaction: discord.Interaction) -> None:
+            await self.handlers.coc_assets_summary(interaction)
 
     async def on_message(self, message: discord.Message) -> None:
         if message.author.bot or not message.content or message.guild is None:

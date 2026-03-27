@@ -17,6 +17,7 @@ class BotCommands:
         gameplay=None,
         diagnostics=None,
         persistence_store=None,
+        coc_assets=None,
     ) -> None:
         self._settings = settings or get_settings()
         self._session_store = session_store
@@ -24,6 +25,7 @@ class BotCommands:
         self._gameplay = gameplay
         self._diagnostics = diagnostics
         self._persistence_store = persistence_store
+        self._coc_assets = coc_assets
 
     async def setup_check(self, interaction) -> None:
         snapshot = build_health_snapshot(self._settings)
@@ -276,6 +278,52 @@ class BotCommands:
         )
         await interaction.response.send_message(result, ephemeral=False)
 
+    async def coc_check_roll(
+        self,
+        interaction,
+        *,
+        label: str,
+        value: int,
+        difficulty: str = "regular",
+        bonus_dice: int = 0,
+        penalty_dice: int = 0,
+        pushed: bool = False,
+    ) -> None:
+        result = self._safe_roll_for_channel(
+            channel_id=str(interaction.channel_id),
+            user_id=str(interaction.user.id),
+            action="coc_skill_check",
+            label=label,
+            value=value,
+            difficulty=difficulty,
+            bonus_dice=bonus_dice,
+            penalty_dice=penalty_dice,
+            pushed=pushed,
+        )
+        await interaction.response.send_message(result, ephemeral=False)
+
+    async def san_roll(
+        self,
+        interaction,
+        *,
+        current_san: int,
+        loss_on_success: str = "0",
+        loss_on_failure: str = "1d6",
+        bonus_dice: int = 0,
+        penalty_dice: int = 0,
+    ) -> None:
+        result = self._safe_roll_for_channel(
+            channel_id=str(interaction.channel_id),
+            user_id=str(interaction.user.id),
+            action="coc_sanity_check",
+            current_san=current_san,
+            loss_on_success=loss_on_success,
+            loss_on_failure=loss_on_failure,
+            bonus_dice=bonus_dice,
+            penalty_dice=penalty_dice,
+        )
+        await interaction.response.send_message(result, ephemeral=False)
+
     async def attack_roll(
         self,
         interaction,
@@ -306,6 +354,19 @@ class BotCommands:
             return
         await interaction.response.send_message(
             self._diagnostics.recent_summary(campaign_id),
+            ephemeral=True,
+        )
+
+    async def coc_assets_summary(self, interaction) -> None:
+        if self._coc_assets is None:
+            await interaction.response.send_message("COC assets are not configured", ephemeral=True)
+            return
+        summary = self._coc_assets.summary()
+        rulebooks = ", ".join(item["name"] for item in summary.get("rulebooks", [])) or "none"
+        investigators = ", ".join(item["name"] for item in summary.get("investigators", [])) or "none"
+        refs = ", ".join(item["title"] for item in summary.get("community_references", [])) or "none"
+        await interaction.response.send_message(
+            f"rulebooks: {rulebooks}\ninvestigators: {investigators}\nreferences: {refs}",
             ephemeral=True,
         )
 
@@ -529,6 +590,26 @@ class BotCommands:
                     modifier=modifier,
                     advantage=advantage,
                 )
+            if lowered.startswith("coc "):
+                label, value, difficulty = self._split_coc_payload(stripped[4:].strip())
+                return self._resolve_roll_for_channel(
+                    channel_id=channel_id,
+                    user_id=user_id,
+                    action="coc_skill_check",
+                    label=label,
+                    value=value,
+                    difficulty=difficulty,
+                )
+            if lowered.startswith("san "):
+                current_san = int(stripped[4:].strip())
+                return self._resolve_roll_for_channel(
+                    channel_id=channel_id,
+                    user_id=user_id,
+                    action="coc_sanity_check",
+                    current_san=current_san,
+                    loss_on_success="0",
+                    loss_on_failure="1d6",
+                )
         except (ValueError, RuntimeError) as exc:
             return f"掷骰输入无效：{exc}"
         return None
@@ -542,6 +623,15 @@ class BotCommands:
         advantage = parts[2] if len(parts) > 2 else "none"
         return label, modifier, advantage
 
+    def _split_coc_payload(self, payload: str) -> tuple[str, int, str]:
+        parts = [part for part in payload.split(" ") if part]
+        if len(parts) < 2:
+            raise ValueError("expected `<label> <value> [regular|hard|extreme]`")
+        label = parts[0]
+        value = int(parts[1])
+        difficulty = parts[2] if len(parts) > 2 else "regular"
+        return label, value, difficulty
+
     def _format_roll_result(self, result: dict[str, object]) -> str:
         action = str(result.get("action", "roll"))
         consequence = str(result.get("consequence_summary", "")).strip()
@@ -552,6 +642,22 @@ class BotCommands:
             return f"{base}\n{consequence}" if consequence else base
         if action in {"ability_check", "saving_throw"}:
             base = f"{result['actor']} 的 {result['label']}：{result['roll']}，总计 {result['total']}"
+            return f"{base}\n{consequence}" if consequence else base
+        if action == "coc_skill_check":
+            rank = result.get("success_rank", "failure")
+            outcome = "成功" if result.get("success") else "失败"
+            pushed = "，推动检定" if result.get("pushed") else ""
+            base = (
+                f"{result['actor']} 的 {result['label']}：{result['roll']}，"
+                f"目标值 {result['value']}，难度 {result['difficulty']}，结果 {rank} {outcome}{pushed}"
+            )
+            return f"{base}\n{consequence}" if consequence else base
+        if action == "coc_sanity_check":
+            outcome = "成功" if result.get("success") else "失败"
+            base = (
+                f"{result['actor']} 的理智检定：{result['roll']}，"
+                f"当前 SAN {result['current_san']}，结果 {outcome}，理智损失 {result['san_loss']}"
+            )
             return f"{base}\n{consequence}" if consequence else base
         if action == "damage_roll":
             base = f"{result['actor']} 的伤害掷骰：{result['roll']}，总计 {result['total']} {result['damage_type']}"

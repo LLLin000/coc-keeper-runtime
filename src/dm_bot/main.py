@@ -5,6 +5,7 @@ from pathlib import Path
 
 from dm_bot.characters.importer import CharacterImporter
 from dm_bot.characters.sources import DicecloudSnapshotSource
+from dm_bot.coc.assets import COCAssetLibrary, COCReference
 from dm_bot.config import Settings, get_settings
 from dm_bot.diagnostics.service import DiagnosticsService
 from dm_bot.discord_bot.client import create_discord_bot
@@ -38,7 +39,8 @@ def describe_runtime(settings: Settings | None = None) -> str:
         f"discord_public_key={'configured' if settings.discord_public_key else 'missing'}\n"
         f"router_model={settings.router_model}\n"
         f"narrator_model={settings.narrator_model}\n"
-        f"ollama_base_url={settings.ollama_base_url}"
+        f"ollama_base_url={settings.ollama_base_url}\n"
+        f"coc_asset_root={settings.coc_asset_root}"
     )
 
 
@@ -46,6 +48,7 @@ def build_runtime(settings: Settings | None = None) -> RuntimeBundle:
     settings = settings or get_settings()
     model_client = OllamaClient(settings)
     persistence_store = PersistenceStore(Path("dm_bot.sqlite3"))
+    coc_assets = build_coc_assets(settings)
     gameplay = GameplayOrchestrator(
         importer=CharacterImporter(sources={"dicecloud_snapshot": DicecloudSnapshotSource(fixtures={})}),
         registry=CharacterRegistry(),
@@ -66,11 +69,31 @@ def build_runtime(settings: Settings | None = None) -> RuntimeBundle:
         gameplay=gameplay,
         diagnostics=DiagnosticsService(persistence_store),
         persistence_store=persistence_store,
+        coc_assets=coc_assets,
     )
     return RuntimeBundle(
         settings=settings,
         app=create_app(),
         discord_bot=create_discord_bot(handlers=handlers, settings=settings),
+    )
+
+
+def build_coc_assets(settings: Settings) -> COCAssetLibrary:
+    root = Path(settings.coc_asset_root)
+    if not root.exists():
+        return COCAssetLibrary(
+            community_references=[
+                COCReference(title="克苏鲁公社", url="https://www.cthulhuclub.com", summary="COC 模组、规则与工具入口。")
+            ]
+        )
+    rulebooks = [path for path in root.iterdir() if path.is_file() and path.suffix.lower() == ".pdf"]
+    investigator_paths = [path for path in root.rglob("*.pdf") if path.parent != root]
+    return COCAssetLibrary.from_paths(
+        rulebook_paths=rulebooks,
+        investigator_paths=investigator_paths,
+        community_references=[
+            COCReference(title="克苏鲁公社", url="https://www.cthulhuclub.com", summary="COC 模组、规则与工具入口。")
+        ],
     )
 
 

@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
 from dm_bot.rules.actions import LookupAction, RuleAction
-from dm_bot.rules.dice import D20DiceRoller, DiceOutcome
+from dm_bot.rules.dice import D20DiceRoller, DiceOutcome, PercentileOutcome
 
 
 class RulesEngineError(RuntimeError):
@@ -41,6 +41,10 @@ class RulesEngine:
             return self._execute_damage_roll(action)
         if action.action == "raw_roll":
             return self._execute_raw_roll(action)
+        if action.action == "coc_skill_check":
+            return self._execute_coc_skill_check(action)
+        if action.action == "coc_sanity_check":
+            return self._execute_coc_sanity_check(action)
         raise RulesEngineError(f"unsupported action: {action.action}")
 
     def _execute_attack_roll(self, action: RuleAction) -> dict[str, object]:
@@ -109,11 +113,103 @@ class RulesEngine:
             "total": outcome.total,
         }
 
+    def _execute_coc_skill_check(self, action: RuleAction) -> dict[str, object]:
+        label = str(action.parameters.get("label", "技能检定"))
+        value = int(action.parameters.get("value", 0))
+        if value <= 0:
+            raise RulesEngineError("coc_skill_check requires positive value")
+        difficulty = str(action.parameters.get("difficulty", "regular"))
+        bonus_dice = int(action.parameters.get("bonus_dice", 0))
+        penalty_dice = int(action.parameters.get("penalty_dice", 0))
+        pushed = bool(action.parameters.get("pushed", False))
+        outcome = self._roll_percentile(
+            value=value,
+            difficulty=difficulty,
+            bonus_dice=bonus_dice,
+            penalty_dice=penalty_dice,
+            pushed=pushed,
+        )
+        return {
+            "action": "coc_skill_check",
+            "actor": action.actor.name,
+            "label": label,
+            "value": value,
+            "difficulty": difficulty,
+            "bonus_dice": bonus_dice,
+            "penalty_dice": penalty_dice,
+            "pushed": pushed,
+            "rolled": outcome.rolled,
+            "success": outcome.success,
+            "success_rank": outcome.success_rank,
+            "critical": outcome.critical,
+            "fumble": outcome.fumble,
+            "roll": outcome.rendered,
+            "total": outcome.rolled,
+        }
+
+    def _execute_coc_sanity_check(self, action: RuleAction) -> dict[str, object]:
+        current_san = int(action.parameters.get("current_san", 0))
+        if current_san <= 0:
+            raise RulesEngineError("coc_sanity_check requires current_san")
+        outcome = self._roll_percentile(
+            value=current_san,
+            difficulty="regular",
+            bonus_dice=int(action.parameters.get("bonus_dice", 0)),
+            penalty_dice=int(action.parameters.get("penalty_dice", 0)),
+            pushed=False,
+        )
+        loss_on_success = str(action.parameters.get("loss_on_success", "0"))
+        loss_on_failure = str(action.parameters.get("loss_on_failure", "1"))
+        san_loss = loss_on_success if outcome.success else loss_on_failure
+        return {
+            "action": "coc_sanity_check",
+            "actor": action.actor.name,
+            "current_san": current_san,
+            "rolled": outcome.rolled,
+            "success": outcome.success,
+            "success_rank": outcome.success_rank,
+            "critical": outcome.critical,
+            "fumble": outcome.fumble,
+            "roll": outcome.rendered,
+            "total": outcome.rolled,
+            "san_loss": san_loss,
+            "loss_on_success": loss_on_success,
+            "loss_on_failure": loss_on_failure,
+        }
+
     def _roll(self, expression: str, *, advantage: str = "none") -> DiceOutcome:
         try:
             return self._dice_roller.roll(expression, advantage=advantage)
         except Exception as exc:
             raise RulesEngineError(str(exc)) from exc
+
+    def _roll_percentile(
+        self,
+        *,
+        value: int,
+        difficulty: str,
+        bonus_dice: int,
+        penalty_dice: int,
+        pushed: bool,
+    ):
+        try:
+            outcome = self._dice_roller.roll_percentile(
+                value=value,
+                difficulty=difficulty,
+                bonus_dice=bonus_dice,
+                penalty_dice=penalty_dice,
+                pushed=pushed,
+            )
+        except TypeError:
+            outcome = self._dice_roller.roll_percentile(
+                value=value,
+                difficulty=difficulty,
+                bonus_dice=bonus_dice,
+                penalty_dice=penalty_dice,
+            )
+        if isinstance(outcome, dict):
+            return PercentileOutcome.model_validate(outcome)
+        return outcome
 
 
 class _LegacyDiceRoller:
@@ -127,6 +223,44 @@ class _LegacyDiceRoller:
             total=total,
             rendered=f"{expression} = `{total}`",
         )
+
+    def roll_percentile(
+        self,
+        *,
+        value: int,
+        difficulty: str = "regular",
+        bonus_dice: int = 0,
+        penalty_dice: int = 0,
+        pushed: bool = False,
+    ) -> dict[str, object]:
+        rolled = max(1, min(100, int(self._resolver("1d100"))))
+        thresholds = {
+            "regular": value,
+            "hard": value // 2,
+            "extreme": value // 5,
+        }
+        success = rolled <= thresholds[difficulty]
+        rank = "failure"
+        if success:
+            if rolled <= thresholds["extreme"]:
+                rank = "extreme"
+            elif rolled <= thresholds["hard"]:
+                rank = "hard"
+            else:
+                rank = "regular"
+        return {
+            "value": value,
+            "difficulty": difficulty,
+            "rolled": rolled,
+            "success": success,
+            "success_rank": rank,
+            "critical": rolled == 1,
+            "fumble": rolled == 100,
+            "bonus_dice": bonus_dice,
+            "penalty_dice": penalty_dice,
+            "pushed": pushed,
+            "rendered": f"{rolled:02d} / {value}",
+        }
 
     def _resolve_expression(self, expression: str) -> int:
         if expression.startswith("1d20+") or expression.startswith("1d20-"):
