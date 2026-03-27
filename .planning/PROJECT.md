@@ -27,6 +27,7 @@ Run a real multiplayer D&D session in Discord where a local AI DM can narrate, r
 
 ### Active
 
+- [ ] The narrator transport should support true Ollama streaming with Discord chunked edits, rather than only typing indicators and post-hoc final messages.
 - [ ] The module system supports a second formal adventure package without adding one-off runtime code for that script.
 - [ ] The operator can selectively reveal secret or private information to subsets of players instead of only table-wide narration.
 - [ ] The DM runtime can surface richer structured progression controls for module-specific triggers, puzzle states, and branching overrides.
@@ -42,7 +43,7 @@ Run a real multiplayer D&D session in Discord where a local AI DM can narrate, r
 
 ## Current State
 
-`v1.2` shipped the startup and dice usability milestone. The runtime now supports ready-gated packaged-adventure onboarding, automatic opening narration for `疯狂之馆`, mature `d20`-backed dice resolution for common roll families, and clearer Discord-side progress or blocking feedback during ordinary channel play.
+`v1.2` shipped the startup and dice usability milestone. The runtime now supports ready-gated packaged-adventure onboarding, automatic opening narration for `疯狂之馆`, mature `d20`-backed dice resolution for common roll families, and clearer Discord-side progress or blocking feedback during ordinary channel play. A follow-on Phase 12 has been added to finish true live streaming output from the narrator into Discord.
 
 ## Context
 

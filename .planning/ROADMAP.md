@@ -65,10 +65,23 @@ Plans:
 - [x] 11-01-PLAN.md - Add progressive Discord response transport and streaming-aware narrator plumbing.
 - [x] 11-02-PLAN.md - Harden natural-message routing, ignored-input feedback, and packaged-adventure message handling.
 
+### Phase 12: True Streaming Discord Output
+**Goal**: Upgrade from progressive response feedback to true narrator-phase streaming so players see the DM reply grow live in Discord.
+**Depends on**: Phase 11
+**Requirements**: RESP-01, RESP-02
+**Success Criteria** (what must be TRUE):
+  1. The narrator path can consume Ollama streaming responses and surface partial text incrementally instead of waiting for a full final blob.
+  2. Discord delivery coalesces streamed chunks into rate-safe message edits rather than issuing a token-by-token flood.
+  3. Slash-command turns and ordinary channel-message turns both use the same streaming transport behavior where supported.
+  4. If streaming fails mid-response, the bot falls back cleanly to a finalized non-streamed reply without losing the turn.
+**Plans**: 1 plan
+Plans:
+- [ ] 12-01-PLAN.md - Add Ollama stream consumption, Discord chunked-edit transport, and graceful streaming fallback.
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -83,3 +96,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 9. Adventure Onboarding And Auto-Opening | 2/2 | Completed | 2026-03-27 |
 | 10. Mature Dice Engine And Deterministic Roll Resolution | 2/2 | Completed | 2026-03-27 |
 | 11. Streaming Responses And Message Reliability | 2/2 | Completed | 2026-03-27 |
+| 12. True Streaming Discord Output | 0/1 | Planned | - |

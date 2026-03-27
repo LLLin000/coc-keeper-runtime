@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 疯狂之馆开场体验与骰子系统
-status: completed
-stopped_at: Completed milestone v1.2 and prepared for next milestone
-last_updated: "2026-03-27T22:30:00.000Z"
-last_activity: 2026-03-27 - Completed milestone v1.2 with onboarding, dice, and response reliability
+status: planning
+stopped_at: Added Phase 12 for true streaming Discord output
+last_updated: "2026-03-27T22:50:00.000Z"
+last_activity: 2026-03-27 - Added Phase 12 for true streaming Discord output
 progress:
-  total_phases: 11
+  total_phases: 12
   completed_phases: 11
-  total_plans: 22
+  total_plans: 23
   completed_plans: 22
-  percent: 100
+  percent: 96
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Run a real multiplayer D&D session in Discord where a local AI DM can narrate, roleplay multiple characters, and enforce heavy rules flow without constant manual bookkeeping.
-**Current focus:** Planning next milestone
+**Current focus:** Planning Phase 12 for true streaming Discord output
 
 ## Current Position
 
-Phase: 11 of 11 (Streaming Responses And Message Reliability)
-Plan: 2 of 2
-Status: Completed
-Last activity: 2026-03-27 - Completed milestone v1.2 with onboarding, dice, and response reliability
+Phase: 12 of 12 (True Streaming Discord Output)
+Plan: 0 of 1
+Status: Planning
+Last activity: 2026-03-27 - Added Phase 12 for true streaming Discord output
 
-Progress: [██████████] 100%
+Progress: [█████████░] 96%
 
 ## Performance Metrics
 
@@ -69,6 +69,7 @@ Recent decisions affecting current work:
 - Phase 9 target: adventure loading should become a guided ready-up and DM opening flow.
 - Phase 10 target: placeholder rolls should be replaced with a mature dice engine, not a custom parser.
 - Phase 11 target: Discord should show progress during long DM turns and ordinary message handling should be more transparent.
+- Phase 12 target: Ollama narrator output should stream live into Discord through chunked edits with safe fallback.
 
 ### Pending Todos
 
@@ -76,7 +77,7 @@ None yet.
 
 ### Roadmap Evolution
 
-- Next roadmap will continue numbering after Phase 11 for the new milestone.
+- Roadmap now continues with Phase 12 inside milestone v1.2.
 
 ### Blockers/Concerns
 
@@ -84,9 +85,10 @@ None yet.
 - Rules and narration boundaries must stay strict so models never become the source of truth for state mutations.
 - Dice parsing should be integrated from a mature external library to reduce debugging cost.
 - Streaming transport must not become the source of truth for canonical state.
+- Discord message edit frequency must stay rate-safe when true streaming is added.
 
 ## Session Continuity
 
-Last session: 2026-03-27T21:10:00.000Z
-Stopped at: Completed milestone v1.2 and prepared for next milestone
+Last session: 2026-03-27T22:50:00.000Z
+Stopped at: Added Phase 12 for true streaming Discord output
 Resume file: .planning/PROJECT.md
