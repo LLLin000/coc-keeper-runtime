@@ -1,3 +1,5 @@
+import argparse
+import asyncio
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -18,6 +20,7 @@ from dm_bot.router.service import RouterService
 from dm_bot.rules.compendium import FixtureCompendium
 from dm_bot.rules.engine import RulesEngine
 from dm_bot.runtime.app import create_app
+import uvicorn
 
 
 @dataclass
@@ -25,6 +28,18 @@ class RuntimeBundle:
     settings: Settings
     app: object
     discord_bot: object
+
+
+def describe_runtime(settings: Settings | None = None) -> str:
+    settings = settings or get_settings()
+    token_status = "configured" if settings.discord_token else "missing"
+    return (
+        f"discord_token={token_status}\n"
+        f"discord_public_key={'configured' if settings.discord_public_key else 'missing'}\n"
+        f"router_model={settings.router_model}\n"
+        f"narrator_model={settings.narrator_model}\n"
+        f"ollama_base_url={settings.ollama_base_url}"
+    )
 
 
 def build_runtime(settings: Settings | None = None) -> RuntimeBundle:
@@ -53,5 +68,38 @@ def build_runtime(settings: Settings | None = None) -> RuntimeBundle:
     return RuntimeBundle(
         settings=settings,
         app=create_app(),
-        discord_bot=create_discord_bot(handlers=handlers),
+        discord_bot=create_discord_bot(handlers=handlers, settings=settings),
     )
+
+
+async def run_discord_bot(settings: Settings | None = None) -> None:
+    bundle = build_runtime(settings)
+    if not bundle.settings.discord_token:
+        raise RuntimeError("DM_BOT_DISCORD_TOKEN is required to start the Discord bot")
+    await bundle.discord_bot.start(bundle.settings.discord_token)
+
+
+def run_api(settings: Settings | None = None) -> None:
+    bundle = build_runtime(settings)
+    uvicorn.run(bundle.app, host="127.0.0.1", port=8000)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="dm-bot")
+    parser.add_argument("command", choices=["preflight", "run-api", "run-bot"])
+    args = parser.parse_args(argv)
+
+    if args.command == "preflight":
+        print(describe_runtime())
+        return 0
+    if args.command == "run-api":
+        run_api()
+        return 0
+    if args.command == "run-bot":
+        asyncio.run(run_discord_bot())
+        return 0
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

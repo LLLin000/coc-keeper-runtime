@@ -11,11 +11,13 @@ class Settings(BaseSettings):
     )
 
     discord_token: str = Field(default="")
+    discord_application_id: str = Field(default="")
+    discord_public_key: str = Field(default="")
+    discord_guild_id: str = Field(default="")
     ollama_base_url: str = Field(default="http://localhost:11434/v1")
     router_model: str = Field(default="qwen3:1.7b")
-    narrator_model: str = Field(default="collective-v0.1-chinese-roleplay-8b")
+    narrator_model: str = Field(default="fluffy/l3-8b-stheno-v3.2:q4_K_M")
 
 
 def get_settings() -> Settings:
     return Settings()
-

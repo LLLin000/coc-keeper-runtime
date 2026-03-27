@@ -60,6 +60,7 @@ def test_router_service_returns_validated_turn_plan() -> None:
     assert plan.mode == "dm"
     assert plan.narration_brief == "keep it short"
     assert client.router_requests
+    assert client.router_requests[0].response_format == {"type": "json_object"}
 
 
 def test_router_service_rejects_invalid_json_payload() -> None:
@@ -75,6 +76,48 @@ def test_router_service_rejects_invalid_json_payload() -> None:
 
     with pytest.raises(RouterError):
         asyncio.run(service.route(envelope))
+
+
+def test_router_service_normalizes_common_schema_aliases() -> None:
+    client = StubOllamaClient(
+        router_content=(
+            '{"mode":"dm","tool_calls":[{"tool":"lookup_rule","params":{"topic":"stealth"}}],'
+            '"state_intents":["exploring"],"narration_brief":"brief"}'
+        )
+    )
+    service = RouterService(client)
+    envelope = TurnEnvelope(
+        campaign_id="camp-1",
+        channel_id="chan-1",
+        user_id="user-1",
+        trace_id="trace-1",
+        content="我想潜行。",
+    )
+
+    plan = asyncio.run(service.route(envelope))
+
+    assert plan.tool_calls[0].name == "lookup_rule"
+    assert plan.tool_calls[0].arguments == {"topic": "stealth"}
+    assert plan.state_intents[0].kind == "exploring"
+
+
+def test_router_service_normalizes_string_tool_calls() -> None:
+    client = StubOllamaClient(
+        router_content='{"mode":"dm","tool_calls":["use flashlights"],"state_intents":[],"narration_brief":"brief"}'
+    )
+    service = RouterService(client)
+    envelope = TurnEnvelope(
+        campaign_id="camp-1",
+        channel_id="chan-1",
+        user_id="user-1",
+        trace_id="trace-1",
+        content="我点火把。",
+    )
+
+    plan = asyncio.run(service.route(envelope))
+
+    assert plan.tool_calls[0].name == "use flashlights"
+    assert plan.tool_calls[0].arguments == {}
 
 
 def test_turn_runner_passes_compact_context_to_narrator() -> None:
@@ -113,7 +156,11 @@ def test_turn_runner_passes_compact_context_to_narrator() -> None:
     assert "tool_calls" not in narration_request.user_prompt
 
 
-def test_model_snapshot_reports_router_and_narrator_readiness() -> None:
+def test_model_snapshot_reports_router_and_narrator_readiness(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "dm_bot.runtime.model_checks.list_ollama_models",
+        lambda settings: ["qwen3:1.7b", "collective-v0.1-chinese-roleplay-8b"],
+    )
     settings = Settings(
         router_model="qwen3:1.7b",
         narrator_model="collective-v0.1-chinese-roleplay-8b",

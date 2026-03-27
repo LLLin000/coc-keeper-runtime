@@ -4,11 +4,20 @@ from discord.ext import commands
 
 
 class DiscordDmBot(commands.Bot):
-    def __init__(self, *, handlers) -> None:
+    def __init__(self, *, handlers, settings) -> None:
         intents = discord.Intents.none()
         super().__init__(command_prefix="!", intents=intents)
         self.handlers = handlers
+        self.sync_guild_id = settings.discord_guild_id
         self._register_commands()
+
+    async def setup_hook(self) -> None:
+        if self.sync_guild_id:
+            guild = discord.Object(id=int(self.sync_guild_id))
+            self.tree.copy_global_to(guild=guild)
+            await self.tree.sync(guild=guild)
+        else:
+            await self.tree.sync()
 
     def _register_commands(self) -> None:
         @self.tree.command(name="setup", description="Check runtime setup and model availability")
@@ -50,5 +59,5 @@ class DiscordDmBot(commands.Bot):
             await self.handlers.debug_status(interaction, campaign_id=campaign_id)
 
 
-def create_discord_bot(*, handlers) -> commands.Bot:
-    return DiscordDmBot(handlers=handlers)
+def create_discord_bot(*, handlers, settings) -> commands.Bot:
+    return DiscordDmBot(handlers=handlers, settings=settings)

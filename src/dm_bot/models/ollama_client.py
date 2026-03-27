@@ -27,13 +27,16 @@ class OllamaClient:
         return await self._call_model(self.narrator_model, request)
 
     async def _call_model(self, model: str, request: ModelRequest) -> ModelResponse:
-        response = await self._client.chat.completions.create(
-            model=model,
-            messages=[
+        payload = {
+            "model": model,
+            "messages": [
                 {"role": "system", "content": request.system_prompt},
                 {"role": "user", "content": request.user_prompt},
             ],
-        )
+        }
+        if request.response_format is not None:
+            payload["response_format"] = request.response_format
+
+        response = await self._client.chat.completions.create(**payload)
         content = response.choices[0].message.content or ""
         return ModelResponse(model=model, content=content)
-

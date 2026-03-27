@@ -25,9 +25,9 @@ class TurnEnvelope(BaseModel):
 class ModelRequest(BaseModel):
     system_prompt: str
     user_prompt: str
+    response_format: dict[str, object] | None = None
 
 
 class ModelResponse(BaseModel):
     model: str
     content: str
-
