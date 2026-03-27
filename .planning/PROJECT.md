@@ -40,7 +40,7 @@ Run a real multiplayer Call of Cthulhu session in Discord where a local AI Keepe
 
 ### Active
 
-- [ ] The next milestone should deepen full COC module execution by migrating actual adventures and clue logic onto the new COC-first runtime and investigator assets.
+- [ ] The next milestone should add bot-based investigator panels, private knowledge handling, and complex-module runtime support so `覆辙`-class COC modules can run cleanly inside Discord.
 
 ### Out of Scope
 

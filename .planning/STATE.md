@@ -1,36 +1,36 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.6
-milestone_name: COC/KP 基础运行时与模组资产接入
-status: completed
-stopped_at: Completed milestone v1.6 with COC-first rules, asset discovery, and keeper-facing prompt/runtime migration
-last_updated: "2026-03-28T16:20:00.000Z"
-last_activity: 2026-03-28 - Completed milestone v1.6 execution
+milestone: v1.7
+milestone_name: 调查员面板与复杂 COC 模组运行时
+status: defining requirements
+stopped_at: Started milestone v1.7 for investigator panels and 覆辙-class complex module support
+last_updated: "2026-03-28T17:10:00.000Z"
+last_activity: 2026-03-28 - Milestone v1.7 started
 progress:
-  total_phases: 24
+  total_phases: 27
   completed_phases: 24
   total_plans: 53
   completed_plans: 50
-  percent: 100
+  percent: 89
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-27)
+See: .planning/PROJECT.md (updated 2026-03-28)
 
 **Core value:** Run a real multiplayer Call of Cthulhu session in Discord where a local AI Keeper can narrate, roleplay multiple characters, and enforce investigation-heavy rules flow without constant manual bookkeeping.
-**Current focus:** Preparing the next milestone after completing the COC/Keeper-first runtime pivot
+**Current focus:** Defining v1.7 for investigator panels, private knowledge flow, and complex COC module migration
 
 ## Current Position
 
-Phase: 24 of 24 (COC Module And Keeper Experience Migration)
-Plan: 1 of 1
-Status: Completed
-Last activity: 2026-03-28 - Completed milestone v1.6 execution
+Phase: Not started (defining requirements)
+Plan: -
+Status: Defining requirements
+Last activity: 2026-03-28 - Milestone v1.7 started
 
-Progress: [██████████] 100%
+Progress: [████████░░] 89%
 
 ## Performance Metrics
 
@@ -52,6 +52,9 @@ Progress: [██████████] 100%
 | 19 | 2 | - | - |
 | 20 | 2 | - | - |
 | 21 | 2 | - | - |
+| 22 | 1 | - | - |
+| 23 | 1 | - | - |
+| 24 | 1 | - | - |
 
 **Recent Trend:**
 
@@ -65,26 +68,10 @@ Progress: [██████████] 100%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Phase 1: Discord-first runtime remains the primary execution surface for v1.
-- Phase 2: One mature low-friction character import path is preferred over a custom sheet platform.
-- Phase 2: Deterministic rules authority and 2014 SRD-only scope are fixed v1 guardrails.
-- Phase 4: Campaign usability depends on persistence, replayability, and recovery rather than feature breadth.
-- Phase 9 target: adventure loading should become a guided ready-up and DM opening flow.
-- Phase 10 target: placeholder rolls should be replaced with a mature dice engine, not a custom parser.
-- Phase 11 target: Discord should show progress during long DM turns and ordinary message handling should be more transparent.
-- Phase 12 target: Ollama narrator output should stream live into Discord through chunked edits with safe fallback.
-- Phase 13 delivered structured runtime judgements for direct scene interactions, including automatic outcomes, clarification prompts, and explicit roll-needed prompts.
-- Phase 14 delivered reusable light/rescue hint tiers and stall recovery driven by module metadata rather than freeform narrator guesswork.
-- Phase 15 delivered stronger scene entry framing, pressure presentation, and return-to-choice pacing for `疯狂之馆`, with reusable hooks for later modules.
-- Phase 16 target: adventure runtime should become location-first through room graphs, local interactables, and explicit adjacency.
-- Phase 17 target: source scripts should be AI-extracted into room graphs, trigger trees, and reveal-safe runtime drafts.
-- Phase 18 target: `疯狂之馆` should migrate into the new room-graph format and improve live navigation and consequence flow.
-- Phase 16 delivered location-aware runtime state, adjacency, and room-graph schema support.
-- Phase 17 delivered reviewable AI extraction drafts for room graphs and trigger summaries.
-- Phase 18 delivered the first location-first migration of `疯狂之馆`, including natural portal observation and room returns.
-- Phase 19 delivered a generic chain-capable trigger schema with mostly declarative nodes and limited hook escape hatches.
-- Phase 20 delivered runtime trigger execution so actions and rolls now cause auditable consequence chains.
-- Phase 21 migrated `疯狂之馆` key progress beats onto the generic trigger engine and verified reusable consequence flow.
+- The runtime has already pivoted to COC/Keeper-first semantics and should stay anchored to the local COC rulebooks.
+- New complex-module mechanics must be represented either as canonical COC rules or explicit module-specific rules, not hidden prompt invention.
+- `覆辙` is the first target complex COC module because it exercises multiple entry tracks, asymmetrical truths, and longer-form scenario state.
+- The next milestone should add persistent investigator panels and private knowledge flow before attempting broader complex-module migration.
 
 ### Pending Todos
 
@@ -92,25 +79,17 @@ None yet.
 
 ### Roadmap Evolution
 
-- Roadmap now includes completed Phases 22-24 for milestone v1.6.
+- Roadmap now extends through Phases 25-27 for milestone v1.7.
 
 ### Blockers/Concerns
 
-- Character import source must stay low-friction and mature; do not expand into a sheet platform.
-- Rules and narration boundaries must stay strict so models never become the source of truth for state mutations.
-- Dice parsing should be integrated from a mature external library to reduce debugging cost.
-- Streaming transport must not become the source of truth for canonical state.
-- Discord message edit frequency must stay rate-safe when true streaming is added.
-- Presentation polish should stay grounded in structured module logic rather than freeform narrator improvisation as new modules are added.
-- AI-first extraction must stay reviewable; the system should not silently turn source scripts into opaque runtime blobs.
-- Location graphs should preserve the original script topology and not flatten everything into unordered node soup.
-- Trigger execution must stay reusable across future adventures and cannot collapse into `疯狂之馆`-specific imperative code.
-- The COC pivot reused the current Discord, room-graph, persistence, trigger, and streaming foundations instead of starting over.
 - Dynamic-form investigator PDFs may need a non-text-extraction intake path.
 - Community COC sites are useful ecosystem references, but canonical runtime truth should stay local and reviewable.
+- New complex-module mechanics must stay anchored to the supplied COC rulebooks or explicit scenario rules instead of silent prompt invention.
+- Complex modules like `覆辙` will require richer private knowledge and mixed graph support than `疯狂之馆`.
 
 ## Session Continuity
 
-Last session: 2026-03-28T16:20:00.000Z
-Stopped at: Completed milestone v1.6 with COC-first rules, asset discovery, and keeper-facing prompt/runtime migration
+Last session: 2026-03-28T17:10:00.000Z
+Stopped at: Started milestone v1.7 for investigator panels and 覆辙-class complex module support
 Resume file: .planning/PROJECT.md

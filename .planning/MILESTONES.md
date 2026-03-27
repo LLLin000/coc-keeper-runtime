@@ -1,5 +1,13 @@
 # Milestones
 
+## v1.7 调查员面板与复杂 COC 模组运行时 (In Progress)
+
+**Goal:**
+
+- Add per-player investigator panels, private knowledge handling, and reusable runtime support for more complex COC modules such as `覆辙`, while keeping all new mechanics grounded in local COC rulebooks or explicit module rules.
+
+---
+
 ## v1.6 COC/KP 基础运行时与模组资产接入 (Shipped: 2026-03-28)
 
 **Phases completed:** 3 phases total

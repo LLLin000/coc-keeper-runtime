@@ -3,33 +3,32 @@
 **Defined:** 2026-03-28
 **Core Value:** Run a real multiplayer Call of Cthulhu session in Discord where a local AI Keeper can narrate, roleplay multiple characters, and enforce investigation-heavy rules flow without constant manual bookkeeping.
 
-## v1.6 Requirements
+## v1.7 Requirements
 
-### COC Runtime Foundations
+### Investigator Panels
 
-- [x] **COC-01**: The rules runtime should model core COC 7th investigation checks, including regular/hard/extreme success tiers and failure without relying on freeform narrator interpretation.
-- [x] **COC-02**: The runtime should support bonus dice, penalty dice, pushed rolls, opposed rolls, and combined rolls in ways that can feed deterministic consequences.
-- [x] **COC-03**: SAN, temporary pressure, and key COC investigator state should become first-class structured runtime concepts instead of ad hoc narrative text.
-- [x] **COC-04**: Keeper-facing resolution should support “what happens on success/failure/push failure” patterns common to COC modules.
+- [ ] **PANEL-01**: Each player should have a persistent investigator panel that surfaces canonical COC investigator data and scenario-linked mutable state.
+- [ ] **PANEL-02**: Investigator panels should support both standard investigators and structured alternate templates such as `覆辙`'s investigation and magical-girl tracks.
+- [ ] **PANEL-03**: Scenario outcomes such as SAN changes, injuries, resource shifts, and explicit module-specific effects should write back into the investigator panel.
+- [ ] **PANEL-04**: Investigator panel fields should map back to local COC rules or explicit module metadata rather than freeform prompt invention.
 
-### COC Asset And Character Intake
+### Private Knowledge And Complex Module Graphs
 
-- [x] **ASSET-01**: Local COC rulebooks should be ingested into a reviewable knowledge layer so prompts and extraction flows can reference stable structured rule concepts.
-- [x] **ASSET-02**: Pregenerated investigators and blank investigator templates should have a viable intake path even when source PDFs are dynamic forms or otherwise hard to text-extract.
-- [x] **ASSET-03**: The system should support a canonical COC investigator data model aligned with local assets rather than D&D sheet assumptions.
-- [x] **ASSET-04**: Curated ecosystem references such as COC community sites should enrich metadata and context, but the runtime must preserve local-first, reviewable truth.
+- [ ] **GRAPH-01**: The runtime should support mixed room/scene/event graphs so more complex COC modules are not forced into a room-only shape.
+- [ ] **GRAPH-02**: The runtime should support private and group-scoped clues, truths, and tasking so different players can know different things.
+- [ ] **GRAPH-03**: Multiple entry tracks and role-specific onboarding should be expressible structurally rather than hard-coded into one adventure.
+- [ ] **GRAPH-04**: All added graph and knowledge features should stay reusable across future COC modules, not only `覆辙`.
 
-### COC Module And Keeper Experience
+### COC Rule Discipline
 
-- [x] **KP-01**: Module extraction and runtime prompts should shift from D&D/DM framing to COC/Keeper framing, especially around investigation, clue gating, terror escalation, and hidden truth.
-- [x] **KP-02**: The room graph and trigger engine should remain reusable for future COC modules rather than overfitting to a single adventure.
-- [x] **KP-03**: Player-facing guidance should feel like a Keeper orienting investigators toward leads and risks without collapsing into scripted walkthroughs.
-- [x] **KP-04**: Operator-facing diagnostics should surface COC-relevant state such as SAN pressure, clue status, pending push consequences, and location-based danger.
+- [ ] **RULE-01**: New runtime mechanics should be grounded in the supplied local COC 7th rulebooks wherever the base system covers them.
+- [ ] **RULE-02**: When a module introduces special behavior not covered by base COC rules, that behavior should be recorded as explicit module-specific rules rather than implied prompt behavior.
+- [ ] **RULE-03**: Diagnostics and operator surfaces should distinguish canonical COC rules from module-specific overrides.
 
-### Migration And Compatibility
+### 覆辙 Migration
 
-- [x] **MIG-01**: Existing Discord, room-graph, trigger, and streaming infrastructure should remain intact while COC-first semantics are introduced on top.
-- [x] **MIG-02**: The system should provide a migration path away from D&D-specific concepts in prompts, schemas, and runtime assumptions without breaking current module tooling.
+- [ ] **FUZHE-01**: `覆辙` should be migrated as the first complex-module sample, including its dual entry tracks, asymmetrical truths, and scenario-specific long-state consequences.
+- [ ] **FUZHE-02**: The migration should reveal any missing runtime primitives needed for future complex COC modules and fold them back into reusable abstractions.
 
 ## v2 Requirements
 
@@ -44,35 +43,34 @@
 
 | Feature | Reason |
 |---------|--------|
-| Keeping D&D-first terminology and sheet assumptions as the project center | This milestone explicitly pivots the product toward COC/Keeper-first play. |
-| Treating community web references as canonical runtime truth | Local rulebooks and reviewable structured assets should stay authoritative. |
-| Rebuilding the whole bot from scratch for COC | The Discord, room graph, trigger, persistence, and streaming foundations should be reused. |
-| Solving every future COC module in this milestone | This round establishes the reusable COC base, not total content parity. |
+| Inventing unsupported rules because a module feels dramatic | New logic must map to canonical COC rules or explicit module-specific rules. |
+| Treating `覆辙` as a one-off special case with bespoke runtime hacks | This milestone is explicitly about reusable support for more complex COC modules. |
+| Replacing the current room-graph/trigger foundations wholesale | The milestone should extend the runtime, not discard the foundation that already works. |
+| Full visual parity with the public character generator in one round | The first goal is persistent player panels and runtime linkage, not a pixel-perfect website clone. |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| COC-01 | Phase 22 | Complete |
-| COC-02 | Phase 22 | Complete |
-| COC-03 | Phase 22 | Complete |
-| COC-04 | Phase 22 | Complete |
-| ASSET-01 | Phase 23 | Complete |
-| ASSET-02 | Phase 23 | Complete |
-| ASSET-03 | Phase 23 | Complete |
-| ASSET-04 | Phase 23 | Complete |
-| KP-01 | Phase 24 | Complete |
-| KP-02 | Phase 24 | Complete |
-| KP-03 | Phase 24 | Complete |
-| KP-04 | Phase 24 | Complete |
-| MIG-01 | Phase 24 | Complete |
-| MIG-02 | Phase 24 | Complete |
+| PANEL-01 | Phase 25 | Planned |
+| PANEL-02 | Phase 25 | Planned |
+| PANEL-03 | Phase 25 | Planned |
+| PANEL-04 | Phase 25 | Planned |
+| GRAPH-01 | Phase 26 | Planned |
+| GRAPH-02 | Phase 26 | Planned |
+| GRAPH-03 | Phase 26 | Planned |
+| GRAPH-04 | Phase 26 | Planned |
+| RULE-01 | Phase 26 | Planned |
+| RULE-02 | Phase 26 | Planned |
+| RULE-03 | Phase 26 | Planned |
+| FUZHE-01 | Phase 27 | Planned |
+| FUZHE-02 | Phase 27 | Planned |
 
 **Coverage:**
-- v1.6 requirements: 14 total
-- Completed: 14
+- v1.7 requirements: 13 total
+- Completed: 0
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-28*
-*Last updated: 2026-03-28 after milestone v1.6 execution*
+*Last updated: 2026-03-28 after milestone v1.7 kickoff*
