@@ -76,7 +76,7 @@ Plans:
   4. If streaming fails mid-response, the bot falls back cleanly to a finalized non-streamed reply without losing the turn.
 **Plans**: 1 plan
 Plans:
-- [ ] 12-01-PLAN.md - Add Ollama stream consumption, Discord chunked-edit transport, and graceful streaming fallback.
+- [x] 12-01-PLAN.md - Add Ollama stream consumption, Discord chunked-edit transport, and graceful streaming fallback.
 
 ## Progress
 
@@ -96,4 +96,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 9. Adventure Onboarding And Auto-Opening | 2/2 | Completed | 2026-03-27 |
 | 10. Mature Dice Engine And Deterministic Roll Resolution | 2/2 | Completed | 2026-03-27 |
 | 11. Streaming Responses And Message Reliability | 2/2 | Completed | 2026-03-27 |
-| 12. True Streaming Discord Output | 0/1 | Planned | - |
+| 12. True Streaming Discord Output | 1/1 | Completed | 2026-03-27 |

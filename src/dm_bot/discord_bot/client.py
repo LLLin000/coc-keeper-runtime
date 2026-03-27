@@ -152,15 +152,7 @@ class DiscordDmBot(commands.Bot):
         if message.author.bot or not message.content or message.guild is None:
             return
         async with message.channel.typing():
-            reply = await self.handlers.handle_channel_message(
-                channel_id=str(message.channel.id),
-                guild_id=str(message.guild.id),
-                user_id=str(message.author.id),
-                content=message.content,
-                mention_count=len(message.mentions),
-            )
-        if reply:
-            await message.channel.send(reply)
+            await self.handlers.handle_channel_message_stream(message=message)
 
 
 def create_discord_bot(*, handlers, settings) -> commands.Bot:

@@ -1,6 +1,8 @@
 import json
+from collections.abc import Awaitable, Callable
 
 from dm_bot.config import Settings, get_settings
+from dm_bot.discord_bot.streaming import StreamingMessageTransport
 from dm_bot.orchestrator.message_filters import MessageDisposition, classify_message
 from dm_bot.runtime.health import build_health_snapshot
 
@@ -84,14 +86,15 @@ class BotCommands:
         if onboarding_block:
             await interaction.followup.send(onboarding_block, ephemeral=True)
             return
-        result = await self._dispatch_turn(
+        await self._stream_turn_to_transport(
             campaign_id=session.campaign_id,
             channel_id=str(interaction.channel_id),
             user_id=str(interaction.user.id),
             content=content,
+            send_initial=lambda initial: interaction.followup.send(initial, wait=True),
+            edit_message=lambda message, updated: message.edit(content=updated),
         )
         self._save_campaign_state(session.campaign_id)
-        await interaction.followup.send(result.reply)
 
     async def import_character(self, interaction, *, provider: str, external_id: str) -> None:
         if self._gameplay is None:
@@ -346,12 +349,79 @@ class BotCommands:
         self._save_campaign_state(session.campaign_id)
         return result.reply
 
+    async def handle_channel_message_stream(
+        self,
+        *,
+        message,
+    ) -> None:
+        channel_id = str(message.channel.id)
+        guild_id = str(message.guild.id)
+        user_id = str(message.author.id)
+        content = message.content
+        mention_count = len(message.mentions)
+        if self._session_store is None or self._turn_coordinator is None:
+            return
+        session = self._session_store.get_by_channel(channel_id)
+        if session is None or session.guild_id != guild_id or user_id not in session.member_ids:
+            return
+
+        disposition = classify_message(content, mention_count=mention_count)
+        if disposition != MessageDisposition.PROCESS:
+            return
+
+        self._load_campaign_state(session.campaign_id)
+        onboarding_block = self._gameplay.onboarding_block_message() if self._gameplay is not None else None
+        if onboarding_block:
+            await message.channel.send(onboarding_block)
+            return
+
+        inline_roll = self._try_inline_roll(channel_id=channel_id, user_id=user_id, content=content)
+        if inline_roll is not None:
+            self._save_campaign_state(session.campaign_id)
+            await message.channel.send(inline_roll)
+            return
+
+        blocked = self._combat_gate_message(channel_id=channel_id, user_id=user_id)
+        if blocked:
+            await message.channel.send(blocked)
+            return
+
+        await self._stream_turn_to_transport(
+            campaign_id=session.campaign_id,
+            channel_id=channel_id,
+            user_id=user_id,
+            content=content,
+            send_initial=lambda initial: message.channel.send(initial),
+            edit_message=lambda sent_message, updated: sent_message.edit(content=updated),
+        )
+        self._save_campaign_state(session.campaign_id)
+
     async def _dispatch_turn(self, *, campaign_id: str, channel_id: str, user_id: str, content: str):
         return await self._turn_coordinator.handle_turn(
             campaign_id=campaign_id,
             channel_id=channel_id,
             user_id=user_id,
             content=content,
+        )
+
+    async def _stream_turn_to_transport(
+        self,
+        *,
+        campaign_id: str,
+        channel_id: str,
+        user_id: str,
+        content: str,
+        send_initial: Callable[[str], Awaitable[object]],
+        edit_message: Callable[[object, str], Awaitable[None]],
+    ) -> str:
+        transport = StreamingMessageTransport(send_initial=send_initial, edit_message=edit_message)
+        return await transport.stream(
+            self._turn_coordinator.stream_turn(
+                campaign_id=campaign_id,
+                channel_id=channel_id,
+                user_id=user_id,
+                content=content,
+            )
         )
 
     def _combat_gate_message(self, *, channel_id: str, user_id: str) -> str | None:

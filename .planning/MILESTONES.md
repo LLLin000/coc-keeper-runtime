@@ -9,6 +9,7 @@
 - Added a reusable packaged-adventure ready-up flow so `mad_mansion` can start with explicit table readiness and an automatic DM opening.
 - Replaced placeholder dice behavior with a mature `d20`-backed rules layer and exposed checks, saves, attacks, damage, and raw expressions in Discord.
 - Improved Discord usability through clearer blocked-input feedback, inline dice shortcuts, and more visible processing during ordinary message play.
+- Added true narrator-phase streaming to Discord using rate-safe chunked message edits with fallback to finalized replies.
 
 ---
 

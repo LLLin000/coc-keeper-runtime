@@ -21,17 +21,37 @@ class FakeResponse:
 class FakeFollowup:
     def __init__(self) -> None:
         self.messages: list[str] = []
+        self.sent_messages: list[FakeSentMessage] = []
 
     async def send(self, content: str, **kwargs) -> None:
         self.messages.append(content)
+        sent = FakeSentMessage(content)
+        self.sent_messages.append(sent)
+        if kwargs.get("wait"):
+            return sent
+        return None
+
+
+class FakeSentMessage:
+    def __init__(self, content: str) -> None:
+        self.content = content
+        self.edits: list[str] = []
+
+    async def edit(self, *, content: str) -> None:
+        self.content = content
+        self.edits.append(content)
 
 
 class FakeChannel:
     def __init__(self) -> None:
         self.messages: list[str] = []
+        self.sent_messages: list[FakeSentMessage] = []
 
     async def send(self, content: str) -> None:
         self.messages.append(content)
+        sent = FakeSentMessage(content)
+        self.sent_messages.append(sent)
+        return sent
 
 
 class FakeInteraction:
@@ -51,6 +71,11 @@ class StubTurnService:
     async def handle_turn(self, *, campaign_id: str, channel_id: str, user_id: str, content: str):
         self.calls.append((campaign_id, channel_id, user_id, content))
         return type("TurnResult", (), {"reply": "地牢里传来低语。", "trace_id": "trace-1"})()
+
+    async def stream_turn(self, *, campaign_id: str, channel_id: str, user_id: str, content: str):
+        self.calls.append((campaign_id, channel_id, user_id, content))
+        yield "地牢里"
+        yield "地牢里传来低语。"
 
 
 def test_setup_command_reports_models() -> None:
@@ -99,7 +124,8 @@ def test_turn_command_defers_and_sends_followup_reply() -> None:
     asyncio.run(commands.take_turn(interaction, content="我推开门。"))
 
     assert interaction.response.deferred is True
-    assert interaction.followup.messages == ["地牢里传来低语。"]
+    assert interaction.followup.messages == ["DM 正在回应…"]
+    assert interaction.followup.sent_messages[0].edits[-1] == "地牢里传来低语。"
     assert turn_service.calls == [("camp-1", "chan-1", "user-1", "我推开门。")]
 
 
@@ -176,3 +202,41 @@ def test_ready_command_posts_opening_when_all_members_are_ready() -> None:
 
     assert any("疯狂之馆" in message for message in first.channel.messages)
     assert commands._gameplay.adventure_state["onboarding"]["status"] == "in_progress"
+
+
+def test_streaming_channel_message_edits_single_message() -> None:
+    from dm_bot.orchestrator.gameplay import CharacterRegistry, GameplayOrchestrator
+    from dm_bot.rules.compendium import FixtureCompendium
+    from dm_bot.rules.engine import RulesEngine
+
+    store = SessionStore()
+    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    gameplay = GameplayOrchestrator(
+        importer=None,
+        registry=CharacterRegistry(),
+        rules_engine=RulesEngine(compendium=FixtureCompendium(baseline="2014", fixtures={})),
+    )
+    coordinator = StubTurnService()
+    commands = BotCommands(
+        settings=Settings(),
+        session_store=store,
+        turn_coordinator=coordinator,
+        gameplay=gameplay,
+    )
+    message = type(
+        "Message",
+        (),
+        {
+            "channel": FakeChannel(),
+            "guild": type("Guild", (), {"id": "guild-1"})(),
+            "author": type("Author", (), {"id": "user-1", "bot": False})(),
+            "content": "我推开门。",
+            "mentions": [],
+        },
+    )()
+    message.channel.id = "chan-1"
+
+    asyncio.run(commands.handle_channel_message_stream(message=message))
+
+    assert message.channel.messages[0] == "DM 正在回应…"
+    assert message.channel.sent_messages[0].edits[-1] == "地牢里传来低语。"

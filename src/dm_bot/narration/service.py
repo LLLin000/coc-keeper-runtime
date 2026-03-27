@@ -1,4 +1,5 @@
 import json
+from collections.abc import AsyncIterator
 
 from pydantic import BaseModel, Field
 
@@ -18,6 +19,17 @@ class NarrationService:
         self._client = client
 
     async def narrate(self, request: NarrationRequest) -> str:
+        prompt = self._build_model_request(request)
+        response = await self._client.call_narrator(prompt)
+        return response.content.strip()
+
+    async def stream_narrate(self, request: NarrationRequest) -> AsyncIterator[str]:
+        prompt = self._build_model_request(request)
+        async for chunk in self._client.stream_narrator(prompt):
+            if chunk:
+                yield chunk
+
+    def _build_model_request(self, request: NarrationRequest) -> ModelRequest:
         prompt = ModelRequest(
             system_prompt=(
                 "You are the Chinese D&D DM. Produce final Discord-ready prose only. "
@@ -27,8 +39,7 @@ class NarrationService:
             ),
             user_prompt=self._build_prompt(request),
         )
-        response = await self._client.call_narrator(prompt)
-        return response.content.strip()
+        return prompt
 
     def _build_prompt(self, request: NarrationRequest) -> str:
         compact_context = {
