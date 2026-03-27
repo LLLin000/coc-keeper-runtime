@@ -28,7 +28,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Players can create or join a campaign session tied to a Discord channel or thread, and multiple players can participate in the same session without overlapping turn handling.
   3. Discord interactions are acknowledged quickly and longer model or tool work completes through follow-up responses instead of timing out.
   4. On hardware in the class of 8GB VRAM and 32GB RAM, routing uses the small router for structured mode and tool decisions while the narrator separately produces final prose.
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 01-01-PLAN.md - Bootstrap the Python runtime shell, typed config, and setup or health workflow.
+- [ ] 01-02-PLAN.md - Implement Discord session binding, deferred interactions, and campaign-scoped turn serialization.
+- [ ] 01-03-PLAN.md - Implement dual-model router and narrator orchestration with model health checks.
 
 ### Phase 2: Character Import & Rules Authority
 **Goal**: The system has one mature character onboarding path and an authoritative deterministic rules layer grounded in the 2014 SRD.
@@ -70,7 +74,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Discord Runtime & Dual-Model Control | 0/TBD | Not started | - |
+| 1. Discord Runtime & Dual-Model Control | 0/3 | Planned | - |
 | 2. Character Import & Rules Authority | 0/TBD | Not started | - |
 | 3. Gameplay Loop & Combat Play | 0/TBD | Not started | - |
 | 4. Persistence, Recovery & Diagnostics | 0/TBD | Not started | - |
