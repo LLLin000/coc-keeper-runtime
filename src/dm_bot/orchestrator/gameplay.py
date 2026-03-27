@@ -68,9 +68,32 @@ class GameplayOrchestrator:
         self.adventure = adventure
         self.adventure_state = {
             "adventure_slug": adventure.slug,
-            "scene_id": adventure.scenes[0].id if adventure.scenes else None,
+            "scene_id": adventure.start_scene_id,
             "clues_found": [],
             "objectives": list(adventure.objectives),
+            "module_state": adventure.state_defaults(),
+            "ending_id": None,
+        }
+
+    def adventure_snapshot(self) -> dict[str, object]:
+        if self.adventure is None:
+            return {}
+        scene_id = str(self.adventure_state.get("scene_id", self.adventure.start_scene_id))
+        scene = self.adventure.scene_by_id(scene_id)
+        module_state = dict(self.adventure_state.get("module_state", {}))
+        return {
+            "public": {
+                "slug": self.adventure.slug,
+                "title": self.adventure.title,
+                "current_scene": scene.model_dump(),
+                "objectives": list(self.adventure_state.get("objectives", [])),
+                "state": self.adventure.public_state(module_state),
+            },
+            "gm": {
+                "premise": self.adventure.premise,
+                "state": self.adventure.gm_state(module_state),
+                "endings": [ending.model_dump() for ending in self.adventure.endings],
+            },
         }
 
     def export_state(self) -> dict[str, object]:
@@ -93,6 +116,11 @@ class GameplayOrchestrator:
             registry[user_id] = CharacterRecord.model_validate(payload)
         self.registry._characters = registry
         self.adventure_state = dict(state.get("adventure_state", {}))
+        slug = self.adventure_state.get("adventure_slug")
+        if slug:
+            from dm_bot.adventures.loader import load_adventure
+
+            self.adventure = load_adventure(str(slug))
 
     def resolve_plan(self, plan: TurnPlan) -> list[dict[str, object]]:
         results: list[dict[str, object]] = []

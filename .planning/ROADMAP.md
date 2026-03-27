@@ -105,6 +105,9 @@ Plans:
   2. The runtime stores module state separately from Discord history and can answer what room, clues, triggers, timers, and hidden flags are currently active.
   3. Narration can consume omniscient module data without leaking hidden information that is still gated by the package's reveal policy.
   4. Invalid or incomplete package data fails closed with actionable diagnostics instead of silently degrading into freeform DM improvisation.
+**Plans**: 1 plan
+Plans:
+- [x] 06-01-PLAN.md - Formalize adventure schema, loader validation, and canonical module state runtime.
 
 ### Phase 7: 疯狂之馆 Formal Module
 **Goal**: Encode `疯狂之馆` as the first full-length structured module with its room logic, hidden-status mechanics, and branching endings.
@@ -138,6 +141,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 3. Gameplay Loop & Combat Play | 3/3 | Completed | 2026-03-27 |
 | 4. Persistence, Recovery & Diagnostics | 2/2 | Completed | 2026-03-27 |
 | 5. Multiplayer usability, natural message intake, and starter adventure | 2/2 | Completed | 2026-03-27 |
-| 6. Structured Module Runtime | 0/0 | Planned | — |
+| 6. Structured Module Runtime | 1/1 | Completed | 2026-03-27 |
 | 7. 疯狂之馆 Formal Module | 0/0 | Planned | — |
 | 8. Module UX, Session Continuity, and Operator Guidance | 0/0 | Planned | — |
