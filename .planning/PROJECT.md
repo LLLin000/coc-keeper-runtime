@@ -28,9 +28,9 @@ Run a real multiplayer D&D session in Discord where a local AI DM can narrate, r
 
 ### Active
 
-- [ ] The module system supports a second formal adventure package without adding one-off runtime code for that script.
-- [ ] The operator can selectively reveal secret or private information to subsets of players instead of only table-wide narration.
-- [ ] The DM runtime can surface richer structured progression controls for module-specific triggers, puzzle states, and branching overrides.
+- [ ] `疯狂之馆` should decide more like a real Keeper when an action needs a roll, when it succeeds automatically, and when the table needs clarification instead of generic narration.
+- [ ] The module should provide stronger clue timing, hint timing, and stall recovery so players are guided without being railroaded or spoiled.
+- [ ] Scene presentation should feel more like a real human Keeper running a scenario, with better framing, consequence delivery, and return-to-choice rhythm.
 
 ### Out of Scope
 
@@ -43,7 +43,7 @@ Run a real multiplayer D&D session in Discord where a local AI DM can narrate, r
 
 ## Current State
 
-`v1.2` shipped the startup, dice, and streaming usability milestone. The runtime now supports ready-gated packaged-adventure onboarding, automatic opening narration for `疯狂之馆`, mature `d20`-backed dice resolution for common roll families, and true narrator-phase Discord streaming through chunked message edits with fallback if streaming fails.
+`v1.2` shipped the startup, dice, and streaming usability milestone. The runtime now supports ready-gated packaged-adventure onboarding, automatic opening narration for `疯狂之馆`, mature `d20`-backed dice resolution for common roll families, and true narrator-phase Discord streaming through chunked message edits with fallback if streaming fails. The next milestone is about presentation and judgement quality: making the bot feel more like a real Keeper/DM instead of merely a technically correct runtime.
 
 ## Context
 
@@ -56,7 +56,7 @@ This model split is chosen for local hardware fit and reliability on a machine i
 
 The project should preferentially reuse mature external components instead of inventing custom equivalents. Current candidate references include `DND5E-MCP` as an AI-facing rules/lookup skill, `5e-srd-api` as a stable SRD-backed rules data source, and `Avrae` as a reference implementation for interaction patterns and D&D automation design rather than as the core embedded runtime. For dice resolution, the next milestone should adopt a mature parser and roller such as the Python `d20` ecosystem already used by established Discord D&D tooling instead of expanding the placeholder local roller.
 
-The first release proved the core Discord gameplay loop end-to-end: player input, orchestration, rule/tool invocation, state updates, and narrated DM output. The second milestone turned that into a formal module runtime. The next milestone shifts focus to session usability gaps that are now obvious in live play: adventure startup should guide the table, roll resolution should be real, and long DM replies should feel responsive in Discord.
+The first release proved the core Discord gameplay loop end-to-end: player input, orchestration, rule/tool invocation, state updates, and narrated DM output. The second milestone turned that into a formal module runtime and then closed the startup, dice, and streaming gaps. The next milestone shifts from infrastructure quality to live-play craft: judgement about when to call for rolls, deliberate clue timing, stronger scene framing, and recovery when players stall or misread the situation.
 
 ## Constraints
 
@@ -82,6 +82,7 @@ The first release proved the core Discord gameplay loop end-to-end: player input
 | Formal adventures must be structured data, not raw uploaded prose | Hidden-state modules need deterministic triggers, reveal control, and reusable runtime hooks | ✓ Good |
 | `疯狂之馆` is the first official module target | It is rich enough to force a real schema while still being a bounded first module | ✓ Good |
 | New runtime subsystems should reuse mature prior art where possible | This reduces debugging cost and keeps the bot aligned with proven Discord D&D workflows | `d20`-style dice integration prioritized for v1.2 |
+| Live-play feel now matters more than new runtime primitives | The next milestone should polish judgement, hinting, and scene presentation before expanding breadth | `疯狂之馆` experience polish prioritized for v1.3 |
 
 ## Evolution
 
@@ -101,4 +102,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 after v1.2 milestone*
+*Last updated: 2026-03-27 for milestone v1.3 planning*

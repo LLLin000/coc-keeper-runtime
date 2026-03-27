@@ -3,28 +3,28 @@
 **Defined:** 2026-03-27
 **Core Value:** Run a real multiplayer D&D session in Discord where a local AI DM can narrate, roleplay multiple characters, and enforce heavy rules flow without constant manual bookkeeping.
 
-## v1.2 Requirements
+## v1.3 Requirements
 
-### Adventure Onboarding
+### Judgement And Roll Triggers
 
-- [ ] **ONBOARD-01**: Loading a formal adventure package can place the campaign into an explicit pre-session onboarding state instead of only mutating hidden runtime state.
-- [ ] **ONBOARD-02**: After an operator loads `mad_mansion`, the bot can guide the table through role readiness or character selection, then automatically deliver a DM opening scene without requiring a manual `/turn`.
-- [ ] **ONBOARD-03**: The onboarding flow exposes clear readiness, selected characters, and next-step guidance so a small group can start a session from Discord without consulting source files.
-- [ ] **ONBOARD-04**: The opening flow remains reusable for later modules, so future adventures can declare their own intro scene and onboarding requirements without one-off command code.
+- [ ] **JUDGE-01**: The runtime can determine when a player action in `疯狂之馆` should trigger a formal roll, when it should succeed automatically, and when it should be blocked or clarified, instead of leaving that decision mostly to narration.
+- [ ] **JUDGE-02**: When a roll is required, the bot can tell the table what kind of check or save is needed, who should roll, and why, using concise table-facing language.
+- [ ] **JUDGE-03**: Success, failure, and partial-information outcomes are reflected in structured state and downstream narration rather than being flattened into generic scene prose.
+- [ ] **JUDGE-04**: Mature patterns and existing conventions from real tabletop tooling are preferred over custom homegrown judgement rules unless the module specifically requires bespoke logic.
 
-### Mature Dice And Action Resolution
+### Hinting, Clueing, And Reveal Timing
 
-- [ ] **DICE-01**: Dice expression parsing and rolling reuse a mature existing implementation instead of a custom handwritten parser; the preferred baseline is the `d20` engine used in the Python ecosystem and referenced by Avrae's public code/docs.
-- [ ] **DICE-02**: The runtime can resolve standard D&D roll families including ability checks, saving throws, attack rolls, damage rolls, and advantage or disadvantage from structured actions and command paths.
-- [ ] **DICE-03**: Dice results are surfaced with enough structure to drive canonical state updates, combat outcomes, and narrated summaries without the narrator inventing roll outcomes.
-- [ ] **DICE-04**: Malformed or unsupported dice expressions fail closed with actionable feedback rather than silently producing placeholder values.
+- [ ] **HINT-01**: `疯狂之馆` can surface context-sensitive hints when the group stalls, loops, or misses required next steps, without leaking protected hidden information too early.
+- [ ] **HINT-02**: The bot can separate ambient description, discoverable clue prompts, and explicit actionable guidance so players are not forced to guess what is interactable.
+- [ ] **HINT-03**: Important module beats such as the countdown, the function of the four halls, sacrifice costs, and the blood-exit condition are introduced at deliberate times instead of by accidental prompt drift.
+- [ ] **HINT-04**: Reveal timing remains module-safe: table-facing hints never bypass canonical hidden-state gates or spoil late-stage truths prematurely.
 
-### Discord Response And Input Reliability
+### Keeper-Style Scene Presentation
 
-- [ ] **RESP-01**: Long-running DM responses can surface progress incrementally in Discord through a streaming or progressive-response path instead of only replying after full narration completes.
-- [ ] **RESP-02**: When streaming is unavailable, the bot still acknowledges quickly and emits clear progress or fallback updates so users do not see silent timeouts.
-- [ ] **RESP-03**: Ordinary bound-channel messages from joined players are routed reliably into the gameplay loop after restarts and during packaged-adventure play, without requiring `/turn` as the primary path.
-- [ ] **RESP-04**: Operators can distinguish between ignored chatter, blocked gameplay input, pending model work, and successful DM processing from compact Discord feedback.
+- [ ] **PRESENT-01**: The opening hall, each branch hall, and each major branch-specific interaction in `疯狂之馆` have stronger DM framing that feels closer to a real Keeper/DM introduction than a generic AI paragraph.
+- [ ] **PRESENT-02**: The runtime can present clearer transitions between free exploration, explicit roll prompts, consequences, and return-to-choice moments so the session rhythm feels intentional.
+- [ ] **PRESENT-03**: Scene output can call attention to salient props, risks, NPC posture, and available interaction vectors without turning into a menu dump.
+- [ ] **PRESENT-04**: The table can recover from failed exploration or wrong assumptions because the bot knows when to restate pressure, recap discovered truths, or redirect attention.
 
 ## v2 Requirements
 
@@ -39,35 +39,34 @@
 
 | Feature | Reason |
 |---------|--------|
-| Reimplementing mature infrastructure libraries inside the repo by default | The milestone should prefer stable existing libraries and only add thin integration or targeted optimization code. |
-| Writing a bespoke dice parser from scratch | Mature existing parsers already exist and reduce risk. |
-| Treating streaming text as the source of truth for game state | Canonical state must remain deterministic and separate from response transport. |
-| Replacing structured onboarding with a freeform DM prompt blob | Adventure startup needs explicit reusable state transitions. |
-| A full VTT-style visual combat board in this milestone | The priority is reliable Discord play, not a map UI. |
-| Expanding beyond Discord during this round | Discord remains the sole runtime surface for the active milestone. |
+| Rewriting the whole runtime around a new game system | This milestone is about polishing the existing `疯狂之馆` experience. |
+| Adding a second formal module before `疯狂之馆` presentation is strong enough | The current priority is depth and quality, not breadth. |
+| Making the narrator the source of truth for whether rolls or clues should happen | Canonical judgement must stay in structured runtime logic. |
+| Building a full visual GM dashboard in this round | Better in-session guidance matters more than a new UI surface. |
+| Replacing mature external libraries with custom equivalents | The milestone should keep reusing stable prior art and only add thin module-specific logic. |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ONBOARD-01 | Phase 9 | Complete |
-| ONBOARD-02 | Phase 9 | Complete |
-| ONBOARD-03 | Phase 9 | Complete |
-| ONBOARD-04 | Phase 9 | Complete |
-| DICE-01 | Phase 10 | Complete |
-| DICE-02 | Phase 10 | Complete |
-| DICE-03 | Phase 10 | Complete |
-| DICE-04 | Phase 10 | Complete |
-| RESP-01 | Phase 11 | Complete |
-| RESP-02 | Phase 11 | Complete |
-| RESP-03 | Phase 11 | Complete |
-| RESP-04 | Phase 11 | Complete |
+| JUDGE-01 | Phase 13 | Planned |
+| JUDGE-02 | Phase 13 | Planned |
+| JUDGE-03 | Phase 13 | Planned |
+| JUDGE-04 | Phase 13 | Planned |
+| HINT-01 | Phase 14 | Planned |
+| HINT-02 | Phase 14 | Planned |
+| HINT-03 | Phase 14 | Planned |
+| HINT-04 | Phase 14 | Planned |
+| PRESENT-01 | Phase 15 | Planned |
+| PRESENT-02 | Phase 15 | Planned |
+| PRESENT-03 | Phase 15 | Planned |
+| PRESENT-04 | Phase 15 | Planned |
 
 **Coverage:**
-- v1.2 requirements: 12 total
+- v1.3 requirements: 12 total
 - Mapped to phases: 12
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-27*
-*Last updated: 2026-03-27 after milestone v1.2*
+*Last updated: 2026-03-27 for milestone v1.3 planning*

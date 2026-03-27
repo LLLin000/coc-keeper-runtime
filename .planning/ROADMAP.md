@@ -2,7 +2,7 @@
 
 ## Overview
 
-Milestone `v1.0` established the Discord-first local-DM runtime with deterministic rules, persistence, diagnostics, and a starter packaged adventure. Milestone `v1.1` introduced a formal module runtime and shipped `疯狂之馆` as the first structured full-length module. Milestone `v1.2` focuses on three missing pieces that still block a smooth table experience: reusable adventure onboarding, a real dice engine built on mature prior art instead of placeholder rolls, and faster clearer Discord response behavior for ordinary message play.
+Milestone `v1.0` established the Discord-first local-DM runtime with deterministic rules, persistence, diagnostics, and a starter packaged adventure. Milestone `v1.1` introduced a formal module runtime and shipped `疯狂之馆` as the first structured full-length module. Milestone `v1.2` added ready-gated startup, mature dice integration, and true Discord streaming. Milestone `v1.3` now focuses on the part players feel most directly during live play: better judgement about when rolls should happen, better hint and clue timing, and scene presentation that feels closer to a real human Keeper/DM running `疯狂之馆`.
 
 ## Phases
 
@@ -20,68 +20,59 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 6: Structured Module Runtime** - Introduce reusable formal adventure packages with canonical state and reveal policy.
 - [x] **Phase 7: 疯狂之馆 Formal Module** - Encode `疯狂之馆` as the first official structured module.
 - [x] **Phase 8: Module UX, Session Continuity, and Operator Guidance** - Persist packaged-adventure sessions and improve operator visibility.
+- [x] **Phase 9: Adventure Onboarding And Auto-Opening** - Make packaged-adventure startup feel like a real game session.
+- [x] **Phase 10: Mature Dice Engine And Deterministic Roll Resolution** - Replace placeholder rolls with a mature dice engine.
+- [x] **Phase 11: Streaming Responses And Message Reliability** - Make Discord play feel responsive with clearer processing feedback.
+- [x] **Phase 12: True Streaming Discord Output** - Stream narrator output live into Discord through chunked edits with fallback.
 
-## Milestone v1.2 Planned Work
+## Milestone v1.3 Planned Work
 
-### Phase 9: Adventure Onboarding And Auto-Opening
-**Goal**: Make packaged-adventure startup feel like a real game session by turning `/load_adventure` into a guided readiness and opening flow.
-**Depends on**: Phase 8
-**Requirements**: ONBOARD-01, ONBOARD-02, ONBOARD-03, ONBOARD-04
+### Phase 13: Structured Judgement And Roll Prompting
+**Goal**: Make the runtime act more like a real Keeper by deciding when a roll is needed, when it is not, and how to prompt the table clearly.
+**Depends on**: Phase 12
+**Requirements**: JUDGE-01, JUDGE-02, JUDGE-03, JUDGE-04
 **Success Criteria** (what must be TRUE):
-  1. Loading `mad_mansion` puts the campaign into a visible onboarding state instead of silently waiting for the next manual gameplay input.
-  2. The bot can guide joined players through character readiness or role assignment, then automatically deliver the module intro and first actionable scene frame.
-  3. Operators can inspect and recover onboarding progress after restarts without manually editing stored state.
-  4. The onboarding mechanism is data-driven enough that later modules can declare their own intros and readiness requirements without bespoke command branching.
+  1. `疯狂之馆` interactions can distinguish between automatic success, blocked action, clarification-needed action, and formal roll-needed action through structured runtime logic.
+  2. When a roll is needed, the bot can surface a concise DM-facing prompt that identifies the actor, the roll family, and the reason.
+  3. Roll-trigger outcomes update canonical state and downstream narration rather than being treated as a purely narrative flourish.
+  4. The design reuses mature tabletop and bot patterns where possible instead of inventing unnecessary new judgement semantics.
 **Plans**: 2 plans
 Plans:
-- [x] 09-01-PLAN.md - Add packaged-adventure onboarding state, readiness tracking, and restart-safe startup transitions.
-- [x] 09-02-PLAN.md - Drive DM auto-opening, first-scene framing, and operator-facing startup guidance from module data.
+- [ ] 13-01-PLAN.md - Add structured action judgement for module interactions and map roll-needed outcomes into the deterministic rules layer.
+- [ ] 13-02-PLAN.md - Surface explicit DM roll prompts and consequence categories through Discord commands and ordinary-message flow.
 
-### Phase 10: Mature Dice Engine And Deterministic Roll Resolution
-**Goal**: Replace placeholder rolls with a mature dice engine and integrate deterministic D&D roll families into the runtime.
-**Depends on**: Phase 9
-**Requirements**: DICE-01, DICE-02, DICE-03, DICE-04
+### Phase 14: Hint Timing, Clue Flow, And Stall Recovery
+**Goal**: Improve how `疯狂之馆` reveals information, nudges players, and recovers from stalls without spoiling hidden truths.
+**Depends on**: Phase 13
+**Requirements**: HINT-01, HINT-02, HINT-03, HINT-04
 **Success Criteria** (what must be TRUE):
-  1. The runtime uses a mature existing dice parser and roller rather than a handwritten expression evaluator; `d20`-style notation works for core gameplay.
-  2. Ability checks, saving throws, attack rolls, damage rolls, and advantage or disadvantage resolve through structured rules code and produce canonical roll objects.
-  3. Combat and natural-message play can invoke those roll paths without narrator invention or fake default values.
-  4. Unsupported expressions and invalid roll requests fail with explicit player feedback and diagnostics.
+  1. The module can distinguish ambient description from discoverable clues and explicit progression hints.
+  2. The runtime can detect common stall states or repeated dead-end loops and emit safe next-step guidance.
+  3. Major pressure beats and critical module truths are introduced deliberately rather than accidentally drifting into view.
+  4. Hints never bypass canonical reveal gates or expose protected late-stage secrets too early.
 **Plans**: 2 plans
 Plans:
-- [x] 10-01-PLAN.md - Integrate a mature dice library and replace placeholder roll resolution in the rules layer.
-- [x] 10-02-PLAN.md - Expose structured checks, saves, attacks, and damage across commands, combat flow, and narration summaries.
+- [ ] 14-01-PLAN.md - Encode context-sensitive hint triggers, clue tiers, and stall detection into the `疯狂之馆` runtime.
+- [ ] 14-02-PLAN.md - Improve DM-facing recap and redirect messaging so players can recover from confusion without raw state inspection.
 
-### Phase 11: Streaming Responses And Message Reliability
-**Goal**: Make Discord play feel responsive by improving ordinary-message routing and surfacing long-running DM output progressively.
-**Depends on**: Phase 10
-**Requirements**: RESP-01, RESP-02, RESP-03, RESP-04
+### Phase 15: Keeper-Style Scene Framing And Consequence Presentation
+**Goal**: Make scene presentation, consequence delivery, and return-to-choice rhythm feel more like a human Keeper running the module.
+**Depends on**: Phase 14
+**Requirements**: PRESENT-01, PRESENT-02, PRESENT-03, PRESENT-04
 **Success Criteria** (what must be TRUE):
-  1. Long narrator turns can stream or progressively update Discord output without waiting for a single final blob whenever the transport supports it.
-  2. When streaming cannot be used, users still get immediate acknowledgement and visible progress so the bot no longer appears frozen.
-  3. Bound-channel ordinary messages from joined players route reliably through the gameplay loop after restarts and during packaged-adventure scenes.
-  4. Discord feedback clearly distinguishes ignored social chatter, blocked actions, pending model work, and successful DM handling.
+  1. Central hall framing, branch-hall introductions, and major set-piece interactions have stronger module-specific DM voice and usable scene structure.
+  2. The runtime can present transitions between exploration, roll prompt, consequence, and next choice cleanly enough that the session rhythm feels intentional.
+  3. Scene output highlights salient props, threats, and opportunities without collapsing into either generic prose or menu spam.
+  4. Failed exploration and wrong assumptions still move the table forward because the DM knows when to restate pressure, recap discoveries, and redirect attention.
 **Plans**: 2 plans
 Plans:
-- [x] 11-01-PLAN.md - Add progressive Discord response transport and streaming-aware narrator plumbing.
-- [x] 11-02-PLAN.md - Harden natural-message routing, ignored-input feedback, and packaged-adventure message handling.
-
-### Phase 12: True Streaming Discord Output
-**Goal**: Upgrade from progressive response feedback to true narrator-phase streaming so players see the DM reply grow live in Discord.
-**Depends on**: Phase 11
-**Requirements**: RESP-01, RESP-02
-**Success Criteria** (what must be TRUE):
-  1. The narrator path can consume Ollama streaming responses and surface partial text incrementally instead of waiting for a full final blob.
-  2. Discord delivery coalesces streamed chunks into rate-safe message edits rather than issuing a token-by-token flood.
-  3. Slash-command turns and ordinary channel-message turns both use the same streaming transport behavior where supported.
-  4. If streaming fails mid-response, the bot falls back cleanly to a finalized non-streamed reply without losing the turn.
-**Plans**: 1 plan
-Plans:
-- [x] 12-01-PLAN.md - Add Ollama stream consumption, Discord chunked-edit transport, and graceful streaming fallback.
+- [ ] 15-01-PLAN.md - Refine `疯狂之馆` scene framing and branch introductions using structured presentation templates.
+- [ ] 15-02-PLAN.md - Integrate consequence narration, recap beats, and return-to-choice pacing into live Discord output.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -97,3 +88,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 10. Mature Dice Engine And Deterministic Roll Resolution | 2/2 | Completed | 2026-03-27 |
 | 11. Streaming Responses And Message Reliability | 2/2 | Completed | 2026-03-27 |
 | 12. True Streaming Discord Output | 1/1 | Completed | 2026-03-27 |
+| 13. Structured Judgement And Roll Prompting | 0/2 | Planned | - |
+| 14. Hint Timing, Clue Flow, And Stall Recovery | 0/2 | Planned | - |
+| 15. Keeper-Style Scene Framing And Consequence Presentation | 0/2 | Planned | - |
