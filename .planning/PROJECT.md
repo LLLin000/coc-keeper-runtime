@@ -139,11 +139,11 @@ When work genuinely spans multiple tracks:
 
 ## Active Milestone
 
-- Current milestone: `v2.3`
+- Current milestone: `vB.1.1`
 - Primary track: `Track B - 人物构建与管理层`
 - Goal: Tighten archive-builder mapping with better AI summarization during builder flow, aligned with standard COC character sheet sections
 
-## Milestone v2.3: B1 Archive And Builder Normalization
+## Milestone vB.1.1: B1 Archive And Builder Normalization
 
 **Goal:** Tighten archive-builder mapping with better AI summarization during builder flow.
 
@@ -194,4 +194,4 @@ Update it when:
 - track selection guidance needs to become more explicit for collaborators
 
 ---
-*Last updated: 2026-03-28 for milestone v2.3 B1 Archive And Builder Normalization*
+*Last updated: 2026-03-28 for milestone vB.1.1 B1 Archive And Builder Normalization*

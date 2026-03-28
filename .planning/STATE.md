@@ -1,12 +1,12 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.3
+milestone: vB.1.1
 milestone_name: B1 Archive And Builder Normalization
 status: planning
 active_track: track-b
-stopped_at: Starting milestone v2.3 - archive and builder normalization with better AI summarization
+stopped_at: Starting milestone vB.1.1 - archive and builder normalization with better AI summarization
 last_updated: "2026-03-28T11:08:00.000Z"
-last_activity: 2026-03-28 - Started milestone v2.3 B1 Archive And Builder Normalization
+last_activity: 2026-03-28 - Started milestone vB.1.1 B1 Archive And Builder Normalization
 progress:
   total_phases: 0
   completed_phases: 0
@@ -51,7 +51,7 @@ progress:
 
 ## Current Milestone
 
-**v2.3: B1 Archive And Builder Normalization** (Active Now)
+**vB.1.1: B1 Archive And Builder Normalization** (Active Now)
 - Goal: Tighten archive-builder mapping with better AI summarization
 - Reference: COC character sheet sections, local COC rules
 
@@ -92,4 +92,4 @@ When resuming:
 6. Keep `v2.2` focused on governance/document structure only.
 
 ---
-*Last updated: 2026-03-28 for milestone v2.3 B1 Archive And Builder Normalization*
+*Last updated: 2026-03-28 for milestone vB.1.1 B1 Archive And Builder Normalization*
