@@ -19,19 +19,21 @@ Historical milestones remain linear for GSD continuity. Each milestone now inclu
 
 ---
 
-## v2.2 [Governance] GSD Track 化治理重构 (Planned: 2026-03-28)
+## v2.2 [Governance] GSD Track 化治理重构 (Shipped: 2026-03-28)
 
 **Goal:**
 
 - Formalize track-based project governance so any GSD-driven collaborator can recover the product structure, global rules, and next-milestone choices directly from repository planning docs.
 
-**Planned phases:** 3 phases total
+**Phases completed:** 3 phases total
 
-**Planned focus:**
+**Key accomplishments:**
 
-- Define the four persistent product tracks and repository-wide global rules.
-- Restructure `PROJECT.md`, `ROADMAP.md`, and `STATE.md` so active work is track-aware.
-- Align README and collaboration notes with the new track model.
+- Defined four persistent product tracks (A/B/C/D) with clear ownership boundaries
+- Added global rules to PROJECT.md for smoke-check, canonical truth, auditability
+- Restructured ROADMAP.md to organize by track for future milestone selection
+- Added track labels to MILESTONES.md for historical context
+- Updated collaboration notes with track guidance
 
 ---
 
