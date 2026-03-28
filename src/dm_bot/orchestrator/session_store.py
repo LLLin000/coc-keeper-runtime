@@ -1,4 +1,19 @@
+from datetime import datetime
+from enum import Enum
 from pydantic import BaseModel, Field
+
+
+class SessionPhase(str, Enum):
+    """Explicit session phases for multiplayer campaigns."""
+
+    ONBOARDING = "onboarding"
+    LOBBY = "lobby"
+    AWAITING_READY = "awaiting_ready"
+    AWAITING_ADMIN_START = "awaiting_admin_start"
+    SCENE_ROUND_OPEN = "scene_round_open"
+    SCENE_ROUND_RESOLVING = "scene_round_resolving"
+    COMBAT = "combat"
+    PAUSED = "paused"
 
 
 class CampaignSession(BaseModel):
@@ -10,6 +25,54 @@ class CampaignSession(BaseModel):
     active_characters: dict[str, str] = Field(default_factory=dict)
     active_roles: dict[str, str] = Field(default_factory=dict)
     selected_profiles: dict[str, str] = Field(default_factory=dict)
+    # Session phase tracking (vC.1.2)
+    session_phase: SessionPhase = SessionPhase.LOBBY
+    player_ready: dict[str, bool] = Field(default_factory=dict)
+    admin_started: bool = False
+    phase_history: list[tuple[str, datetime]] = Field(default_factory=list)
+    # Onboarding tracking (vC.1.2 - Phase 48)
+    onboarding_completed: dict[str, bool] = Field(default_factory=dict)
+    onboarding_content: dict[str, object] = Field(default_factory=dict)
+
+    def transition_to(self, new_phase: SessionPhase) -> None:
+        self.session_phase = new_phase
+        self.phase_history.append((new_phase.value, datetime.now()))
+
+    def set_player_ready(self, user_id: str, ready: bool) -> None:
+        self.player_ready[user_id] = ready
+
+    def can_start_session(self) -> bool:
+        ready_players = sum(1 for r in self.player_ready.values() if r)
+        return ready_players >= len(self.member_ids) and self.admin_started
+
+    def get_phase_context(self) -> dict[str, object]:
+        return {
+            "phase": self.session_phase.value,
+            "player_ready_count": sum(1 for r in self.player_ready.values() if r),
+            "total_members": len(self.member_ids),
+            "admin_started": self.admin_started,
+            "onboarding_completed_count": sum(
+                1 for c in self.onboarding_completed.values() if c
+            ),
+            "onboarding_content": bool(self.onboarding_content),
+        }
+
+    def set_onboarding_complete(self, user_id: str, complete: bool = True) -> None:
+        self.onboarding_completed[user_id] = complete
+
+    def is_onboarding_complete(self, user_id: str) -> bool:
+        return self.onboarding_completed.get(user_id, False)
+
+    def all_onboarding_complete(self) -> bool:
+        if not self.member_ids:
+            return True
+        return all(self.onboarding_completed.get(uid, False) for uid in self.member_ids)
+
+    def set_onboarding_content(self, content: dict[str, object]) -> None:
+        self.onboarding_content = content
+
+    def get_onboarding_content(self) -> dict[str, object]:
+        return self.onboarding_content
 
 
 class SessionStore:
@@ -132,6 +195,12 @@ class SessionStore:
                 "active_characters": dict(session.active_characters),
                 "active_roles": dict(session.active_roles),
                 "selected_profiles": dict(session.selected_profiles),
+                "session_phase": session.session_phase.value,
+                "player_ready": dict(session.player_ready),
+                "admin_started": session.admin_started,
+                "phase_history": session.phase_history,
+                "onboarding_completed": dict(session.onboarding_completed),
+                "onboarding_content": dict(session.onboarding_content),
             }
             for channel_id, session in self._sessions.items()
         }
@@ -162,5 +231,11 @@ class SessionStore:
                 active_characters=dict(raw.get("active_characters", {})),
                 active_roles=dict(raw.get("active_roles", {})),
                 selected_profiles=dict(raw.get("selected_profiles", {})),
+                session_phase=SessionPhase(raw.get("session_phase", "lobby")),
+                player_ready=dict(raw.get("player_ready", {})),
+                admin_started=raw.get("admin_started", False),
+                phase_history=list(raw.get("phase_history", [])),
+                onboarding_completed=dict(raw.get("onboarding_completed", {})),
+                onboarding_content=dict(raw.get("onboarding_content", {})),
             )
             self._sessions[channel_id] = session
