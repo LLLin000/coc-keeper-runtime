@@ -33,6 +33,11 @@ class CampaignSession(BaseModel):
     # Onboarding tracking (vC.1.2 - Phase 48)
     onboarding_completed: dict[str, bool] = Field(default_factory=dict)
     onboarding_content: dict[str, object] = Field(default_factory=dict)
+    # Round collection tracking (vC.1.2 - Phase 49)
+    pending_actions: dict[str, str] = Field(
+        default_factory=dict
+    )  # user_id -> action text
+    action_submitters: set[str] = Field(default_factory=set)  # users who have submitted
 
     def transition_to(self, new_phase: SessionPhase) -> None:
         self.session_phase = new_phase
@@ -73,6 +78,46 @@ class CampaignSession(BaseModel):
 
     def get_onboarding_content(self) -> dict[str, object]:
         return self.onboarding_content
+
+    def set_player_action(self, user_id: str, action: str) -> None:
+        if action and action.strip():
+            self.pending_actions[user_id] = action.strip()
+            self.action_submitters.add(user_id)
+
+    def clear_player_action(self, user_id: str) -> None:
+        self.pending_actions.pop(user_id, None)
+        self.action_submitters.discard(user_id)
+
+    def clear_all_actions(self) -> None:
+        self.pending_actions.clear()
+        self.action_submitters.clear()
+
+    def has_submitted(self, user_id: str) -> bool:
+        return user_id in self.action_submitters
+
+    def get_pending_members(self) -> list[str]:
+        return [mid for mid in self.member_ids if mid not in self.action_submitters]
+
+    def all_submitted(self) -> bool:
+        if not self.member_ids:
+            return True
+        return all(uid in self.action_submitters for uid in self.member_ids)
+
+    def get_submitter_names(self) -> list[str]:
+        names = []
+        for uid in self.action_submitters:
+            char_name = self.active_characters.get(uid)
+            if char_name:
+                names.append(char_name)
+        return names
+
+    def get_pending_member_names(self) -> list[str]:
+        names = []
+        for uid in self.get_pending_members():
+            char_name = self.active_characters.get(uid)
+            if char_name:
+                names.append(char_name)
+        return names
 
 
 class SessionStore:
@@ -201,6 +246,8 @@ class SessionStore:
                 "phase_history": session.phase_history,
                 "onboarding_completed": dict(session.onboarding_completed),
                 "onboarding_content": dict(session.onboarding_content),
+                "pending_actions": dict(session.pending_actions),
+                "action_submitters": sorted(session.action_submitters),
             }
             for channel_id, session in self._sessions.items()
         }
@@ -237,5 +284,7 @@ class SessionStore:
                 phase_history=list(raw.get("phase_history", [])),
                 onboarding_completed=dict(raw.get("onboarding_completed", {})),
                 onboarding_content=dict(raw.get("onboarding_content", {})),
+                pending_actions=dict(raw.get("pending_actions", {})),
+                action_submitters=set(raw.get("action_submitters", [])),
             )
             self._sessions[channel_id] = session
