@@ -1038,6 +1038,14 @@ class BotCommands:
                     "使用 `/complete_onboarding` 确认已了解规则。"
                 )
 
+        if session.session_phase == SessionPhase.SCENE_ROUND_OPEN:
+            return await self._handle_round_action(
+                session=session,
+                channel_id=channel_id,
+                user_id=user_id,
+                content=content,
+            )
+
         onboarding_block = (
             self._gameplay.onboarding_block_message()
             if self._gameplay is not None
@@ -1123,6 +1131,15 @@ class BotCommands:
                     "使用 `/complete_onboarding` 确认已了解规则。"
                 )
                 return
+
+        if session.session_phase == SessionPhase.SCENE_ROUND_OPEN:
+            await self._handle_round_action_stream(
+                session=session,
+                message=message,
+                user_id=user_id,
+                content=content,
+            )
+            return
 
         onboarding_block = (
             self._gameplay.onboarding_block_message()
@@ -1214,6 +1231,48 @@ class BotCommands:
         if actor_name == active_name:
             return None
         return f"当前轮到 {active_name} 行动。"
+
+    async def _handle_round_action(
+        self,
+        *,
+        session,
+        channel_id: str,
+        user_id: str,
+        content: str,
+    ) -> str | None:
+        if not content or not content.strip():
+            return None
+        session.set_player_action(user_id, content)
+        self._persist_sessions()
+        return self._build_round_status_message(session)
+
+    async def _handle_round_action_stream(
+        self,
+        *,
+        session,
+        message,
+        user_id: str,
+        content: str,
+    ) -> None:
+        if not content or not content.strip():
+            return
+        session.set_player_action(user_id, content)
+        self._persist_sessions()
+        status_msg = self._build_round_status_message(session)
+        await message.channel.send(status_msg)
+
+    def _build_round_status_message(self, session) -> str:
+        submitted_names = session.get_submitter_names()
+        pending_names = session.get_pending_member_names()
+        submitted_str = "，".join(submitted_names) if submitted_names else "无"
+        pending_str = "，".join(pending_names) if pending_names else "无"
+        if session.all_submitted():
+            return (
+                f"✅ **行动已全部提交！**\n"
+                f"已提交: {submitted_str}\n"
+                f"KP 可以使用 `/resolve-round` 进行结算。"
+            )
+        return f"📝 **行动收集中**\n已提交: {submitted_str} | 待提交: {pending_str}"
 
     def _persist_sessions(self) -> None:
         if self._persistence_store is None or self._session_store is None:
