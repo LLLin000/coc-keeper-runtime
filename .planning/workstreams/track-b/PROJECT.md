@@ -139,10 +139,10 @@ When work genuinely spans multiple tracks:
 
 ## Active Milestone
 
-- Most recently completed milestone: `vB.1.2`
-- Active milestone: `vB.1.3`
+- Most recently completed milestone: `vB.1.3`
+- Active milestone: `vB.1.4`
 - Primary track: `Track B - 人物构建与管理层`
-- Current goal: Turn character creation into a two-stage interview-to-sheet flow where a Keeper-like interview shapes the person first, then a COC-bounded card finalization stage turns that person into a legal investigator sheet.
+- Current goal: Make Discord user identity, archive profile ownership, campaign membership, and campaign character instances explicit and auditable so multiplayer sessions cannot accidentally bleed owner/admin identity into player characters.
 
 ## Milestone vB.1.3: B3 Interview-To-Sheet Character Creation
 
@@ -209,9 +209,9 @@ The next priority is making long-lived archives feel like complete investigator 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Track B archive work should now be organized as persistent investigator-card evolution, not one-off archive tweaks | The project needs long-lived investigator assets that can survive across modules and collaboration sessions | `vB.1.2` focuses on archive-card completion |
+| Track B archive work should now be organized as persistent investigator-card evolution, not one-off archive tweaks | The project needs long-lived investigator assets that can survive across modules and collaboration sessions | `vB.1.2` focused on archive-card completion |
 | Card completeness should be informed by `charSheetGenerator`, but rules truth must still come from local COC sources | The site is a useful section/layout reference, not canonical rules truth | Track B may mirror card sections while keeping COC rules local |
-| Long-lived archive truth and campaign instance truth must remain separate | Richer cards create pressure to leak module state back into archives | Track B milestones must keep projection boundaries explicit |
+| Long-lived archive truth and campaign instance truth must remain separate | Richer cards create pressure to leak module state back into archives | `vB.1.4` will harden campaign instance ownership and projection boundaries |
 
 ## Evolution
 
@@ -224,4 +224,105 @@ Update it when:
 - track selection guidance needs to become more explicit for collaborators
 
 ---
-*Last updated: 2026-03-28 for milestone vB.1.3 B3 Interview-To-Sheet Character Creation*
+## Milestone vB.1.4: B4 Identity Projection And Character Ownership
+
+**Goal:** Strengthen the identity chain from Discord user to archive profile to campaign member to campaign character instance so multiplayer sessions have deterministic ownership, ready gates, and admin separation.
+
+**Target features:**
+- define explicit contracts for:
+  - `discord_user`
+  - `archive_profile`
+  - `campaign_member`
+  - `campaign_character_instance`
+- require an explicit selected profile/instance before a player can ready into a campaign
+- prevent owner/admin fallbacks from being mistaken as player identity during onboarding or scene play
+- keep one active campaign instance per player per campaign, with clear auditing and governance
+
+**Primary Track**
+- Track B - 人物构建与管理层
+
+**Secondary Impact**
+- Track C - Discord 交互层: join/ready/session flows will consume the stricter ownership model
+
+**Contracts Changed**
+- `ArchiveProfile`
+- `CampaignProjection`
+- campaign member/profile binding semantics
+- active instance ownership rules
+
+**Migration Notes**
+- preserve existing archive records while introducing stronger campaign-instance binding
+- do not allow convenience fallbacks to silently choose the wrong character for a player
+- keep owner/admin governance explicit rather than overloading player identity paths
+
+## Queued Milestone vB.1.5: B5 Character Lifecycle And Governance Surface
+
+**Goal:** Build the operator and player-facing governance layer on top of explicit identity ownership so active, archived, replaced, and deleted character states are manageable, reviewable, and understandable in Discord.
+
+**Target features:**
+- richer lifecycle operations for long-lived archive profiles and campaign character instances
+- clearer player-facing visibility into:
+  - active profile
+  - archived profiles
+  - selected campaign instance
+- clearer admin-facing visibility into all player characters and ownership state
+- audit-friendly management actions for activation, archival, replacement, deletion, and recovery
+
+**Primary Track**
+- Track B - 人物构建与管理层
+
+**Secondary Impact**
+- Track C - Discord 交互层: archive/admin channel command behavior and redirects
+- Track D - 游戏呈现层: player-facing summaries and ownership clarity
+
+**Contracts Changed**
+- `ArchiveProfile`
+- admin lifecycle operation contracts
+- archive/profile status surface
+
+**Migration Notes**
+- queue this after vB.1.4 so lifecycle UI is built on a stable identity chain
+- preserve one-active-profile-by-default as the baseline policy
+- keep governance changes auditable and explicit rather than silent
+
+## Queued Milestone vB.1.6: B6 COC-Legal Character Finalization And New-Player Modes
+
+**Goal:** Turn builder output into a full legal investigator-sheet finalization system that supports both strict canonical COC generation and a clearly bounded quick-start mode for new players.
+
+**Target features:**
+- consume Track A's canonical generation/allocation rules instead of ad-hoc numeric finishing
+- support a strict standard creation path:
+  - canonical attribute generation
+  - age adjustments
+  - derived stats
+  - occupation and interest skill allocation
+- support a clearly labeled quick-start/new-player path:
+  - controlled attribute arrays or KP-approved presets
+  - recommended professions, skills, and starter items from module onboarding metadata
+  - shorter path to a legal playable sheet without pretending to be the canonical method
+- explain to players where each numeric result came from:
+  - rules
+  - dice
+  - chosen profession
+  - optional quick-start constraints
+
+**Primary Track**
+- Track B - 人物构建与管理层
+
+**Secondary Impact**
+- Track A - 模组与规则运行层: finalization consumes canonical generation/allocation contracts
+- Track D - 游戏呈现层: player-facing finalization summaries and newcomer card guidance
+- Track C - Discord 交互层: onboarding and builder flows may expose standard vs quick-start creation modes
+
+**Contracts Changed**
+- `BuilderSession`
+- character finalization contract
+- archive profile writeback for canonical vs quick-start provenance
+
+**Migration Notes**
+- quick-start must remain clearly marked as an onboarding aid, not a silent replacement of canonical rules
+- preserve the interview-to-sheet flow as the narrative front-end while replacing the numeric back-end with stricter rule-bound finalization
+- keep module-specific recommendations data-driven through onboarding metadata rather than hardcoding per-module builder logic
+
+---
+*Last updated: 2026-03-28 for milestone vB.1.4 B4 Identity Projection And Character Ownership*

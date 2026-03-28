@@ -175,3 +175,84 @@ Milestone: Interview-To-Sheet Character Creation
 - vB.1.3 requirements: 12 total
 - Mapped to phases: 12
 - Unmapped: 0 ✓
+
+---
+
+## vB.1.4 Requirements (Track B)
+
+Milestone: Identity Projection And Character Ownership
+
+### Identity Chain
+
+- [ ] **ID-01**: Every participating Discord user maps explicitly to one archive profile before campaign readiness is allowed
+- [ ] **ID-02**: Campaign membership and campaign character instance are represented as distinct concepts instead of implicit fallbacks
+- [ ] **ID-03**: One player may only have one active character instance per campaign at a time
+
+### Ownership Enforcement
+
+- [ ] **OWN-01**: Ready flow rejects users who have not explicitly selected a valid profile/instance
+- [ ] **OWN-02**: Owner/admin identity can never be silently substituted for another player's active character
+- [ ] **OWN-03**: Projection and lookup logic preserve actor identity consistently across onboarding, scene play, and diagnostics
+
+### Governance And Auditability
+
+- [ ] **GOV-01**: Admin and owner actions over player characters are explicit and auditable
+- [ ] **GOV-02**: Archive truth and campaign-instance truth remain distinct after ownership hardening
+- [ ] **GOV-03**: Diagnostics can explain which archive profile and which campaign instance are currently bound to a Discord user
+
+## vB.1.4 Traceability
+
+| Requirement | Planned Phase |
+|-------------|---------------|
+| ID-01 | TBD |
+| ID-02 | TBD |
+| ID-03 | TBD |
+| OWN-01 | TBD |
+| OWN-02 | TBD |
+| OWN-03 | TBD |
+| GOV-01 | TBD |
+| GOV-02 | TBD |
+| GOV-03 | TBD |
+
+**Coverage:**
+- vB.1.4 requirements: 9 total
+- Mapped to phases: TBD
+- Unmapped: 0 ✓
+
+---
+
+## vB.1.6 Requirements (Track B)
+
+Milestone: COC-Legal Character Finalization And New-Player Modes
+
+### Canonical Finalization
+
+- [ ] **FINAL-01**: Builder finalization consumes Track A's canonical COC generation and derived-stat rules instead of ad-hoc numeric heuristics
+- [ ] **FINAL-02**: Occupation skill points, interest skill points, credit rating, and specialization choices are allocated through explicit legal finalization steps
+- [ ] **FINAL-03**: Finalization output clearly distinguishes person-shaping results from rule-generated sheet values
+
+### New-Player Quick-Start
+
+- [ ] **START-01**: System supports a clearly labeled quick-start character mode for new players without replacing the standard canonical path
+- [ ] **START-02**: Quick-start mode can consume module-provided recommendations for professions, skills, and starter items
+- [ ] **START-03**: Quick-start output remains legally compatible with downstream archive, projection, and gameplay contracts
+
+### Transparency And Guidance
+
+- [ ] **GUIDE-01**: Finalization explains which values came from dice, which from rule formulas, and which from selected creation mode
+- [ ] **GUIDE-02**: Finalization can surface recommended allocations or warnings when a player selects mismatched or weak skill coverage for a module
+- [ ] **GUIDE-03**: Archive writeback preserves creation provenance so operators can tell whether a sheet came from standard or quick-start flow
+
+## vB.1.6 Traceability
+
+| Requirement | Planned Phase |
+|-------------|---------------|
+| FINAL-01 | TBD |
+| FINAL-02 | TBD |
+| FINAL-03 | TBD |
+| START-01 | TBD |
+| START-02 | TBD |
+| START-03 | TBD |
+| GUIDE-01 | TBD |
+| GUIDE-02 | TBD |
+| GUIDE-03 | TBD |

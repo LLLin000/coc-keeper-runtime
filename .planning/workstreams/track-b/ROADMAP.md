@@ -11,10 +11,10 @@
 
 ## Active Milestone
 
-**vB.1.3** - B3 Interview-To-Sheet Character Creation
+**vB.1.4** - B4 Identity Projection And Character Ownership
 - **Primary Track:** Track B - 人物构建与管理层
-- **Goal:** Split character creation into a richer interview stage and a COC-bounded card finalization stage so builder output becomes a real person first and a legal investigator sheet second
-- **Status:** Completed
+- **Goal:** Strengthen Discord-user-to-character ownership so multiplayer campaign membership and role projection stay explicit, auditable, and immune to admin/owner identity bleed
+- **Status:** Planned
 
 ---
 
@@ -231,4 +231,44 @@
 | 51. Builder Flow Integration And UX Polish | 1/1 | Completed | 2026-03-28 |
 
 ---
-*Last updated: 2026-03-28 for milestones vB.1.1, vB.1.2, and vB.1.3*
+---
+
+## vB.1.4 Next (Planned)
+
+**Goal:** Make Discord user identity, archive profile ownership, campaign membership, and campaign character instances explicit enough that multiplayer play cannot silently pick the wrong character or owner/admin identity.
+
+**Planned focus:**
+- stronger `discord_user -> archive_profile -> campaign_member -> campaign_character_instance` contracts
+- no ready without an explicit selected character instance
+- one active instance per player per campaign
+- owner/admin separation and auditability
+
+---
+
+## Queued Milestone
+
+**vB.1.5** - Character Lifecycle And Governance Surface
+- **Primary Track:** Track B - 人物构建与管理层
+- **Goal:** Build clearer player/admin governance around active, archived, replaced, and deleted characters once identity ownership is hardened
+- **Status:** Queued after vB.1.4
+
+**Planned focus:**
+- profile lifecycle clarity
+- admin governance surfaces
+- ownership visibility and auditability
+- archive/campaign instance management UX
+
+**vB.1.6** - COC-Legal Character Finalization And New-Player Modes
+- **Primary Track:** Track B - 人物构建与管理层
+- **Goal:** Finalize investigator sheets through explicit COC-legal flows while also supporting a bounded quick-start mode for new players
+- **Status:** Queued after vB.1.5
+
+**Planned focus:**
+- standard canonical character finalization
+- quick-start/new-player creation mode
+- profession/skill/item recommendation consumption
+- provenance and explanation of where card values came from
+
+---
+
+*Last updated: 2026-03-28 for milestones vB.1.1, vB.1.2, vB.1.3, and planned vB.1.4*

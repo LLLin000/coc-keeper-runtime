@@ -137,22 +137,15 @@ When work genuinely spans multiple tracks:
 - record all secondary impacts explicitly
 - avoid turning one milestone into a broad multi-track rewrite
 
-## Active Milestone
+## Active Milestones By Workstream
 
-- Current milestone: `vB.1.1`
-- Primary track: `Track B - 人物构建与管理层`
-- Goal: Tighten archive-builder mapping with better AI summarization during builder flow, aligned with standard COC character sheet sections
+- `track-a`: `vA.1.2` — Group Action Resolution And Shared Scene Consequences
+- `track-b`: `vB.1.4` — Identity Projection And Character Ownership
+- `track-c`: `vC.1.2` — Multiplayer Session Governance
+- `track-d`: `vD.1.1` — Keeper-Guided Archive Experience
+- `track-e`: `vE.1.1` — Runtime Control Panel Foundations (completed foundation; follow-up milestone not yet opened)
 
-## Milestone vB.1.1: B1 Archive And Builder Normalization
-
-**Goal:** Tighten archive-builder mapping with better AI summarization during builder flow.
-
-**Target features:**
-- Reference https://www.cthulhuclub.com/charSheetGenerator/ for comprehensive character sheet sections
-- Reference local COC rules (C:\Users\Lin\Downloads\COC) for proper COC semantics
-- Fix AI summarization in builder flow: Currently AI just copies user input instead of summarizing into cohesive character attributes
-- Better builder-to-archive contracts
-- Richer semantic normalization, fewer fallback heuristics
+Use each workstream's own `PROJECT.md`, `ROADMAP.md`, `REQUIREMENTS.md`, and `STATE.md` as the source of truth for that lane. The repository-level project map describes long-lived tracks and governance, not one single active milestone.
 
 ## Current State
 
@@ -165,7 +158,7 @@ The project has already completed:
 - adaptive conversational builder flow
 - startup smoke checks and initial profile governance
 
-The next priority is not a single feature. It is making project governance explicit enough that outside collaborators and GSD-driven agents can choose the right track and continue work without flattening the architecture.
+The next priority is not a single feature. It is letting collaborators and GSD-driven agents pick the right workstream and advance the next milestone without flattening the architecture.
 
 ## Constraints
 
@@ -179,9 +172,9 @@ The next priority is not a single feature. It is making project governance expli
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Work should now be organized by persistent tracks rather than only by sequential feature bundles | The system is large enough that archive, runtime, Discord surface, and presentation need separate strategic lanes | `v2.2` will formalize tracks in planning docs |
+| Work should now be organized by persistent tracks rather than only by sequential feature bundles | The system is large enough that archive, runtime, Discord surface, and presentation need separate strategic lanes | `v2.2` formalized tracks in planning docs |
 | Infrastructure and collaboration concerns should be global rules, not a separate product track | Smoke checks, auditability, and documentation quality apply everywhere and should not be treated as optional feature work | Global Rules added to `PROJECT.md` |
-| Every milestone must have one primary track | This keeps GSD agents from widening scope until milestones become unreadable | Track-first milestone classification becomes the default |
+| Each workstream should carry its own active milestone and state | A repository-level single active milestone became misleading once tracks began to move independently | Repository-level planning now points contributors into per-workstream docs |
 
 ## Evolution
 
@@ -194,4 +187,4 @@ Update it when:
 - track selection guidance needs to become more explicit for collaborators
 
 ---
-*Last updated: 2026-03-28 for milestone vB.1.1 B1 Archive And Builder Normalization*
+*Last updated: 2026-03-28 for workstream-aligned milestone governance*

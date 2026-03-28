@@ -9,6 +9,48 @@
 
 ---
 
+## Next Milestone
+
+**vA.1.2** - Group Action Resolution And Shared Scene Consequences
+- **Primary Track:** Track A - 模组与规则运行层
+- **Goal:** Add scene-round batching and shared consequence resolution for multiplayer play while preserving canonical module truth
+- **Status:** Planned
+
+**Planned focus:**
+- scene round action batch contract
+- multi-actor resolution against shared state
+- shared reveal and consequence summaries
+- compatibility pass for existing complex modules
+
+---
+
+## Queued Milestone
+
+**vA.1.3** - Closed-Loop Event Graph Runtime
+- **Primary Track:** Track A - 模组与规则运行层
+- **Goal:** Generalize action-to-event-to-consequence flow into a reusable closed-loop event graph runtime so future modules can be extracted into one framework instead of patched scene by scene
+- **Status:** Queued after vA.1.2
+
+**Planned focus:**
+- action intent and event entry contracts
+- event reaction and consequence nodes
+- spine-branch-ending runtime model
+- module extraction contract for event graphs
+
+**vA.1.4** - COC Core Rules Authority And Module Onboarding Metadata
+- **Primary Track:** Track A - 模组与规则运行层
+- **Goal:** Promote local COC rulebooks into canonical runtime truth for character generation, skill allocation, combat, injury, SAN, and module onboarding metadata
+- **Status:** Queued after vA.1.3
+
+**Planned focus:**
+- strict attribute / age / derived-stat rules
+- strict occupation + interest skill allocation rules
+- combat and injury state machine
+- SAN loss and insanity state handling
+- module onboarding metadata for new-player-friendly session starts
+
+---
+
 ## vA.1.1 Phases (COMPLETE)
 
 - [x] **Phase 1: 凄夜的游乐场迁移** - 结构化新模组 ✅
