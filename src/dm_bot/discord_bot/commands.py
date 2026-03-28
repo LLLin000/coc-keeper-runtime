@@ -2,6 +2,7 @@ import json
 from collections.abc import Awaitable, Callable
 
 from dm_bot.config import Settings, get_settings
+from dm_bot.discord_bot.channel_enforcer import ChannelEnforcer
 from dm_bot.discord_bot.streaming import StreamingMessageTransport
 from dm_bot.orchestrator.message_filters import MessageDisposition, classify_message
 from dm_bot.runtime.health import build_health_snapshot
@@ -30,6 +31,14 @@ class BotCommands:
         self._coc_assets = coc_assets
         self._archive_repository = archive_repository
         self._character_builder = character_builder
+        self._enforcer = ChannelEnforcer(session_store) if session_store else None
+
+    def check_channel(self, command_name: str, interaction) -> tuple[bool, str | None]:
+        if self._enforcer is None:
+            return True, None
+        guild_id = str(interaction.guild_id) if interaction.guild_id else ""
+        channel_id = str(interaction.channel_id) if interaction.channel_id else ""
+        return self._enforcer.check_command(command_name, guild_id, channel_id)
 
     async def setup_check(self, interaction) -> None:
         snapshot = build_health_snapshot(self._settings)
@@ -52,19 +61,31 @@ class BotCommands:
         )
 
     async def bind_archive_channel(self, interaction) -> None:
-        self._session_store.bind_archive_channel(guild_id=str(interaction.guild_id), channel_id=str(interaction.channel_id))
+        self._session_store.bind_archive_channel(
+            guild_id=str(interaction.guild_id), channel_id=str(interaction.channel_id)
+        )
         self._persist_sessions()
-        await interaction.response.send_message("当前频道已绑定为角色档案频道。", ephemeral=True)
+        await interaction.response.send_message(
+            "当前频道已绑定为角色档案频道。", ephemeral=True
+        )
 
     async def bind_trace_channel(self, interaction) -> None:
-        self._session_store.bind_trace_channel(guild_id=str(interaction.guild_id), channel_id=str(interaction.channel_id))
+        self._session_store.bind_trace_channel(
+            guild_id=str(interaction.guild_id), channel_id=str(interaction.channel_id)
+        )
         self._persist_sessions()
-        await interaction.response.send_message("当前频道已绑定为 KP/trace 频道。", ephemeral=True)
+        await interaction.response.send_message(
+            "当前频道已绑定为 KP/trace 频道。", ephemeral=True
+        )
 
     async def bind_admin_channel(self, interaction) -> None:
-        self._session_store.bind_admin_channel(guild_id=str(interaction.guild_id), channel_id=str(interaction.channel_id))
+        self._session_store.bind_admin_channel(
+            guild_id=str(interaction.guild_id), channel_id=str(interaction.channel_id)
+        )
         self._persist_sessions()
-        await interaction.response.send_message("当前频道已绑定为管理员角色管理频道。", ephemeral=True)
+        await interaction.response.send_message(
+            "当前频道已绑定为管理员角色管理频道。", ephemeral=True
+        )
 
     async def join_campaign(self, interaction) -> None:
         session = self._session_store.join_campaign(
@@ -90,35 +111,67 @@ class BotCommands:
 
     async def set_role(self, interaction, *, role: str) -> None:
         if self._session_store is None or self._gameplay is None:
-            await interaction.response.send_message("gameplay is not configured", ephemeral=True)
+            await interaction.response.send_message(
+                "gameplay is not configured", ephemeral=True
+            )
             return
-        self._session_store.bind_role(channel_id=str(interaction.channel_id), user_id=str(interaction.user.id), role=role)
+        self._session_store.bind_role(
+            channel_id=str(interaction.channel_id),
+            user_id=str(interaction.user.id),
+            role=role,
+        )
         self._persist_sessions()
         self._gameplay.ensure_investigator_panel(
             user_id=str(interaction.user.id),
-            display_name=getattr(interaction.user, "display_name", f"玩家{interaction.user.id}"),
+            display_name=getattr(
+                interaction.user, "display_name", f"玩家{interaction.user.id}"
+            ),
             role=role,
         )
-        await interaction.response.send_message(f"角色定位已设为 `{role}`", ephemeral=True)
+        await interaction.response.send_message(
+            f"角色定位已设为 `{role}`", ephemeral=True
+        )
 
-    async def start_character_builder(self, interaction, *, visibility: str = "private") -> None:
-        if self._character_builder is None:
-            await interaction.response.send_message("character builder is not configured", ephemeral=True)
+    async def start_character_builder(
+        self, interaction, *, visibility: str = "private"
+    ) -> None:
+        allowed, msg = self.check_channel("start_builder", interaction)
+        if not allowed:
+            await interaction.response.send_message(msg, ephemeral=True)
             return
-        prompt = self._character_builder.start(user_id=str(interaction.user.id), visibility=visibility)
-        await interaction.response.send_message(prompt, ephemeral=visibility == "private")
+        if self._character_builder is None:
+            await interaction.response.send_message(
+                "character builder is not configured", ephemeral=True
+            )
+            return
+        prompt = self._character_builder.start(
+            user_id=str(interaction.user.id), visibility=visibility
+        )
+        await interaction.response.send_message(
+            prompt, ephemeral=visibility == "private"
+        )
 
     async def builder_reply(self, interaction, *, answer: str) -> None:
-        if self._character_builder is None or self._archive_repository is None:
-            await interaction.response.send_message("character builder is not configured", ephemeral=True)
+        allowed, msg = self.check_channel("builder_reply", interaction)
+        if not allowed:
+            await interaction.response.send_message(msg, ephemeral=True)
             return
-        prompt, profile = await self._character_builder.answer(user_id=str(interaction.user.id), answer=answer)
+        if self._character_builder is None or self._archive_repository is None:
+            await interaction.response.send_message(
+                "character builder is not configured", ephemeral=True
+            )
+            return
+        prompt, profile = await self._character_builder.answer(
+            user_id=str(interaction.user.id), answer=answer
+        )
         self._persist_archives()
         ephemeral = True
         if profile is None:
             await interaction.response.send_message(prompt, ephemeral=ephemeral)
             return
-        await self._sync_selected_profile_projections(user_id=str(interaction.user.id), profile=profile)
+        await self._sync_selected_profile_projections(
+            user_id=str(interaction.user.id), profile=profile
+        )
         await interaction.response.send_message(
             f"{prompt}\nAI 只会补充职业细化、背景摘要和人物归档字段；不会静默覆盖你明确给出的年龄、职业、人生目标和弱点。\n"
             f"你现在可以在档案频道使用 `/profiles` 或在游戏大厅里 `/select_profile profile_id:{profile.profile_id}`。",
@@ -126,32 +179,54 @@ class BotCommands:
         )
 
     async def list_profiles(self, interaction) -> None:
+        allowed, msg = self.check_channel("profiles", interaction)
+        if not allowed:
+            await interaction.response.send_message(msg, ephemeral=True)
+            return
         if self._archive_repository is None:
-            await interaction.response.send_message("archive repository is not configured", ephemeral=True)
+            await interaction.response.send_message(
+                "archive repository is not configured", ephemeral=True
+            )
             return
         profiles = self._archive_repository.list_profiles(str(interaction.user.id))
         if not profiles:
-            await interaction.response.send_message("你还没有长期调查员档案。先用 `/start_builder` 建一张。", ephemeral=True)
+            await interaction.response.send_message(
+                "你还没有长期调查员档案。先用 `/start_builder` 建一张。", ephemeral=True
+            )
             return
         lines = [item.summary_line() for item in profiles]
         await interaction.response.send_message("\n".join(lines), ephemeral=True)
 
     async def profile_detail(self, interaction, *, profile_id: str) -> None:
-        if self._archive_repository is None:
-            await interaction.response.send_message("archive repository is not configured", ephemeral=True)
+        allowed, msg = self.check_channel("profile_detail", interaction)
+        if not allowed:
+            await interaction.response.send_message(msg, ephemeral=True)
             return
-        profile = self._archive_repository.get_profile(str(interaction.user.id), profile_id)
+        if self._archive_repository is None:
+            await interaction.response.send_message(
+                "archive repository is not configured", ephemeral=True
+            )
+            return
+        profile = self._archive_repository.get_profile(
+            str(interaction.user.id), profile_id
+        )
         await interaction.response.send_message(profile.detail_view(), ephemeral=True)
 
     async def select_profile(self, interaction, *, profile_id: str) -> None:
         if self._archive_repository is None:
-            await interaction.response.send_message("archive repository is not configured", ephemeral=True)
+            await interaction.response.send_message(
+                "archive repository is not configured", ephemeral=True
+            )
             return
         session = self._session_store.get_by_channel(str(interaction.channel_id))
         if session is None:
-            await interaction.response.send_message("no campaign bound to this channel", ephemeral=True)
+            await interaction.response.send_message(
+                "no campaign bound to this channel", ephemeral=True
+            )
             return
-        profile = self._archive_repository.get_profile(str(interaction.user.id), profile_id)
+        profile = self._archive_repository.get_profile(
+            str(interaction.user.id), profile_id
+        )
         self._session_store.select_archive_profile(
             channel_id=str(interaction.channel_id),
             user_id=str(interaction.user.id),
@@ -163,46 +238,75 @@ class BotCommands:
             user_id=str(interaction.user.id),
             profile=profile,
         )
-        await interaction.response.send_message(f"已为本团选择档案角色 `{profile.name}`。", ephemeral=True)
+        await interaction.response.send_message(
+            f"已为本团选择档案角色 `{profile.name}`。", ephemeral=True
+        )
 
     async def archive_profile(self, interaction, *, profile_id: str) -> None:
         if self._archive_repository is None:
-            await interaction.response.send_message("archive repository is not configured", ephemeral=True)
+            await interaction.response.send_message(
+                "archive repository is not configured", ephemeral=True
+            )
             return
-        profile = self._archive_repository.archive_profile(user_id=str(interaction.user.id), profile_id=profile_id)
+        profile = self._archive_repository.archive_profile(
+            user_id=str(interaction.user.id), profile_id=profile_id
+        )
         self._persist_archives()
-        await self._sync_selected_profile_projections(user_id=str(interaction.user.id), profile=profile)
-        await interaction.response.send_message(f"已归档 `{profile.name}`。", ephemeral=True)
+        await self._sync_selected_profile_projections(
+            user_id=str(interaction.user.id), profile=profile
+        )
+        await interaction.response.send_message(
+            f"已归档 `{profile.name}`。", ephemeral=True
+        )
 
     async def activate_profile(self, interaction, *, profile_id: str) -> None:
         if self._archive_repository is None:
-            await interaction.response.send_message("archive repository is not configured", ephemeral=True)
+            await interaction.response.send_message(
+                "archive repository is not configured", ephemeral=True
+            )
             return
-        profile = self._archive_repository.replace_active_with(user_id=str(interaction.user.id), profile_id=profile_id)
+        profile = self._archive_repository.replace_active_with(
+            user_id=str(interaction.user.id), profile_id=profile_id
+        )
         self._persist_archives()
-        await self._sync_selected_profile_projections(user_id=str(interaction.user.id), profile=profile)
-        await interaction.response.send_message(f"已将 `{profile.name}` 设为当前激活档案。", ephemeral=True)
+        await self._sync_selected_profile_projections(
+            user_id=str(interaction.user.id), profile=profile
+        )
+        await interaction.response.send_message(
+            f"已将 `{profile.name}` 设为当前激活档案。", ephemeral=True
+        )
 
     async def admin_profiles(self, interaction) -> None:
+        allowed, msg = self.check_channel("admin_profiles", interaction)
+        if not allowed:
+            await interaction.response.send_message(msg, ephemeral=True)
+            return
         if self._archive_repository is None:
-            await interaction.response.send_message("archive repository is not configured", ephemeral=True)
+            await interaction.response.send_message(
+                "archive repository is not configured", ephemeral=True
+            )
             return
         if not self._is_admin(interaction):
-            await interaction.response.send_message("你没有管理员权限。", ephemeral=True)
+            await interaction.response.send_message(
+                "你没有管理员权限。", ephemeral=True
+            )
             return
         guidance = self._admin_channel_guidance(interaction)
         profiles = self._archive_repository.list_all_profiles()
         if not profiles:
-            await interaction.response.send_message(guidance + "\n当前没有任何角色档案。", ephemeral=True)
+            await interaction.response.send_message(
+                guidance + "\n当前没有任何角色档案。", ephemeral=True
+            )
             return
         lines = [guidance] if guidance else []
-        lines.extend(
-            f"{item.user_id} | {item.summary_line()}"
-            for item in profiles
-        )
+        lines.extend(f"{item.user_id} | {item.summary_line()}" for item in profiles)
         await interaction.response.send_message("\n".join(lines), ephemeral=True)
 
     async def take_turn(self, interaction, *, content: str) -> None:
+        allowed, msg = self.check_channel("take_turn", interaction)
+        if not allowed:
+            await interaction.response.send_message(msg, ephemeral=True)
+            return
         session = self._session_store.get_by_channel(str(interaction.channel_id))
         if session is None:
             await interaction.response.send_message(
@@ -213,17 +317,25 @@ class BotCommands:
 
         await interaction.response.defer(thinking=True)
         self._load_campaign_state(session.campaign_id)
-        blocked = self._combat_gate_message(channel_id=str(interaction.channel_id), user_id=str(interaction.user.id))
+        blocked = self._combat_gate_message(
+            channel_id=str(interaction.channel_id), user_id=str(interaction.user.id)
+        )
         if blocked:
             await interaction.followup.send(blocked, ephemeral=True)
             return
-        onboarding_block = self._gameplay.onboarding_block_message() if self._gameplay is not None else None
+        onboarding_block = (
+            self._gameplay.onboarding_block_message()
+            if self._gameplay is not None
+            else None
+        )
         if onboarding_block:
             await interaction.followup.send(onboarding_block, ephemeral=True)
             return
         adventure_response = self._evaluate_adventure_guidance(content=content)
         if adventure_response is not None:
-            self._record_trigger_events(session.campaign_id, list(adventure_response.get("trigger_events", [])))
+            self._record_trigger_events(
+                session.campaign_id, list(adventure_response.get("trigger_events", []))
+            )
             self._save_campaign_state(session.campaign_id)
             await interaction.followup.send(str(adventure_response["message"]))
             return
@@ -237,7 +349,9 @@ class BotCommands:
         )
         self._save_campaign_state(session.campaign_id)
 
-    async def import_character(self, interaction, *, provider: str, external_id: str) -> None:
+    async def import_character(
+        self, interaction, *, provider: str, external_id: str
+    ) -> None:
         if self._gameplay is None:
             await interaction.response.send_message(
                 "character import is not configured",
@@ -264,7 +378,9 @@ class BotCommands:
 
     async def enter_scene(self, interaction, *, speakers: str) -> None:
         if self._gameplay is None:
-            await interaction.response.send_message("gameplay is not configured", ephemeral=True)
+            await interaction.response.send_message(
+                "gameplay is not configured", ephemeral=True
+            )
             return
         self._load_state_for_channel(str(interaction.channel_id))
         parsed = [item.strip() for item in speakers.split(",") if item.strip()]
@@ -277,7 +393,9 @@ class BotCommands:
 
     async def end_scene(self, interaction) -> None:
         if self._gameplay is None:
-            await interaction.response.send_message("gameplay is not configured", ephemeral=True)
+            await interaction.response.send_message(
+                "gameplay is not configured", ephemeral=True
+            )
             return
         self._load_state_for_channel(str(interaction.channel_id))
         self._gameplay.end_scene()
@@ -286,14 +404,18 @@ class BotCommands:
 
     async def start_combat(self, interaction, *, combatants: str) -> None:
         if self._gameplay is None:
-            await interaction.response.send_message("gameplay is not configured", ephemeral=True)
+            await interaction.response.send_message(
+                "gameplay is not configured", ephemeral=True
+            )
             return
         self._load_state_for_channel(str(interaction.channel_id))
         parsed = []
         from dm_bot.gameplay.combat import Combatant
 
         for raw in combatants.split(","):
-            name, initiative, hit_points, armor_class = [part.strip() for part in raw.split(":")]
+            name, initiative, hit_points, armor_class = [
+                part.strip() for part in raw.split(":")
+            ]
             parsed.append(
                 Combatant(
                     name=name,
@@ -311,14 +433,20 @@ class BotCommands:
 
     async def show_combat(self, interaction) -> None:
         if self._gameplay is None:
-            await interaction.response.send_message("gameplay is not configured", ephemeral=True)
+            await interaction.response.send_message(
+                "gameplay is not configured", ephemeral=True
+            )
             return
         self._load_state_for_channel(str(interaction.channel_id))
-        await interaction.response.send_message(self._gameplay.combat_summary(), ephemeral=True)
+        await interaction.response.send_message(
+            self._gameplay.combat_summary(), ephemeral=True
+        )
 
     async def next_turn(self, interaction) -> None:
         if self._gameplay is None:
-            await interaction.response.send_message("gameplay is not configured", ephemeral=True)
+            await interaction.response.send_message(
+                "gameplay is not configured", ephemeral=True
+            )
             return
         self._load_state_for_channel(str(interaction.channel_id))
         encounter = self._gameplay.next_combat_turn()
@@ -332,8 +460,14 @@ class BotCommands:
         )
 
     async def load_adventure(self, interaction, *, adventure_id: str) -> None:
+        allowed, msg = self.check_channel("load_adventure", interaction)
+        if not allowed:
+            await interaction.response.send_message(msg, ephemeral=True)
+            return
         if self._gameplay is None:
-            await interaction.response.send_message("gameplay is not configured", ephemeral=True)
+            await interaction.response.send_message(
+                "gameplay is not configured", ephemeral=True
+            )
             return
         from dm_bot.adventures.loader import load_adventure
 
@@ -349,14 +483,24 @@ class BotCommands:
             f"《{adventure.title}》已加载。已加入玩家请使用 `/ready` 完成就位；如未导入角色，可在 `/ready` 时填写角色名。"
         )
 
-    async def ready_for_adventure(self, interaction, *, character_name: str = "") -> None:
+    async def ready_for_adventure(
+        self, interaction, *, character_name: str = ""
+    ) -> None:
+        allowed, msg = self.check_channel("ready", interaction)
+        if not allowed:
+            await interaction.response.send_message(msg, ephemeral=True)
+            return
         if self._gameplay is None or self._session_store is None:
-            await interaction.response.send_message("gameplay is not configured", ephemeral=True)
+            await interaction.response.send_message(
+                "gameplay is not configured", ephemeral=True
+            )
             return
         self._load_state_for_channel(str(interaction.channel_id))
         session = self._session_store.get_by_channel(str(interaction.channel_id))
         if session is None:
-            await interaction.response.send_message("no campaign bound to this channel", ephemeral=True)
+            await interaction.response.send_message(
+                "no campaign bound to this channel", ephemeral=True
+            )
             return
         resolved_name = character_name.strip()
         if character_name.strip():
@@ -372,7 +516,9 @@ class BotCommands:
                 user_id=str(interaction.user.id),
             )
             if selected_profile_id:
-                profile = self._archive_repository.get_profile(str(interaction.user.id), selected_profile_id)
+                profile = self._archive_repository.get_profile(
+                    str(interaction.user.id), selected_profile_id
+                )
                 resolved_name = profile.name
                 self._session_store.bind_character(
                     channel_id=str(interaction.channel_id),
@@ -381,20 +527,36 @@ class BotCommands:
                 )
                 self._persist_sessions()
                 if self._gameplay is not None:
-                    role = self._session_store.active_role_for(channel_id=str(interaction.channel_id), user_id=str(interaction.user.id)) or "investigator"
+                    role = (
+                        self._session_store.active_role_for(
+                            channel_id=str(interaction.channel_id),
+                            user_id=str(interaction.user.id),
+                        )
+                        or "investigator"
+                    )
                     panel = self._gameplay.sync_panel_from_archive_profile(
                         user_id=str(interaction.user.id),
                         profile=profile,
                         role=role,
                     )
-        role = self._session_store.active_role_for(channel_id=str(interaction.channel_id), user_id=str(interaction.user.id)) or "investigator"
+        role = (
+            self._session_store.active_role_for(
+                channel_id=str(interaction.channel_id), user_id=str(interaction.user.id)
+            )
+            or "investigator"
+        )
         self._gameplay.ensure_investigator_panel(
             user_id=str(interaction.user.id),
-            display_name=resolved_name or getattr(interaction.user, "display_name", f"玩家{interaction.user.id}"),
+            display_name=resolved_name
+            or getattr(interaction.user, "display_name", f"玩家{interaction.user.id}"),
             role=role,
         )
-        seeded = self._gameplay.seed_role_knowledge(user_id=str(interaction.user.id), role=role)
-        onboarding = self._gameplay.mark_adventure_ready(user_id=str(interaction.user.id))
+        seeded = self._gameplay.seed_role_knowledge(
+            user_id=str(interaction.user.id), role=role
+        )
+        onboarding = self._gameplay.mark_adventure_ready(
+            user_id=str(interaction.user.id)
+        )
         ready_ids = set(onboarding.get("ready_user_ids", []))
         await interaction.response.send_message(
             f"已就位 ({len(ready_ids)}/{len(session.member_ids)})",
@@ -404,13 +566,20 @@ class BotCommands:
         if track:
             private_lines = [f"【{track['title']}】", track["opening_text"]]
             if seeded:
-                private_lines.append("私人导入：" + "；".join(item.get("title", "") for item in seeded if item.get("title")))
+                private_lines.append(
+                    "私人导入："
+                    + "；".join(
+                        item.get("title", "") for item in seeded if item.get("title")
+                    )
+                )
             await interaction.followup.send("\n".join(private_lines), ephemeral=True)
         if session.member_ids and ready_ids.issuperset(session.member_ids):
             self._gameplay.begin_adventure()
             self._save_state_for_channel(str(interaction.channel_id))
             await interaction.channel.send(
-                self._gameplay.adventure_opening_text(active_characters=session.active_characters)
+                self._gameplay.adventure_opening_text(
+                    active_characters=session.active_characters
+                )
             )
         else:
             self._save_state_for_channel(str(interaction.channel_id))
@@ -424,7 +593,9 @@ class BotCommands:
         )
         await interaction.response.send_message(result, ephemeral=False)
 
-    async def check_roll(self, interaction, *, label: str, modifier: int, advantage: str = "none") -> None:
+    async def check_roll(
+        self, interaction, *, label: str, modifier: int, advantage: str = "none"
+    ) -> None:
         result = self._safe_roll_for_channel(
             channel_id=str(interaction.channel_id),
             user_id=str(interaction.user.id),
@@ -435,7 +606,9 @@ class BotCommands:
         )
         await interaction.response.send_message(result, ephemeral=False)
 
-    async def save_roll(self, interaction, *, label: str, modifier: int, advantage: str = "none") -> None:
+    async def save_roll(
+        self, interaction, *, label: str, modifier: int, advantage: str = "none"
+    ) -> None:
         result = self._safe_roll_for_channel(
             channel_id=str(interaction.channel_id),
             user_id=str(interaction.user.id),
@@ -518,7 +691,9 @@ class BotCommands:
 
     async def debug_status(self, interaction, *, campaign_id: str) -> None:
         if self._diagnostics is None:
-            await interaction.response.send_message("diagnostics are not configured", ephemeral=True)
+            await interaction.response.send_message(
+                "diagnostics are not configured", ephemeral=True
+            )
             return
         await interaction.response.send_message(
             self._diagnostics.recent_summary(campaign_id),
@@ -527,43 +702,69 @@ class BotCommands:
 
     async def coc_assets_summary(self, interaction) -> None:
         if self._coc_assets is None:
-            await interaction.response.send_message("COC assets are not configured", ephemeral=True)
+            await interaction.response.send_message(
+                "COC assets are not configured", ephemeral=True
+            )
             return
         summary = self._coc_assets.summary()
-        rulebooks = ", ".join(item["name"] for item in summary.get("rulebooks", [])) or "none"
-        investigators = ", ".join(item["name"] for item in summary.get("investigators", [])) or "none"
-        refs = ", ".join(item["title"] for item in summary.get("community_references", [])) or "none"
+        rulebooks = (
+            ", ".join(item["name"] for item in summary.get("rulebooks", [])) or "none"
+        )
+        investigators = (
+            ", ".join(item["name"] for item in summary.get("investigators", []))
+            or "none"
+        )
+        refs = (
+            ", ".join(item["title"] for item in summary.get("community_references", []))
+            or "none"
+        )
         await interaction.response.send_message(
             f"rulebooks: {rulebooks}\ninvestigators: {investigators}\nreferences: {refs}",
             ephemeral=True,
         )
 
     async def show_sheet(self, interaction) -> None:
-        archive_channel = self._session_store.archive_channel_for(str(interaction.guild_id)) if self._session_store else None
-        if archive_channel and str(interaction.channel_id) != archive_channel:
-            await interaction.response.send_message(
-                f"请到角色档案频道 `<#{archive_channel}>` 查看长期角色信息。",
-                ephemeral=True,
-            )
+        allowed, msg = self.check_channel("sheet", interaction)
+        if not allowed:
+            await interaction.response.send_message(msg, ephemeral=True)
             return
         if self._archive_repository is not None:
-            active_profile = self._archive_repository.active_profile(str(interaction.user.id))
+            active_profile = self._archive_repository.active_profile(
+                str(interaction.user.id)
+            )
             if active_profile is not None:
-                await interaction.response.send_message(active_profile.detail_view(), ephemeral=True)
+                await interaction.response.send_message(
+                    active_profile.detail_view(), ephemeral=True
+                )
                 return
         if self._gameplay is None:
-            await interaction.response.send_message("gameplay is not configured", ephemeral=True)
+            await interaction.response.send_message(
+                "gameplay is not configured", ephemeral=True
+            )
             return
         snapshot = self._gameplay.investigator_panel_snapshot(str(interaction.user.id))
-        knowledge_titles = [item.get("title", "") for item in snapshot.get("knowledge", []) if item.get("title")]
+        knowledge_titles = [
+            item.get("title", "")
+            for item in snapshot.get("knowledge", [])
+            if item.get("title")
+        ]
         panel = self._gameplay.panels.get(str(interaction.user.id))
         if panel is None:
             panel = self._gameplay.ensure_investigator_panel(
                 user_id=str(interaction.user.id),
-                display_name=getattr(interaction.user, "display_name", f"玩家{interaction.user.id}"),
-                role=self._session_store.active_role_for(channel_id=str(interaction.channel_id), user_id=str(interaction.user.id)) if self._session_store else "investigator",
+                display_name=getattr(
+                    interaction.user, "display_name", f"玩家{interaction.user.id}"
+                ),
+                role=self._session_store.active_role_for(
+                    channel_id=str(interaction.channel_id),
+                    user_id=str(interaction.user.id),
+                )
+                if self._session_store
+                else "investigator",
             )
-        await interaction.response.send_message(panel.summary(knowledge_titles=knowledge_titles), ephemeral=True)
+        await interaction.response.send_message(
+            panel.summary(knowledge_titles=knowledge_titles), ephemeral=True
+        )
 
     async def handle_channel_message(
         self,
@@ -586,7 +787,11 @@ class BotCommands:
         if self._session_store is None or self._turn_coordinator is None:
             return None
         session = self._session_store.get_by_channel(channel_id)
-        if session is None or session.guild_id != guild_id or user_id not in session.member_ids:
+        if (
+            session is None
+            or session.guild_id != guild_id
+            or user_id not in session.member_ids
+        ):
             return None
 
         disposition = classify_message(content, mention_count=mention_count)
@@ -594,7 +799,11 @@ class BotCommands:
             return None
 
         self._load_campaign_state(session.campaign_id)
-        onboarding_block = self._gameplay.onboarding_block_message() if self._gameplay is not None else None
+        onboarding_block = (
+            self._gameplay.onboarding_block_message()
+            if self._gameplay is not None
+            else None
+        )
         if onboarding_block:
             return onboarding_block
 
@@ -604,13 +813,17 @@ class BotCommands:
             content=content,
         )
         if inline_roll is not None:
-            self._record_trigger_events(session.campaign_id, self._consume_gameplay_trigger_events())
+            self._record_trigger_events(
+                session.campaign_id, self._consume_gameplay_trigger_events()
+            )
             self._save_campaign_state(session.campaign_id)
             return inline_roll
 
         adventure_response = self._evaluate_adventure_guidance(content=content)
         if adventure_response is not None:
-            self._record_trigger_events(session.campaign_id, list(adventure_response.get("trigger_events", [])))
+            self._record_trigger_events(
+                session.campaign_id, list(adventure_response.get("trigger_events", []))
+            )
             self._save_campaign_state(session.campaign_id)
             return str(adventure_response["message"])
 
@@ -649,7 +862,11 @@ class BotCommands:
         if self._session_store is None or self._turn_coordinator is None:
             return
         session = self._session_store.get_by_channel(channel_id)
-        if session is None or session.guild_id != guild_id or user_id not in session.member_ids:
+        if (
+            session is None
+            or session.guild_id != guild_id
+            or user_id not in session.member_ids
+        ):
             return
 
         disposition = classify_message(content, mention_count=mention_count)
@@ -657,21 +874,31 @@ class BotCommands:
             return
 
         self._load_campaign_state(session.campaign_id)
-        onboarding_block = self._gameplay.onboarding_block_message() if self._gameplay is not None else None
+        onboarding_block = (
+            self._gameplay.onboarding_block_message()
+            if self._gameplay is not None
+            else None
+        )
         if onboarding_block:
             await message.channel.send(onboarding_block)
             return
 
-        inline_roll = self._try_inline_roll(channel_id=channel_id, user_id=user_id, content=content)
+        inline_roll = self._try_inline_roll(
+            channel_id=channel_id, user_id=user_id, content=content
+        )
         if inline_roll is not None:
-            self._record_trigger_events(session.campaign_id, self._consume_gameplay_trigger_events())
+            self._record_trigger_events(
+                session.campaign_id, self._consume_gameplay_trigger_events()
+            )
             self._save_campaign_state(session.campaign_id)
             await message.channel.send(inline_roll)
             return
 
         adventure_response = self._evaluate_adventure_guidance(content=content)
         if adventure_response is not None:
-            self._record_trigger_events(session.campaign_id, list(adventure_response.get("trigger_events", [])))
+            self._record_trigger_events(
+                session.campaign_id, list(adventure_response.get("trigger_events", []))
+            )
             self._save_campaign_state(session.campaign_id)
             await message.channel.send(str(adventure_response["message"]))
             return
@@ -687,11 +914,15 @@ class BotCommands:
             user_id=user_id,
             content=content,
             send_initial=lambda initial: message.channel.send(initial),
-            edit_message=lambda sent_message, updated: sent_message.edit(content=updated),
+            edit_message=lambda sent_message, updated: sent_message.edit(
+                content=updated
+            ),
         )
         self._save_campaign_state(session.campaign_id)
 
-    async def _dispatch_turn(self, *, campaign_id: str, channel_id: str, user_id: str, content: str):
+    async def _dispatch_turn(
+        self, *, campaign_id: str, channel_id: str, user_id: str, content: str
+    ):
         return await self._turn_coordinator.handle_turn(
             campaign_id=campaign_id,
             channel_id=channel_id,
@@ -709,7 +940,9 @@ class BotCommands:
         send_initial: Callable[[str], Awaitable[object]],
         edit_message: Callable[[object, str], Awaitable[None]],
     ) -> str:
-        transport = StreamingMessageTransport(send_initial=send_initial, edit_message=edit_message)
+        transport = StreamingMessageTransport(
+            send_initial=send_initial, edit_message=edit_message
+        )
         return await transport.stream(
             self._turn_coordinator.stream_turn(
                 campaign_id=campaign_id,
@@ -725,7 +958,9 @@ class BotCommands:
         active_name = self._gameplay.active_combatant_name()
         if active_name is None:
             return None
-        actor_name = self._session_store.active_character_for(channel_id=channel_id, user_id=user_id)
+        actor_name = self._session_store.active_character_for(
+            channel_id=channel_id, user_id=user_id
+        )
         if actor_name == active_name:
             return None
         return f"当前轮到 {active_name} 行动。"
@@ -738,32 +973,55 @@ class BotCommands:
     def _persist_archives(self) -> None:
         if self._persistence_store is None or self._archive_repository is None:
             return
-        self._persistence_store.save_archive_profiles(self._archive_repository.export_state())
+        self._persistence_store.save_archive_profiles(
+            self._archive_repository.export_state()
+        )
 
-    async def _sync_selected_profile_projections(self, *, user_id: str, profile) -> None:
+    async def _sync_selected_profile_projections(
+        self, *, user_id: str, profile
+    ) -> None:
         if self._session_store is None:
             return
-        for channel_id in self._session_store.channels_selecting_profile(user_id=user_id, profile_id=profile.profile_id):
-            await self._sync_profile_projection_for_channel(channel_id=channel_id, user_id=user_id, profile=profile)
+        for channel_id in self._session_store.channels_selecting_profile(
+            user_id=user_id, profile_id=profile.profile_id
+        ):
+            await self._sync_profile_projection_for_channel(
+                channel_id=channel_id, user_id=user_id, profile=profile
+            )
 
-    async def _sync_profile_projection_for_channel(self, *, channel_id: str, user_id: str, profile) -> None:
+    async def _sync_profile_projection_for_channel(
+        self, *, channel_id: str, user_id: str, profile
+    ) -> None:
         if self._session_store is None or self._gameplay is None:
             return
         session = self._session_store.get_by_channel(channel_id)
         if session is None:
             return
         self._load_campaign_state(session.campaign_id)
-        role = self._session_store.active_role_for(channel_id=channel_id, user_id=user_id) or "investigator"
-        self._session_store.bind_character(channel_id=channel_id, user_id=user_id, character_name=profile.name)
+        role = (
+            self._session_store.active_role_for(channel_id=channel_id, user_id=user_id)
+            or "investigator"
+        )
+        self._session_store.bind_character(
+            channel_id=channel_id, user_id=user_id, character_name=profile.name
+        )
         self._persist_sessions()
-        self._gameplay.sync_panel_from_archive_profile(user_id=user_id, profile=profile, role=role)
+        self._gameplay.sync_panel_from_archive_profile(
+            user_id=user_id, profile=profile, role=role
+        )
         self._save_campaign_state(session.campaign_id)
 
     def _is_admin(self, interaction) -> bool:
-        guild_permissions = getattr(getattr(interaction, "user", None), "guild_permissions", None)
+        guild_permissions = getattr(
+            getattr(interaction, "user", None), "guild_permissions", None
+        )
         if getattr(guild_permissions, "administrator", False):
             return True
-        session = self._session_store.get_by_channel(str(interaction.channel_id)) if self._session_store is not None else None
+        session = (
+            self._session_store.get_by_channel(str(interaction.channel_id))
+            if self._session_store is not None
+            else None
+        )
         return session is not None and session.owner_id == str(interaction.user.id)
 
     def _admin_channel_guidance(self, interaction) -> str:
@@ -782,15 +1040,23 @@ class BotCommands:
         user_id: str,
         content: str,
     ) -> str | None:
-        if self._session_store is None or self._character_builder is None or self._archive_repository is None:
+        if (
+            self._session_store is None
+            or self._character_builder is None
+            or self._archive_repository is None
+        ):
             return None
         archive_channel = self._session_store.archive_channel_for(guild_id)
-        if archive_channel != channel_id or not self._character_builder.has_session(user_id):
+        if archive_channel != channel_id or not self._character_builder.has_session(
+            user_id
+        ):
             return None
         answer = content.strip()
         if not answer:
             return None
-        prompt, profile = await self._character_builder.answer(user_id=user_id, answer=answer)
+        prompt, profile = await self._character_builder.answer(
+            user_id=user_id, answer=answer
+        )
         self._persist_archives()
         if profile is None:
             return prompt
@@ -807,7 +1073,9 @@ class BotCommands:
     def _save_campaign_state(self, campaign_id: str) -> None:
         if self._persistence_store is None or self._gameplay is None:
             return
-        self._persistence_store.save_campaign_state(campaign_id, self._gameplay.export_state())
+        self._persistence_store.save_campaign_state(
+            campaign_id, self._gameplay.export_state()
+        )
 
     def _load_campaign_state(self, campaign_id: str) -> None:
         if self._persistence_store is None or self._gameplay is None:
@@ -824,28 +1092,50 @@ class BotCommands:
             return
         self._load_campaign_state(session.campaign_id)
 
-    def _resolve_roll_for_channel(self, *, channel_id: str, user_id: str, action: str, **kwargs) -> str:
+    def _resolve_roll_for_channel(
+        self, *, channel_id: str, user_id: str, action: str, **kwargs
+    ) -> str:
         if self._session_store is None or self._gameplay is None:
             return "gameplay is not configured"
         self._load_state_for_channel(channel_id)
-        actor_name = self._session_store.active_character_for(channel_id=channel_id, user_id=user_id) or f"玩家{user_id}"
-        result = self._gameplay.resolve_manual_roll(actor_name=actor_name, action=action, **kwargs)
+        actor_name = (
+            self._session_store.active_character_for(
+                channel_id=channel_id, user_id=user_id
+            )
+            or f"玩家{user_id}"
+        )
+        result = self._gameplay.resolve_manual_roll(
+            actor_name=actor_name, action=action, **kwargs
+        )
         return self._format_roll_result(result)
 
-    def _safe_roll_for_channel(self, *, channel_id: str, user_id: str, action: str, **kwargs) -> str:
+    def _safe_roll_for_channel(
+        self, *, channel_id: str, user_id: str, action: str, **kwargs
+    ) -> str:
         try:
-            return self._resolve_roll_for_channel(channel_id=channel_id, user_id=user_id, action=action, **kwargs)
+            return self._resolve_roll_for_channel(
+                channel_id=channel_id, user_id=user_id, action=action, **kwargs
+            )
         except Exception as exc:
             return f"掷骰失败：{exc}"
 
-    def _try_inline_roll(self, *, channel_id: str, user_id: str, content: str) -> str | None:
+    def _try_inline_roll(
+        self, *, channel_id: str, user_id: str, content: str
+    ) -> str | None:
         stripped = content.strip()
         lowered = stripped.lower()
         try:
             if lowered.startswith("roll "):
-                return self._resolve_roll_for_channel(channel_id=channel_id, user_id=user_id, action="raw_roll", expression=stripped[5:].strip())
+                return self._resolve_roll_for_channel(
+                    channel_id=channel_id,
+                    user_id=user_id,
+                    action="raw_roll",
+                    expression=stripped[5:].strip(),
+                )
             if lowered.startswith("check "):
-                label, modifier, advantage = self._split_check_payload(stripped[6:].strip())
+                label, modifier, advantage = self._split_check_payload(
+                    stripped[6:].strip()
+                )
                 return self._resolve_roll_for_channel(
                     channel_id=channel_id,
                     user_id=user_id,
@@ -855,7 +1145,9 @@ class BotCommands:
                     advantage=advantage,
                 )
             if lowered.startswith("save "):
-                label, modifier, advantage = self._split_check_payload(stripped[5:].strip())
+                label, modifier, advantage = self._split_check_payload(
+                    stripped[5:].strip()
+                )
                 return self._resolve_roll_for_channel(
                     channel_id=channel_id,
                     user_id=user_id,
@@ -966,7 +1258,9 @@ class BotCommands:
             }
         return None
 
-    def _record_trigger_events(self, campaign_id: str, events: list[dict[str, object]]) -> None:
+    def _record_trigger_events(
+        self, campaign_id: str, events: list[dict[str, object]]
+    ) -> None:
         if self._persistence_store is None:
             return
         for event in events:

@@ -16,14 +16,20 @@ class DiscordDmBot(commands.Bot):
         self._register_commands()
 
     async def setup_hook(self) -> None:
+        print("SYNC_START", flush=True)
         if self.sync_guild_id:
             guild = discord.Object(id=int(self.sync_guild_id))
             self.tree.copy_global_to(guild=guild)
             self.tree.clear_commands(guild=None)
-            await self.tree.sync()
-            await self.tree.sync(guild=guild)
+            global_synced = await self.tree.sync()
+            guild_synced = await self.tree.sync(guild=guild)
+            print(
+                f"SYNC_DONE global={len(global_synced)} guild={len(guild_synced)}",
+                flush=True,
+            )
         else:
-            await self.tree.sync()
+            synced = await self.tree.sync()
+            print(f"SYNC_DONE global={len(synced)}", flush=True)
 
     async def on_ready(self) -> None:
         if self.user is not None:

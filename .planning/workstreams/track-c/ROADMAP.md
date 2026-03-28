@@ -11,7 +11,7 @@
 ## vC.1.1 Phases
 
 - [x] **Phase 44: Channel Structure** - Define channel roles and bindings
-- [ ] **Phase 45: Command Routing** - Implement channel-aware command routing
+- [x] **Phase 45: Command Routing** - Implement channel-aware command routing
 - [ ] **Phase 46: Guidance & Polish** - Add guidance, reduce clutter
 
 ### Phase 44: Channel Structure

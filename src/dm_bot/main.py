@@ -28,6 +28,7 @@ from dm_bot.router.service import RouterService
 from dm_bot.rules.compendium import FixtureCompendium
 from dm_bot.rules.engine import RulesEngine
 from dm_bot.runtime.app import create_app
+from dm_bot.runtime.restart_system import run_restart_system
 from dm_bot.runtime.smoke_check import run_local_smoke_check
 import uvicorn
 
@@ -133,7 +134,10 @@ def run_api(settings: Settings | None = None) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="dm-bot")
-    parser.add_argument("command", choices=["preflight", "run-api", "run-bot", "smoke-check"])
+    parser.add_argument(
+        "command",
+        choices=["preflight", "run-api", "run-bot", "smoke-check", "restart-system"],
+    )
     args = parser.parse_args(argv)
 
     if args.command == "preflight":
@@ -147,6 +151,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "smoke-check":
         return run_local_smoke_check(cwd=Path.cwd())
+    if args.command == "restart-system":
+        return run_restart_system(cwd=Path.cwd())
     return 1
 
 
