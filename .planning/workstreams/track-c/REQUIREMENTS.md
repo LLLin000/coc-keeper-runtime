@@ -26,6 +26,19 @@ Milestone: C1 Channel Governance And Command Discipline Hardening
 - [ ] **CLUTTER-02**: Diagnostic commands prefer trace/admin channels
 - [ ] **CLUTTER-03**: Gameplay narration stays in game halls, not cross-posted
 
+### Command Stability (命令稳定性)
+
+- [ ] **STABLE-01**: Commands with in-progress state (e.g., start-builder) detect existing sessions and reject duplicate invocations with clear message
+- [ ] **STABLE-02**: Command state is persisted so mid-command failures don't leave orphaned state
+- [ ] **STABLE-03**: Users can cancel/abort in-progress commands gracefully
+
+### UX Improvements (玩家交互体验)
+
+- [ ] **UX-01**: Commands show confirmation prompts before destructive actions (archive, delete, replace)
+- [ ] **UX-02**: Error messages are friendly and guide users to correct usage
+- [ ] **UX-03**: Loading/processing states are visible to users
+- [ ] **UX-04**: Success messages confirm what happened with relevant details
+
 ## Traceability
 
 | Requirement | Phase | Status |
@@ -40,12 +53,19 @@ Milestone: C1 Channel Governance And Command Discipline Hardening
 | CLUTTER-01 | TBD | Pending |
 | CLUTTER-02 | TBD | Pending |
 | CLUTTER-03 | TBD | Pending |
+| STABLE-01 | TBD | Pending |
+| STABLE-02 | TBD | Pending |
+| STABLE-03 | TBD | Pending |
+| UX-01 | TBD | Pending |
+| UX-02 | TBD | Pending |
+| UX-03 | TBD | Pending |
+| UX-04 | TBD | Pending |
 
 **Coverage:**
-- vC.1.1 requirements: 10 total
+- vC.1.1 requirements: 18 total
 - Mapped to phases: TBD
 - Unmapped: 0 ✓
 
 ---
-*Requirements defined: 2026-03-28*
+*Requirements updated: 2026-03-28 - Added command stability and UX requirements*
 *Last updated: 2026-03-28 for vC.1.1*
