@@ -139,33 +139,36 @@ When work genuinely spans multiple tracks:
 
 ## Active Milestone
 
-- Current milestone: `vB.1.1`
+- Current milestone: `vB.1.2`
 - Primary track: `Track B - 人物构建与管理层`
-- Goal: Tighten archive-builder mapping with better AI summarization during builder flow, aligned with standard COC character sheet sections
+- Goal: Expand archive and profile presentation toward a fuller COC investigator card, aligned with the sections exposed by `charSheetGenerator`
 
-## Milestone vB.1.1: B1 Archive And Builder Normalization
+## Milestone vB.1.2: B2 Investigator Archive Card Completion
 
-**Goal:** Tighten archive-builder mapping with better AI summarization during builder flow.
+**Goal:** Upgrade long-lived investigator archives from usable profiles into fuller COC investigator cards with clearer sections, richer writeback, and cleaner long-lived identity boundaries.
 
 **Target features:**
-- Reference https://www.cthulhuclub.com/charSheetGenerator/ for comprehensive character sheet sections
-- Reference local COC rules (C:\Users\Lin\Downloads\COC) for proper COC semantics
-- Fix AI summarization in builder flow: Currently AI just copies user input instead of summarizing into cohesive character attributes
-- Better builder-to-archive contracts
-- Richer semantic normalization, fewer fallback heuristics
+- Reference [COC第七版调查员人物卡生成器](https://www.cthulhuclub.com/charSheetGenerator/) for card sections worth mirroring in Discord form
+- Continue treating local COC rulebooks as the rules source of truth; new card sections extend character representation, not rule truth
+- Fill out richer archive sections:
+  - 基础身份
+  - 人物塑造
+  - 经历与状态
+  - 资源与装备
+  - 技能与规则建议
+- Improve builder writeback so interview answers land in specific character-card sections instead of only background summaries
+- Strengthen archive detail and `/sheet` presentation so archives feel like persistent investigator assets rather than thin lists
+- Preserve strict separation between long-lived archive truth and campaign/module instance state
 
 ## Current State
 
-The project has already completed:
-- a Discord-first runtime
-- local dual-model orchestration
-- structured COC module support
-- room graphs, trigger trees, and consequence chains
-- persistent investigator archives and campaign projections
+Track B has already completed:
+- archive-builder normalization (`vB.1.1`)
 - adaptive conversational builder flow
-- startup smoke checks and initial profile governance
+- archive/projection sync basics
+- single-active-profile governance
 
-The next priority is not a single feature. It is making project governance explicit enough that outside collaborators and GSD-driven agents can choose the right track and continue work without flattening the architecture.
+The next priority is making long-lived archives feel like complete investigator cards rather than thin archive records.
 
 ## Constraints
 
@@ -179,9 +182,9 @@ The next priority is not a single feature. It is making project governance expli
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Work should now be organized by persistent tracks rather than only by sequential feature bundles | The system is large enough that archive, runtime, Discord surface, and presentation need separate strategic lanes | `v2.2` will formalize tracks in planning docs |
-| Infrastructure and collaboration concerns should be global rules, not a separate product track | Smoke checks, auditability, and documentation quality apply everywhere and should not be treated as optional feature work | Global Rules added to `PROJECT.md` |
-| Every milestone must have one primary track | This keeps GSD agents from widening scope until milestones become unreadable | Track-first milestone classification becomes the default |
+| Track B archive work should now be organized as persistent investigator-card evolution, not one-off archive tweaks | The project needs long-lived investigator assets that can survive across modules and collaboration sessions | `vB.1.2` focuses on archive-card completion |
+| Card completeness should be informed by `charSheetGenerator`, but rules truth must still come from local COC sources | The site is a useful section/layout reference, not canonical rules truth | Track B may mirror card sections while keeping COC rules local |
+| Long-lived archive truth and campaign instance truth must remain separate | Richer cards create pressure to leak module state back into archives | Track B milestones must keep projection boundaries explicit |
 
 ## Evolution
 
@@ -194,4 +197,4 @@ Update it when:
 - track selection guidance needs to become more explicit for collaborators
 
 ---
-*Last updated: 2026-03-28 for milestone vB.1.1 B1 Archive And Builder Normalization*
+*Last updated: 2026-03-28 for milestone vB.1.2 B2 Investigator Archive Card Completion*

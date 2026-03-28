@@ -68,3 +68,50 @@ Milestone: Archive And Builder Normalization
 ---
 *Requirements defined: 2026-03-28*
 *Last updated: 2026-03-28 for vB.1.1*
+
+---
+
+## vB.1.2 Requirements (Track B)
+
+Milestone: Investigator Archive Card Completion
+
+### Archive Card Completeness
+
+- [ ] **AC-01**: Long-lived archive schema covers a broader set of COC-style investigator card sections inspired by `charSheetGenerator`
+- [ ] **AC-02**: New card sections remain backward compatible with old archive payloads
+- [ ] **AC-03**: New card sections are explicitly classified as long-lived archive truth, not campaign-local state
+
+### Builder Writeback Quality
+
+- [ ] **BW-01**: Builder interview answers write back into richer card sections instead of only background summaries
+- [ ] **BW-02**: AI enrichment can extend card sections without silently overriding explicit player-provided answers
+- [ ] **BW-03**: Builder writeback still respects local COC rules and does not invent illegal rule-facing values
+
+### Presentation
+
+- [ ] **PR-01**: `/profile_detail` presents richer card sections with clear grouping and readability
+- [ ] **PR-02**: Archive-channel `/sheet` shows the long-lived card in a fuller investigator-card layout
+- [ ] **PR-03**: Card presentation surfaces enough detail that collaborators can understand a character without reading raw builder transcripts
+
+### Archive / Projection Boundary
+
+- [ ] **AP-01**: Richer archive cards do not cause module-local state to leak back into long-lived archives
+- [ ] **AP-02**: Projection sync still works after archive schema expansion
+- [ ] **AP-03**: Diagnostics or documentation clearly explain archive vs projection boundaries for new card fields
+
+## vB.1.2 Traceability
+
+| Requirement | Planned Phase |
+|-------------|---------------|
+| AC-01 | Phase 44 |
+| AC-02 | Phase 44 |
+| AC-03 | Phase 47 |
+| BW-01 | Phase 45 |
+| BW-02 | Phase 45 |
+| BW-03 | Phase 45 |
+| PR-01 | Phase 46 |
+| PR-02 | Phase 46 |
+| PR-03 | Phase 46 |
+| AP-01 | Phase 47 |
+| AP-02 | Phase 47 |
+| AP-03 | Phase 47 |

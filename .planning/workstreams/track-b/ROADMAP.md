@@ -1,11 +1,20 @@
 # Roadmap: Track B - 人物构建与管理层
 
-## Active Milestone
+## Completed Milestones
 
 **vB.1.1** - B1 Archive And Builder Normalization
 - **Primary Track:** Track B - 人物构建与管理层
 - **Goal:** Tighten archive-builder mapping with better AI summarization during builder flow, aligned with standard COC character sheet sections
 - **Status:** Completed
+
+---
+
+## Active Milestone
+
+**vB.1.2** - B2 Investigator Archive Card Completion
+- **Primary Track:** Track B - 人物构建与管理层
+- **Goal:** Expand archive and profile presentation toward a fuller COC investigator card, aligned with `charSheetGenerator`-style sections while preserving local COC rule truth
+- **Status:** Planned
 
 ---
 
@@ -98,4 +107,66 @@
 | 43. Polish | 1/1 | Completed | 2026-03-28 |
 
 ---
-*Last updated: 2026-03-28 for milestone vB.1.1*
+
+## vB.1.2 Phases
+
+- [ ] **Phase 44: Archive Card Schema Expansion** - Add richer long-lived investigator card fields and backward-compatible defaults
+- [ ] **Phase 45: Builder Writeback To Card Sections** - Map interview answers into clearer card sections instead of generic summaries
+- [ ] **Phase 46: Rich Card Presentation** - Improve `/profile_detail` and archive `/sheet` to feel like full investigator cards
+- [ ] **Phase 47: Archive And Projection Boundary Audit** - Reassert which fields remain long-lived vs campaign/module-local
+
+### Phase 44: Archive Card Schema Expansion
+
+**Goal:** Expand long-lived archive schema so it can represent more of a COC investigator card without confusing those fields with module state.
+
+**Depends on:** vB.1.1 completion
+
+**Focus:**
+  1. Add richer card sections inspired by `charSheetGenerator`
+  2. Keep new fields nullable and backward compatible
+  3. Clearly separate long-lived fields from campaign overlays
+
+### Phase 45: Builder Writeback To Card Sections
+
+**Goal:** Make builder interviews populate richer card sections directly, not just compress into background and portrait summaries.
+
+**Depends on:** Phase 44
+
+**Focus:**
+  1. Map interview answers into more explicit card fields
+  2. Preserve explicit player intent when AI enriches card sections
+  3. Keep writeback aligned with local COC rule boundaries
+
+### Phase 46: Rich Card Presentation
+
+**Goal:** Present long-lived archive cards in Discord as fuller investigator cards instead of thin archive summaries.
+
+**Depends on:** Phase 45
+
+**Focus:**
+  1. Upgrade `/profile_detail`
+  2. Upgrade archive-channel `/sheet`
+  3. Make card sections more readable for players and collaborators
+
+### Phase 47: Archive And Projection Boundary Audit
+
+**Goal:** Reconfirm that richer archive cards still do not leak campaign or module state into long-lived identity truth.
+
+**Depends on:** Phase 46
+
+**Focus:**
+  1. Audit archive vs projection boundaries
+  2. Verify module-local mutations still remain projection-local
+  3. Document which card sections are long-lived and which are campaign-only
+
+## Progress Table (vB.1.2)
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 44. Archive Card Schema Expansion | 0/1 | Not started | - |
+| 45. Builder Writeback To Card Sections | 0/1 | Not started | - |
+| 46. Rich Card Presentation | 0/1 | Not started | - |
+| 47. Archive And Projection Boundary Audit | 0/1 | Not started | - |
+
+---
+*Last updated: 2026-03-28 for milestones vB.1.1 and vB.1.2*
