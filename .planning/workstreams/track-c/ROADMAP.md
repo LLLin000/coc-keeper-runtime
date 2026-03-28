@@ -27,7 +27,8 @@
   2. Commands are bound to appropriate channel types
   3. Channel bindings are configurable via settings
 
-**Plans:** TBD
+**Plans:** 1 plan
+- [ ] 44-01-PLAN.md — Channel structure foundation (game_channel binding + ChannelEnforcer)
 
 ### Phase 45: Command Routing
 
@@ -66,7 +67,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 44. Channel Structure | 0/1 | Not started | - |
+| 44. Channel Structure | 1/1 | Planning complete | - |
 | 45. Command Routing | 0/1 | Not started | - |
 | 46. Guidance & Polish | 0/1 | Not started | - |
 

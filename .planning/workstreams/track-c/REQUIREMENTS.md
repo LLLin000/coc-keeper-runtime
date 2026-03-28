@@ -43,9 +43,9 @@ Milestone: C1 Channel Governance And Command Discipline Hardening
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CHAN-01 | TBD | Pending |
-| CHAN-02 | TBD | Pending |
-| CHAN-03 | TBD | Pending |
+| CHAN-01 | 44 | Pending |
+| CHAN-02 | 44 | Pending |
+| CHAN-03 | 44 | Pending |
 | CHAN-04 | TBD | Pending |
 | GUIDE-01 | TBD | Pending |
 | GUIDE-02 | TBD | Pending |
