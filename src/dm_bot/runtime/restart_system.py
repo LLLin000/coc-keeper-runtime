@@ -6,6 +6,7 @@ import sys
 import time
 from pathlib import Path
 
+from dm_bot.runtime.process_control import launch_detached_process
 from dm_bot.runtime.smoke_check import terminate_existing_bot_processes
 
 READY_MARKER = "READY "
@@ -22,9 +23,7 @@ def log_contains_marker(log_path: Path, marker: str) -> bool:
 
 
 def runtime_bootstrap_complete(marker_log: Path) -> bool:
-    return log_contains_marker(marker_log, READY_MARKER) and log_contains_marker(
-        marker_log, SYNC_MARKER
-    )
+    return log_contains_marker(marker_log, SYNC_MARKER)
 
 
 def run_restart_system(*, cwd: Path, wait_seconds: int = 60) -> int:
@@ -46,48 +45,68 @@ def run_restart_system(*, cwd: Path, wait_seconds: int = 60) -> int:
         if path.exists():
             path.unlink()
 
-    env = dict(os.environ)
-    env["PYTHONUNBUFFERED"] = "1"
-    env["DM_BOT_STARTUP_MARKER_FILE"] = str(startup_marker_log)
-    creationflags = 0
-    if os.name == "nt":
-        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
-
-    stdout_handle = stdout_log.open("w", encoding="utf-8")
-    stderr_handle = stderr_log.open("w", encoding="utf-8")
-    process = subprocess.Popen(
-        [sys.executable, "-m", "dm_bot.main", "run-bot"],
-        cwd=str(cwd),
+    env = {
+        "PYTHONUNBUFFERED": "1",
+        "DM_BOT_STARTUP_MARKER_FILE": str(startup_marker_log),
+    }
+    launched_pid = launch_detached_process(
+        executable=sys.executable,
+        args=["-m", "dm_bot.main", "run-bot"],
+        cwd=cwd,
         env=env,
-        stdout=stdout_handle,
-        stderr=stderr_handle,
-        creationflags=creationflags,
+        stdout_log=stdout_log,
+        stderr_log=stderr_log,
     )
-    stdout_handle.close()
-    stderr_handle.close()
+    if launched_pid is None:
+        restart_log.write_text(
+            "launched_pid=\nactive_pid=\nready_seen=False\nsync_seen=False\nalive=False\nresult=1",
+            encoding="utf-8",
+        )
+        return 1
 
     deadline = time.time() + wait_seconds
     result = 1
+    active_pid: int | None = None
     while time.time() < deadline:
-        if process.poll() is not None:
-            result = 1
-            break
         if runtime_bootstrap_complete(startup_marker_log):
             time.sleep(5)
-            result = 0 if process.poll() is None else 1
+            active_pid = _find_active_bot_pid()
+            result = 0 if active_pid is not None else 1
             break
         time.sleep(0.5)
 
     restart_log.write_text(
         "\n".join(
             [
-                f"pid={process.pid}",
+                f"launched_pid={launched_pid}",
+                f"active_pid={active_pid or ''}",
                 f"ready_seen={log_contains_marker(startup_marker_log, READY_MARKER)}",
                 f"sync_seen={log_contains_marker(startup_marker_log, SYNC_MARKER)}",
-                f"alive={process.poll() is None}",
+                f"alive={active_pid is not None}",
                 f"result={result}",
             ]
         ),
         encoding="utf-8",
     )
     return result
+
+
+def _find_active_bot_pid() -> int | None:
+    command = (
+        "Get-CimInstance Win32_Process | "
+        "Where-Object { $_.CommandLine -match 'dm_bot\\.main run-bot' } | "
+        "Select-Object -ExpandProperty ProcessId"
+    )
+    result = subprocess.run(
+        ["powershell", "-NoProfile", "-Command", command],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    if not lines:
+        return None
+    try:
+        return int(lines[0])
+    except ValueError:
+        return None

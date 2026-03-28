@@ -305,6 +305,42 @@ uv run python -m dm_bot.main smoke-check
 uv run python -m dm_bot.main run-bot
 ```
 
+## Runtime Control Panel
+
+日常本地调试现在推荐优先用统一控制入口，不要再零散地手动重启多个进程。
+
+常用命令：
+
+```powershell
+# 本地交付前检查
+uv run python -m dm_bot.main smoke-check
+
+# 重启整套 bot 流程，并等待 sync / READY / 存活检查
+uv run python -m dm_bot.main restart-system
+
+# 查看当前本地运行状态
+uv run python -m dm_bot.main control-status
+
+# 启动本地运维面板
+uv run python -m dm_bot.main run-control-panel
+```
+
+面板地址：
+
+- [http://127.0.0.1:8001/control-panel](http://127.0.0.1:8001/control-panel)
+
+第一版 panel 用来解决这些问题：
+- bot 有没有起来
+- API 有没有起来
+- 模型是不是本地可用
+- Discord 命令是不是同步完成
+- 最近一次 restart / smoke-check 卡在哪
+
+如果你改完代码，推荐流程是：
+1. 运行 `restart-system`
+2. 打开本地 panel
+3. 确认 `bot` 为运行中、`sync` 已出现、最近一次 restart 成功
+
 ## Discord Usage Model
 
 推荐频道职责分离：

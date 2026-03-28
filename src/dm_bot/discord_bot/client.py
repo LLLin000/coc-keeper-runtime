@@ -1,3 +1,4 @@
+import asyncio
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -49,6 +50,13 @@ class DiscordDmBot(commands.Bot):
             synced = await self.tree.sync()
             print(f"SYNC_DONE global={len(synced)}", flush=True)
             _write_startup_marker(f"SYNC_DONE global={len(synced)}")
+        if os.environ.get("DM_BOT_SYNC_ONLY") == "1":
+            await self.close()
+            return
+
+    async def on_connect(self) -> None:
+        print("CONNECTED", flush=True)
+        _write_startup_marker("CONNECTED")
 
     async def on_ready(self) -> None:
         if self.user is not None:

@@ -4,7 +4,11 @@ import subprocess
 import sys
 import time
 import os
+import json
 from pathlib import Path
+
+SYNC_MARKER = "SYNC_DONE"
+READY_MARKER = "READY "
 
 
 def ready_seen_in_log(log_path: Path) -> bool:
@@ -14,6 +18,19 @@ def ready_seen_in_log(log_path: Path) -> bool:
         return "READY " in log_path.read_text(encoding="utf-8", errors="ignore")
     except OSError:
         return False
+
+
+def log_contains_marker(log_path: Path, marker: str) -> bool:
+    if not log_path.exists():
+        return False
+    try:
+        return marker in log_path.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return False
+
+
+def sync_seen_in_log(log_path: Path) -> bool:
+    return log_contains_marker(log_path, SYNC_MARKER)
 
 
 def terminate_existing_bot_processes(*, current_pid: int) -> None:
@@ -42,11 +59,15 @@ def run_local_smoke_check(*, cwd: Path, wait_seconds: int = 8) -> int:
 
     terminate_existing_bot_processes(current_pid=os.getpid())
     log_path = cwd / "bot.smoke.log"
-    if log_path.exists():
-        log_path.unlink()
+    startup_marker_log = cwd / "bot.smoke.startup.log"
+    status_log = cwd / "bot.smoke.status.json"
+    for path in (log_path, startup_marker_log):
+        if path.exists():
+            path.unlink()
 
     env = dict(os.environ)
     env["PYTHONUNBUFFERED"] = "1"
+    env["DM_BOT_STARTUP_MARKER_FILE"] = str(startup_marker_log)
     process = subprocess.Popen(
         [sys.executable, "-m", "dm_bot.main", "run-bot"],
         cwd=str(cwd),
@@ -56,19 +77,45 @@ def run_local_smoke_check(*, cwd: Path, wait_seconds: int = 8) -> int:
     )
     try:
         deadline = time.time() + max(wait_seconds, 15)
-        ready = False
+        sync_seen = False
+        ready_seen = False
         while time.time() < deadline:
             if process.poll() is not None:
+                _write_smoke_status(
+                    status_log,
+                    passed=False,
+                    summary="bot exited before sync completed",
+                )
                 return 1
-            if ready_seen_in_log(log_path):
-                ready = True
+            sync_seen = sync_seen_in_log(startup_marker_log)
+            ready_seen = log_contains_marker(startup_marker_log, READY_MARKER)
+            if sync_seen:
                 break
             time.sleep(0.5)
-        if not ready:
+        if not sync_seen:
+            _write_smoke_status(
+                status_log,
+                passed=False,
+                summary="sync marker not observed before timeout",
+            )
             return 1
         time.sleep(5)
         if process.poll() is not None:
+            _write_smoke_status(
+                status_log,
+                passed=False,
+                summary="bot exited after sync completed",
+            )
             return 1
+        _write_smoke_status(
+            status_log,
+            passed=True,
+            summary=(
+                "smoke-check passed"
+                if ready_seen
+                else "smoke-check passed (sync completed, READY marker not observed)"
+            ),
+        )
         return 0
     finally:
         if process.poll() is None:
@@ -77,3 +124,17 @@ def run_local_smoke_check(*, cwd: Path, wait_seconds: int = 8) -> int:
                 process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 process.kill()
+
+
+def _write_smoke_status(status_file: Path, *, passed: bool, summary: str) -> None:
+    status_file.write_text(
+        json.dumps(
+            {
+                "passed": passed,
+                "summary": summary,
+                "last_run_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )

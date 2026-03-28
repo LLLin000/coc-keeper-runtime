@@ -30,3 +30,32 @@ def test_main_dispatches_restart_system(monkeypatch) -> None:
 
     assert result == 0
     assert "cwd" in called
+
+
+def test_main_dispatches_control_status(monkeypatch) -> None:
+    called = {}
+
+    def fake_control_status(*, cwd):
+        called["cwd"] = cwd
+        return 0
+
+    monkeypatch.setattr("dm_bot.main.run_control_status", fake_control_status)
+
+    result = main(["control-status"])
+
+    assert result == 0
+    assert "cwd" in called
+
+
+def test_main_dispatches_run_control_panel(monkeypatch) -> None:
+    called = {}
+
+    def fake_run_control_panel():
+        called["ran"] = True
+
+    monkeypatch.setattr("dm_bot.main.run_control_panel", fake_run_control_panel)
+
+    result = main(["run-control-panel"])
+
+    assert result == 0
+    assert called["ran"] is True

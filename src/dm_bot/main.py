@@ -28,6 +28,7 @@ from dm_bot.router.service import RouterService
 from dm_bot.rules.compendium import FixtureCompendium
 from dm_bot.rules.engine import RulesEngine
 from dm_bot.runtime.app import create_app
+from dm_bot.runtime.control_service import RuntimeControlService
 from dm_bot.runtime.restart_system import run_restart_system
 from dm_bot.runtime.smoke_check import run_local_smoke_check
 import uvicorn
@@ -132,11 +133,32 @@ def run_api(settings: Settings | None = None) -> None:
     uvicorn.run(bundle.app, host="127.0.0.1", port=8000)
 
 
+def run_control_panel(settings: Settings | None = None) -> None:
+    settings = settings or get_settings()
+    app = create_app(control_service=RuntimeControlService(cwd=Path.cwd(), settings=settings))
+    uvicorn.run(app, host="127.0.0.1", port=8001)
+
+
+def run_control_status(*, cwd: Path, settings: Settings | None = None) -> int:
+    settings = settings or get_settings()
+    state = RuntimeControlService(cwd=cwd, settings=settings).get_state()
+    print(state.model_dump_json(indent=2))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="dm-bot")
     parser.add_argument(
         "command",
-        choices=["preflight", "run-api", "run-bot", "smoke-check", "restart-system"],
+        choices=[
+            "preflight",
+            "run-api",
+            "run-bot",
+            "smoke-check",
+            "restart-system",
+            "control-status",
+            "run-control-panel",
+        ],
     )
     args = parser.parse_args(argv)
 
@@ -153,6 +175,11 @@ def main(argv: list[str] | None = None) -> int:
         return run_local_smoke_check(cwd=Path.cwd())
     if args.command == "restart-system":
         return run_restart_system(cwd=Path.cwd())
+    if args.command == "control-status":
+        return run_control_status(cwd=Path.cwd())
+    if args.command == "run-control-panel":
+        run_control_panel()
+        return 0
     return 1
 
 
