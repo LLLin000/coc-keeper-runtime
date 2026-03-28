@@ -41,11 +41,94 @@ class BotCommands:
         return self._enforcer.check_command(command_name, guild_id, channel_id)
 
     async def setup_check(self, interaction) -> None:
+        # Build channel structure guidance
+        guild_id = str(interaction.guild_id) if interaction.guild_id else None
+        channel_guidance = self._build_channel_guidance(guild_id) if guild_id else ""
+
         snapshot = build_health_snapshot(self._settings)
-        await interaction.response.send_message(
-            json.dumps(snapshot.model_dump(), ensure_ascii=False),
-            ephemeral=True,
+        health_info = json.dumps(snapshot.model_dump(), ensure_ascii=False)
+
+        full_message = (
+            f"**频道结构指引：**\n{channel_guidance}\n\n**运行状态：**\n{health_info}"
         )
+        await interaction.response.send_message(full_message, ephemeral=True)
+
+    def _build_channel_guidance(self, guild_id: str) -> str:
+        if self._session_store is None:
+            return self._default_channel_guidance()
+
+        lines = [
+            "本 Bot 采用四频道职责分离设计：",
+            "",
+            "1. **#角色档案** - 档案管理命令",
+            "   `/profiles`, `/profile_detail`, `/start_builder`, `/select_profile`",
+            "",
+            "2. **#游戏大厅** - 跑团主战场",
+            "   `/bind_campaign`, `/join_campaign`, `/load_adventure`, `/ready`, `/turn`",
+            "",
+            "3. **#kp-trace** - KP 追踪与调试",
+            "   `/debug_status`, `/show_combat`",
+            "",
+            "4. **#admin** - 管理员角色治理",
+            "   `/admin_profiles`",
+            "",
+        ]
+
+        # Show current bindings if available
+        archive = self._session_store.archive_channel_for(guild_id)
+        game = self._session_store.game_channel_for(guild_id)
+        trace = self._session_store.trace_channel_for(guild_id)
+        admin = self._session_store.admin_channel_for(guild_id)
+
+        bindings = []
+        if archive:
+            bindings.append(f"角色档案: <#{archive}>")
+        if game:
+            bindings.append(f"游戏大厅: <#{game}>")
+        if trace:
+            bindings.append(f"KP-trace: <#{trace}>")
+        if admin:
+            bindings.append(f"管理员: <#{admin}>")
+
+        if bindings:
+            lines.extend(["**当前绑定：**"])
+            lines.extend(bindings)
+        else:
+            lines.append("尚未绑定任何频道。使用上述命令在对应频道绑定。")
+
+        lines.extend(
+            [
+                "",
+                "绑定命令：",
+                "`/bind_archive_channel` - 在角色档案频道执行",
+                "`/bind_campaign` - 在游戏大厅执行",
+                "`/bind_trace_channel` - 在 KP-trace 频道执行",
+                "`/bind_admin_channel` - 在管理员频道执行",
+            ]
+        )
+
+        return "\n".join(lines)
+
+    def _default_channel_guidance(self) -> str:
+        return """本 Bot 采用四频道职责分离设计：
+
+1. **#角色档案** - 档案管理命令
+   `/profiles`, `/profile_detail`, `/start_builder`, `/select_profile`
+
+2. **#游戏大厅** - 跑团主战场
+   `/bind_campaign`, `/join_campaign`, `/load_adventure`, `/ready`, `/turn`
+
+3. **#kp-trace** - KP 追踪与调试
+   `/debug_status`, `/show_combat`
+
+4. **#admin** - 管理员角色治理
+   `/admin_profiles`
+
+绑定命令：
+`/bind_archive_channel` - 在角色档案频道执行
+`/bind_campaign` - 在游戏大厅执行
+`/bind_trace_channel` - 在 KP-trace 频道执行
+`/bind_admin_channel` - 在管理员频道执行"""
 
     async def bind_campaign(self, interaction, *, campaign_id: str) -> None:
         self._session_store.bind_campaign(
