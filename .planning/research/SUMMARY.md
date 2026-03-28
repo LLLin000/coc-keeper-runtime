@@ -1,97 +1,172 @@
-# Research Summary
+# Project Research Summary
 
-**Project:** Discord AI DM  
-**Synthesized:** 2026-03-27  
+**Project:** Discord AI Keeper (COC Archive-Builder Normalization)
+**Domain:** Discord-native local-AI Call of Cthulhu Keeper system — character management layer
+**Researched:** 2026-03-28
 **Confidence:** MEDIUM-HIGH
 
 ## Executive Summary
 
-The lowest-risk path is a Discord-first, Python-based modular monolith that runs a dual-model local AI stack behind a deterministic rules and state layer. The product should optimize for one thing first: a campaign-usable multiplayer Discord session loop with reliable combat, persistence, and multi-character DM performance. Mature ecosystems should be reused for rules data, Discord UX patterns, and character import ideas instead of rebuilding those layers from scratch.
+This research addresses the critical gap in v2.3 Track B: **AI summarization during the character builder flow merely copies or paraphrases user input instead of synthesizing cohesive character attributes**. The current system records interview transcripts but fails to transform them into usable archive profiles that read like a Keeper crafted them.
 
-## Recommended Product Shape
+The recommended solution introduces a **synthesis-first architecture** using `instructor` (structured output parsing) to transform raw builder answers into normalized COC 7e character sheet sections. Key architectural changes include adding `AnswerNormalizer`, `CharacterSheetSynthesizer`, and `SectionNormalizer` components while maintaining the existing archive-campaign separation pattern.
 
-- Discord-native multiplayer play in one campaign channel or thread
-- Hybrid gameplay style: normal DM-led narration with scene-based multi-character performance
-- Heavy-rules support with deterministic authority for combat and resource state
-- External character import or linking through one low-friction mature path in v1
-- Text-first gameplay with persistence and resume before voice, maps, or deep long-term memory
+The primary risk is that local models may generate non-COC content during synthesis. Mitigation requires embedding explicit COC occupation/skill lists in prompts and validating all synthesis output against COC rules before persisting. The architecture is sound but adds ~1-2 seconds per character creation — acceptable for v1 scale.
 
-## Recommended Technical Baseline
+## Key Findings
 
-- `Python 3.12+` as the primary runtime
-- `discord.py` as the Discord framework
-- `Ollama` as the default local model host
-- `qwen3:1.7b` as the router model
-- `collective-v0.1-chinese-roleplay-8b` as the default Chinese narrator model
-- `PostgreSQL` as the canonical data store
-- `5e-srd-api` as the primary open rules/compendium source
-- `Avrae` used as a reference for UX, combat flow, and import patterns rather than as a runtime dependency
+### Recommended Stack
 
-## Key Product Requirements Confirmed By Research
+**Core addition for v2.3:**
+- `instructor` 0.10.x — transforms raw LLM output into validated Pydantic models, solving the core "AI just copies" problem. Works with Ollama's OpenAI-compatible API.
 
-- Multiplayer session orchestration inside Discord is table stakes
-- Combat state management is the real credibility threshold for a heavy-rules DM system
-- Character import/link is expected; full custom sheet management is not a good v1 investment
-- Rules lookup is necessary but not sufficient; the system needs a real rules state kernel
-- Persistence and interruption recovery are mandatory for real Discord play
-- Multi-character performance is part of the core thesis, not a cosmetic add-on
+**Already in stack (verified):**
+- Python 3.12+ — main runtime
+- pydantic v2 + pydantic-settings — typed config and LLM I/O validation
+- SQLAlchemy 2.0.x + PostgreSQL — archive persistence with JSONB for flexible fields
+- Ollama (local models) — qwen3:1.7b (router) + qwen3:4b (narrator)
 
-## Architecture Recommendation
+**Supporting libraries:**
+- `orjson` — fast JSON serialization for archive JSONB
+- `email-validator` — player contact validation if needed
 
-Use a modular monolith with campaign-scoped serialized turn processing:
+### Expected Features
 
-- `discord-adapter`
-- `turn-orchestrator`
-- `router-engine`
-- `tool-and-rules-gateway`
-- `narration-engine`
-- `state-store`
-- `projection-read-models`
+**Must have (table stakes):**
+- Core COC 7e attributes (STR, CON, SIZ, DEX, INT, POW, APP, EDU) — already working
+- Derived statistics (HP, MP, SAN, Idea, Luck, Know, Move Rate, Build, Damage Bonus) — deterministic COC math, already working
+- Occupation with skill allocation — partially working
+- Archive-campaign separation — already implemented correctly in v1.8+
 
-Critical rules:
+**Should have (differentiators):**
+- **AI Summarization Synthesis** — THE KEY GAP to fix. Must synthesize user interview responses into cohesive profile text. Currently AI copies verbatim.
+- Archive field normalization — align existing "life goal/weakness/key past event" with standard COC backstory sections
+- Adaptive conversational builder — already built in v1.9, needs refinement in synthesis quality
 
-- Single writer per campaign/thread
-- Canonical state lives in typed code and storage, not in model text
-- Event log is authoritative history
-- Narration consumes state and tool results but does not mutate canonical rules state directly
+**Defer (v2+):**
+- Rich UI panels beyond Discord message format
+- Character sheet PDF export
+- Multi-era support (1920s, Modern, Dark Ages)
+- Pulp Cthulhu rules variant
 
-## Main Risks
+### Architecture Approach
 
-1. Discord interactions timing out while local inference runs
-2. Letting the LLM act as the source of truth for combat and resource state
-3. Mistaking SRD lookup for full heavy-rules support
-4. Mixing incompatible rules baselines such as 2014 and 2024 content
-5. Overbuilding v1 into an AI DM, VTT, and character platform at the same time
+The proposed architecture adds three new components between builder and archive:
 
-## Guardrails For v1
+1. **AnswerNormalizer** — cleans raw user input to canonical slot format (handles Chinese variations)
+2. **CharacterSheetSynthesizer** — transforms normalized answers into cohesive narrative using structured output (instructor + Pydantic)
+3. **SectionNormalizer** — maps synthesis output to COC 7e character sheet sections with validation
 
-- Use asynchronous Discord interaction handling from the start
-- Choose one rules baseline: `2014 SRD only`
-- Choose one primary character import path first
-- Keep rules authoritative and deterministic
-- Keep narrator and router separated
-- Store append-only turn/event history for replay and debugging
-- Prefer slash commands and structured controls for state-changing actions
+**Major components:**
+1. Builder Interview Layer — unchanged BuilderSession, updated InterviewPlanner
+2. AI Summarization Synthesis Layer (NEW) — synthesizer + normalizer + contracts
+3. Archive Contract Layer (NEW) — enhanced ArchiveProfile with normalized COC 7e sections
+4. Campaign Projection — unchanged from current architecture
 
-## Product Boundary For v1
+### Critical Pitfalls
 
-### In scope
+1. **AI Summarization Invents Non-COC Data** — local models add invented skills/occupations without COC bounds. Prevention: embed explicit COC lists in prompts + post-processing validation.
 
-- Discord multiplayer session loop
-- Character import/link through one mature path
-- Dice and action resolution
-- Combat automation with persistence and resume
-- DM narration and multi-NPC performance
+2. **Builder-to-Archive Contract Breakage** — new schema fields don't map from builder, legacy profiles have nulls. Prevention: schema versioning + append-only new fields + migration path.
 
-### Defer
+3. **Archive-Campaign Projection Desync** — normalization updates archive but not projection. Prevention: explicit update semantics, diagnostic command for sync status.
 
-- Voice/TTS
-- VTT/maps
-- Broad homebrew support
-- Full custom sheet management
-- Multi-platform chat support
-- Custom model training/fine-tuning
+4. **Semantic Normalization Overwrites User Intent** — AI "corrects" explicit player choices. Prevention: distinguish derived vs. intent fields, add confirmation step.
 
-## Bottom Line
+5. **Adaptive Builder Interview Breaks with New Normalization** — schema changes break interview flow. Prevention: treat builder schema and archive schema as coupled contracts.
 
-The first release should behave like a reliable Discord D&D runtime with local AI narration, not like an all-purpose tabletop platform. The winning strategy is to keep the orchestration and rules core deterministic, use local models for routing and narration only where they are strongest, and borrow mature data and interaction patterns wherever possible.
+## Implications for Roadmap
+
+Based on research, suggested phase structure for v2.3:
+
+### Phase 1: Foundation (Week 1)
+**Rationale:** Must establish contracts before building synthesis logic — prevents integration breakage later.
+**Delivers:** 
+- `synthesis/contracts.py` with Pydantic schemas for synthesis I/O
+- `AnswerNormalizer` with basic slot cleaning
+- Updated `BuilderSession` to store normalized answers alongside raw
+**Addresses:** Archive field normalization baseline
+**Avoids:** Pitfall AB6 (builder-schema coupling), Pitfall AB2 (contract breakage)
+
+### Phase 2: Core Synthesis (Week 2)
+**Rationale:** This is the main value add — fixing AI summarization is why v2.3 exists.
+**Delivers:**
+- `CharacterSheetSynthesizer` with narrative synthesis prompt using instructor
+- `SectionNormalizer` with basic COC 7e section mapping
+- `ArchiveProfileFactory` to construct profiles from synthesis
+**Uses:** `instructor` 0.10.x for structured output
+**Implements:** CharacterSheetSynthesizer component
+**Avoids:** Pitfall AB1 (non-COC data) — embed COC lists in synthesis prompts
+
+### Phase 3: Integration (Week 3)
+**Rationale:** Must integrate new components with existing builder and archive.
+**Delivers:**
+- Updated `ConversationalCharacterBuilder` to use new synthesis flow
+- Backward compatibility layer for existing archive fields
+- Fallback from synthesis to heuristic extraction (for robustness)
+**Implements:** Full builder-to-archive flow
+**Avoids:** Pitfall AB4 (overwrites intent), Pitfall AB3 (projection desync)
+
+### Phase 4: Polish (Week 4)
+**Rationale:** Validate with real playtest data before declaring done.
+**Delivers:**
+- Expand COC 7e sections based on playtesting feedback
+- Validation rules for occupation skills and attributes
+- Optimize synthesis prompt based on character quality evaluation
+**Avoids:** Pitfall AB7 (COC section misalignment)
+
+### Phase Ordering Rationale
+
+- Foundation first: contracts prevent integration breakage
+- Synthesis second: core value proposition
+- Integration third: must connect to existing systems
+- Polish last: requires playtest feedback
+
+This order avoids the critical pitfalls: AB2 (contract breakage) by starting with contracts, AB1 (non-COC data) by embedding rules in synthesis prompts, and AB3 (desync) by explicitly defining update semantics in integration phase.
+
+### Research Flags
+
+Phases likely needing deeper research during planning:
+- **Phase 2 (Core Synthesis):** Prompt engineering for synthesis quality — may need iteration to get cohesive narrative output
+- **Phase 3 (Integration):** Archive-projection update semantics — need to define explicit contract
+
+Phases with standard patterns (skip research-phase):
+- **Phase 1 (Foundation):** Pydantic contracts are well-understood patterns
+- **Phase 4 (Polish):** Validation rules follow COC 7e character sheet structure
+
+## Confidence Assessment
+
+| Area | Confidence | Notes |
+|------|------------|-------|
+| Stack | HIGH | `instructor` verified working with Ollama; existing stack stable |
+| Features | HIGH | Based on existing v1.8-v1.9 implementation, COC 7e character sheet reference |
+| Architecture | HIGH | Synthesis-first pattern well-documented; components clearly bounded |
+| Pitfalls | MEDIUM-HIGH | Derived from Track B patterns + COC rules; mitigation strategies align with schema migration best practices |
+
+**Overall confidence:** MEDIUM-HIGH
+
+### Gaps to Address
+
+- **Synthesis prompt quality:** Initial prompts may not produce optimal character synthesis — plan for iteration based on playtest feedback
+- **Model selection:** Current qwen3 models not benchmarked specifically for synthesis tasks — may need alternative models if quality insufficient
+- **Chinese language synthesis:** Prompts optimized for English COC terminology — may need refinement for Chinese character names and concepts
+
+## Sources
+
+### Primary (HIGH confidence)
+- Context7 /pydantic/pydantic — field_validator, model_validator, computed_field patterns
+- Context7 /instructor-ai/instructor — structured output extraction with Pydantic
+- Ollama OpenAI compatibility docs — confirmed instructor works with local Ollama
+- COC 7e character sheet (Chaosium official) — section structure reference
+
+### Secondary (MEDIUM confidence)
+- cthulhuclub.com character sheet generator — Chinese community reference
+- Project's existing v1.8-v1.9 builder implementation — current architecture patterns
+
+### Tertiary (LOW confidence)
+- `DND5E-MCP` — noted as too new to anchor stack; not recommended as dependency
+
+---
+
+*Research completed: 2026-03-28*
+*Ready for roadmap: yes*

@@ -1,140 +1,225 @@
-# Technology Stack
+# Stack Research: Archive-Builder Normalization
 
-**Project:** Discord AI DM
-**Dimension:** Stack
-**Researched:** 2026-03-27
-**Overall confidence:** MEDIUM-HIGH
+**Domain:** Discord AI Keeper - Archive and Builder Data Contracts
+**Researched:** 2026-03-28
+**Confidence:** MEDIUM-HIGH
 
-## Recommended Stack
+## Recommended Stack Additions
 
-### Core runtime
+### Core Enhancement: Structured LLM Output
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| `instructor` | 0.10.x | Structured output parsing from LLM responses | Directly addresses the AI summarization problem — transforms raw LLM output into validated Pydantic models. Works with Ollama's OpenAI-compatible API. |
+
+### Existing Stack (Already Recommended)
 
 | Technology | Version | Purpose | Why |
 |------------|---------|---------|-----|
-| Python | 3.12+ | Main runtime | Lowest integration friction across Discord, local AI serving, Postgres, and automation code. |
-| `uv` | current | Package/env management | Fast, simple Python workflow with less dependency pain than ad hoc `pip` usage. |
-| FastAPI | current stable | Local control API, health checks, admin endpoints, webhooks | Keeps the bot process observable and debuggable without building custom HTTP plumbing. |
-| `pydantic` + `pydantic-settings` | v2 line | Typed config and structured LLM I/O | Important for dual-model orchestration and tool payload validation. |
-| `httpx` | current stable | Calls to model server and external services | Solid async HTTP client; standard choice in modern Python services. |
+| Python | 3.12+ | Main runtime | Lowest integration friction across Discord, AI, and database |
+| `pydantic` + `pydantic-settings` | v2 line | Typed config and LLM I/O validation | Already in use — extends well for archive contracts |
+| SQLAlchemy | 2.0.x | ORM for archive persistence | Already in use — JSONB handles flexible character data |
+| PostgreSQL | 16/17 | Primary datastore | Already in use — JSONB for semi-structured archive fields |
 
-### Discord bot framework
+## Supporting Libraries
 
-**Use `discord.py` 2.7.x.**
+| Library | Version | Purpose | When to Use |
+|---------|---------|---------|-------------|
+| `instructor` | 0.10.x | Extract structured data from conversational builder responses | Use in builder flow when converting freeform interview answers to archive fields |
+| `orjson` | current | Fast JSON serialization | Already in recommended set — use for archive JSONB serialization |
+| `email-validator` | current | Email validation | Use for player/contact email fields in archive |
+| `phonenumbers` | current | Phone validation | Optional — for contact fields if needed |
 
-This is the practical choice for lowest debugging cost. Its docs are current, the library is actively maintained, it supports app commands/interactions, and it already handles Discord rate limits and async workflow well. Do not optimize for novelty here.
+## Key Problem: AI Summarization in Builder Flow
 
-Avoid building on smaller Discord wrappers unless the repo already standardizes on them. For this project, the ecosystem advantage is not worth the migration/debugging tax.
+The current issue: "AI just copies user input instead of summarizing into cohesive character attributes."
 
-### Model serving
+**Root cause:** Without structured output handling, the LLM returns freeform text that either:
+- Gets copied verbatim (current behavior)
+- Requires fragile regex/string parsing
 
-**Use Ollama as the default local model server.**
+**Solution:** Use `instructor` to define Pydantic models for each builder stage, then validate/normalize the LLM output:
 
-Why:
-- OpenAI-compatible API means you can treat both models the same way.
-- It is operationally simpler than running your own `llama.cpp` process management.
-- It is much easier to get working on a single local box than a vLLM deployment.
-- Dual-model orchestration becomes a normal “call fast controller model, then call narration model” pattern instead of a serving problem.
+```python
+import instructor
+from pydantic import BaseModel, Field
+from typing import Optional
 
-**Fallback/scale-up path:** move to `vLLM` only if concurrency or throughput becomes the bottleneck and you are willing to pay the ops complexity cost. vLLM is stronger for high-throughput serving, but it is not the lowest-debugging-cost default for v1.
+# Define what you want extracted from builder conversation
+class CharacterBackground(BaseModel):
+    backstory_summary: str = Field(description="2-3 sentence summary of character's history")
+    key_motivation: str = Field(description="Primary motivation driving the investigator")
+    significant_relationships: list[str] = Field(description="2-4 important relationships")
+    trauma_or_loss: Optional[str] = Field(description="Any past trauma relevant to sanity")
 
-### Orchestration layer
+# Use with Ollama (OpenAI-compatible)
+client = instructor.from_ollama(base_url="http://localhost:11434", model="qwen3:4b")
 
-**Keep orchestration thin.**
-
-Use:
-- `openai` Python SDK against Ollama’s OpenAI-compatible endpoint
-- `pydantic` models for router outputs, action plans, and tool arguments
-- a small in-process planner/executor module
-
-Do **not** start with a heavy agent framework graph unless the simple controller/narrator split proves insufficient. For this project, the main risk is bad state management, not lack of framework abstraction.
-
-### Rules, skills, and data sources to reuse
-
-| Source | Use | Recommendation |
-|--------|-----|----------------|
-| `5e-srd-api` / 5e Bits data | SRD monsters, spells, classes, conditions, equipment, rules lookup | **Use as the primary rules data backbone.** Mature, public, structured, and good enough for v1 heavy-rules support. |
-| Avrae product/docs | Reference for Discord UX, initiative flow, automation shape, and character import patterns | **Use as a design reference, not as an embedded runtime dependency.** |
-| Avrae-style imports | Character ingestion from D&D Beyond, Dicecloud, or Google Sheet style sources | **Use import adapters, not live bidirectional sync, in v1.** |
-| `DND5E-MCP` | MCP-facing rules helper | **Do not make this a core dependency yet.** It appears too new and too unproven to anchor the stack. Low-confidence note based on public repo metadata. |
-
-### Persistence and storage
-
-**Use PostgreSQL 16/17 as the system of record.**
-
-Back it with:
-- `SQLAlchemy` 2.0.x
-- `Alembic`
-- `asyncpg`
-
-Store:
-- campaign metadata in normalized tables
-- turn/combat state in normalized tables
-- session transcript chunks and world-state snapshots in `JSONB`
-- tool results and event history as append-only records
-
-This hybrid relational + `JSONB` approach is the practical sweet spot. It gives you reliable queries and migrations without forcing you to fully normalize every piece of narrative state on day one.
-
-**Do not add Redis initially.** Start without a cache/queue tier. Add it only if you have a measured need for job buffering, rate smoothing, or transient locks.
-
-## What To Avoid Building From Scratch
-
-- A custom Discord command/router framework
-- A custom model-serving layer
-- A full D&D rules compendium/database
-- A full dice parser and combat automation engine from first principles
-- A live-sync character platform
-- A multi-service queue/cache topology before real load exists
-
-## Top 5 Stack Decisions
-
-1. **Python over Node/TypeScript**
-   Python gives the cleanest path across Discord, local AI, validation, and database work. This is the least-friction full-stack choice for a local-model game system.
-
-2. **`discord.py` over alternative wrappers**
-   The maintenance history, docs quality, and interaction support make it the safest Discord foundation.
-
-3. **Ollama first, vLLM later if needed**
-   Ollama minimizes setup and integration cost. vLLM is a scale-up option, not the default.
-
-4. **PostgreSQL as the only required datastore**
-   Campaigns, combat, and recovery state need durability and queryability. Postgres plus `JSONB` covers this without introducing extra moving parts.
-
-5. **Reuse SRD data and Avrae patterns instead of inventing a D&D engine**
-   The fastest route to a campaign-usable v1 is to assemble mature D&D data and proven bot interaction patterns, not to re-author the tabletop stack.
-
-## Practical Package Set
-
-```bash
-uv add discord.py fastapi uvicorn openai pydantic pydantic-settings httpx \
-  sqlalchemy alembic asyncpg orjson tenacity structlog
+normalized = client.chat.completions.create(
+    model="qwen3:4b",
+    messages=[{"role": "user", "content": user_input_from_builder}],
+    response_model=CharacterBackground,
+)
 ```
 
-Optional later:
+**Why instructor over alternatives:**
+- Directly uses existing Pydantic v2 (already in stack)
+- Automatic retry with validation failures
+- Works with Ollama's OpenAI-compatible API
+- Handles the "JSON in markdown" parsing problem automatically
 
-```bash
-uv add redis arq
+## Alternative Approaches Considered
+
+| Approach | Why Not | When It Makes Sense |
+|----------|---------|---------------------|
+| Custom regex/string parsing | Fragile, breaks with varied input, hard to maintain | Only if extremely simple fields |
+| LangChain structured output | Heavy dependency, over-engineered for this use case | If you already use LangChain |
+| Function calling only | Requires specific model support, not all local models support it well | When using GPT-4 API |
+| Manual JSON parsing | Requires careful prompt engineering to get valid JSON | If you have full control over prompts |
+
+## Archive Contract Patterns
+
+### Pattern 1: Nested Pydantic Models for Character Sections
+
+```python
+from pydantic import BaseModel, Field, computed_field
+from typing import Optional
+
+class InvestigatorCharacteristics(BaseModel):
+    """Section 1: Core COC attributes (STR, CON, SIZ, DEX, INT, POW, APP, EDU)"""
+    strength: int = Field(ge=0, le=100, description="STR - Strength")
+    constitution: int = Field(ge=0, le=100, description="CON - Constitution")
+    size: int = Field(ge=0, le=100, description="SIZ - Size")
+    dexterity: int = Field(ge=0, le=100, description="DEX - Dexterity")
+    intelligence: int = Field(ge=0, le=100, description="INT - Intelligence")
+    power: int = Field(ge=0, le=100, description="POW - Power")
+    appearance: int = Field(ge=0, le=100, description="APP - Appearance")
+    education: int = Field(ge=0, le=100, description="EDU - Education")
+
+    @computed_field
+    @property
+    def hp_max(self) -> int:
+        return (self.constitution + self.size) // 10
+
+    @computed_field
+    @property
+    def sanity_max(self) -> int:
+        return self.power
+
+class InvestigatorSkills(BaseModel):
+    """Section 2: Skill points and specializations"""
+    accounting: int = Field(default=0, ge=0, le=100)
+    anthropology: int = Field(default=0, ge=0, le=100)
+    appraise: int = Field(default=0, ge=0, le=100)
+    archaeology: int = Field(default=0, ge=0, le=100)
+    # ... complete COC skill list
+
+class InvestigatorProfile(BaseModel):
+    """Full archive profile contract"""
+    name: str = Field(min_length=1, max_length=100)
+    occupation: str
+    age: int = Field(ge=16, le=90)
+    sex: str
+    residence: str
+    birthplace: str
+    
+    characteristics: InvestigatorCharacteristics
+    skills: InvestigatorSkills
+    
+    # Narrative fields that benefit from AI summarization
+    backstory: str = Field(description="Character history summary")
+    description: str = Field(description="Physical description")
+    ideology_or_beliefs: Optional[str] = None
+    significant_people: list[str] = Field(default_factory=list)
+    meaningful_locations: list[str] = Field(default_factory=list)
+    treasured_possessions: list[str] = Field(default_factory=list)
+    injuries_scars: Optional[str] = None
+    phobias_manias: Optional[str] = None
+    encounters_with_strange: Optional[str] = None
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "Dr. Eleanor Vance",
+                "occupation": "Professor of Anthropology",
+                "age": 34,
+                "sex": "F",
+                "residence": "Arkham, Massachusetts",
+                "birthplace": "Salem, Massachusetts"
+            }
+        }
 ```
 
-## Bottom-Line Recommendation
+### Pattern 2: Builder Stage Contracts
 
-Build v1 as a single Python service:
-- `discord.py` for Discord
-- Ollama for both local models
-- `openai` SDK + typed Pydantic contracts for orchestration
-- PostgreSQL + SQLAlchemy for persistent campaign state
-- `5e-srd-api` data as the default rules source
-- Avrae as a product-pattern reference, not a runtime dependency
+Each builder interview stage gets its own Pydantic model:
 
-That is the most practical stack for a Discord-native local-AI DM with dual-model orchestration and heavy rules support while keeping debugging cost low.
+```python
+class BuilderStageIdentity(BaseModel):
+    """Stage 1: Basic identity"""
+    name: str
+    occupation: str
+    age: int
+    sex: str
+
+class BuilderStageCharacteristics(BaseModel):
+    """Stage 2: Roll characteristics"""
+    rolls: dict[str, int]  # {"STR": 65, "CON": 50, ...}
+
+class BuilderStageBackground(BaseModel):
+    """Stage 3: Narrative backstory (uses instructor for summarization)"""
+    backstory_summary: str
+    key_motivation: str
+    significant_relationships: list[str]
+```
+
+## JSON Schema for API Contracts
+
+Pydantic v2 generates JSON Schema automatically — useful for archive API contracts:
+
+```python
+from pydantic import model_json_schema
+
+schema = model_json_schema(InvestigatorProfile)
+# Returns JSON Schema dict for FastAPI documentation
+```
+
+## What NOT to Add
+
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| Additional database (MongoDB, etc.) | PostgreSQL JSONB already handles flexible character data | Enhance existing SQLAlchemy models |
+| Full-text search library (Elasticsearch) | Overkill for character archive | PostgreSQL text search or simple LIKE |
+| Character sheet UI library | Discord is the primary surface | Focus on data contracts first |
+| Live character sync with D&D Beyond | Not the target — local-first | Import adapters for static character data |
+
+## Installation
+
+```bash
+# Core addition for v2.3
+uv add instructor
+
+# Already in recommended set - verify installed
+uv add orjson email-validator pydantic pydantic-settings
+```
+
+## Version Compatibility
+
+| Package | Compatible With | Notes |
+|---------|-----------------|-------|
+| instructor 0.10.x | pydantic v2, openai SDK, httpx | Works with Ollama OpenAI-compatible API |
+| pydantic v2.10+ | FastAPI, SQLAlchemy, instructor | Already in current stack |
+| SQLAlchemy 2.0+ | PostgreSQL, asyncpg, Alembic | Already in current stack |
 
 ## Sources
 
-- discord.py docs: https://discordpy.readthedocs.io/en/stable/
-- Ollama OpenAI compatibility: https://docs.ollama.com/api/openai-compatibility
-- vLLM OpenAI-compatible server: https://docs.vllm.ai/en/stable/serving/openai_compatible_server.html
-- D&D 5e SRD API docs: https://5e-bits.github.io/docs/
-- Avrae site: https://avrae.io/
-- Avrae docs: https://avrae.readthedocs.io/en/latest/
-- SQLAlchemy 2.0 docs: https://docs.sqlalchemy.org/en/20/intro.html
-- PostgreSQL overview: https://www.postgresql.org/about/
-- DND5E-MCP repo: https://github.com/njseeber1/DND5E-MCP
+- Context7 /pydantic/pydantic — field_validator, model_validator, computed_field patterns
+- Context7 /instructor-ai/instructor — structured output extraction with Pydantic
+- Pydantic v2 docs — JSON Schema generation
+- Ollama OpenAI compatibility — confirmed instructor works with local Ollama
+- COC 7th Ed character sheet sections — Chaosium official, cthulhuclub.com reference
+
+---
+
+*Stack research for: Archive-Builder Normalization v2.3*
+*Researched: 2026-03-28*

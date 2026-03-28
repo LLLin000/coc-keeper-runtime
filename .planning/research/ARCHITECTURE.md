@@ -1,149 +1,361 @@
-# Architecture Patterns
+# Architecture Research
 
-**Domain:** Discord-native local-AI D&D DM
-**Researched:** 2026-03-27
-**Confidence:** MEDIUM-HIGH
+**Domain:** COC Character Archive/Builder Integration with AI Summarization
+**Researched:** 2026-03-28
+**Confidence:** HIGH
 
-## Recommendation
+## Executive Summary
 
-Use a **modular monolith with campaign-scoped turn workers**, not microservices and not a giant bot process. One deployable is the right starting point for a local-AI Discord system, but inside that deployable the boundaries should be hard:
+This research addresses how improved archive-builder contracts and AI summarization integrate with existing Track B architecture. The current system has a functional but fragile mapping between conversational builder answers and archive fields. The key problems are:
 
-1. `discord-adapter`
-2. `turn-orchestrator`
-3. `router-engine`
-4. `tool-and-rules-gateway`
-5. `narration-engine`
-6. `state-store`
-7. `projection-read-models`
+1. **AI summarization merely copies/paraphrases** rather than synthesizing cohesive character attributes
+2. **Character sheet sections are not normalized** to standard COC 7e layout
+3. **Builder-to-archive contracts use heuristic fallbacks** that produce inconsistent results
 
-This avoids a monolith in the important sense: Discord I/O, model reasoning, rule lookup, and persistence are isolated behind contracts. It also avoids premature distributed-systems overhead for a single-node local inference stack.
+This document proposes a synthesis-first architecture that transforms raw interview answers into canonical COC character sheet sections while maintaining the existing archive/projection separation.
 
-## Recommended Boundaries
+## Current Architecture (Track B)
 
-| Module | Responsibility | Must Not Own |
-|--------|----------------|--------------|
-| `discord-adapter` | Receive Discord events, defer responses within Discord's interaction window, send followups, map channels/threads to campaign IDs | Game rules, prompt building, state mutation logic |
-| `turn-orchestrator` | Serialize turns per campaign/thread, load state, invoke router, tools, narration, commit results | Discord API details, direct model prompting details |
-| `router-engine` | Fast model that classifies intent, picks mode, requests tools, emits structured `TurnPlan` JSON | Final prose, DB writes, external API calls |
-| `tool-and-rules-gateway` | Execute dice, rule lookup, condition/initiative actions, compendium reads via adapters | Discord formatting, narrative decisions |
-| `narration-engine` | Large local model for DM voice, NPC dialogue, scene framing, result explanation | Tool selection, canonical rules state |
-| `state-store` | Canonical persistence for campaigns, scenes, combat state, message/event log, imported character refs | Prompt-ready summaries, Discord delivery state beyond IDs |
-| `projection-read-models` | Build prompt context, summaries, combat views, player-facing recaps from canonical events | Canonical writes |
+### Existing Components
 
-## One Discord Turn
-
-```text
-Discord event
-  -> discord-adapter validates + persists raw ingress
-  -> immediate defer/ack
-  -> enqueue turn keyed by campaign_id
-  -> turn-orchestrator loads campaign snapshot + recent event log
-  -> router-engine returns TurnPlan
-  -> tool-and-rules-gateway executes required actions/lookups
-  -> state mutations are validated and appended as domain events
-  -> narration-engine receives compact context + tool results + speaking plan
-  -> discord-adapter sends/edit followup messages
-  -> projection-read-models refresh summaries/combat views
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    CHARACTER LAYER (Track B)                        │
+├─────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────┐    ┌──────────────────────────────────┐  │
+│  │ Conversational      │    │ ArchiveRepository                 │  │
+│  │ CharacterBuilder   │───▶│ (InvestigatorArchiveProfile)      │  │
+│  │                     │    │                                    │  │
+│  │ - BuilderSession   │    │ - Long-lived identity truth       │  │
+│  │ - InterviewPlanner │    │ - Semantic fields (name, occupation│  │
+│  │ - SemanticExtractor│    │   background, persona, etc.)      │  │
+│  └──────────┬──────────┘    │ - COCInvestigatorProfile (stats)  │  │
+│             │               └──────────────────────────────────┘  │
+│             │                           ▲                          │
+│             ▼                           │                          │
+│  ┌─────────────────────┐    ┌──────────────────────────────────┐  │
+│  │ ArchiveSemantic     │    │ CampaignProjection               │  │
+│  │ Extractor          │    │ (per-campaign mutable instances)  │  │
+│  │ (Protocol)         │    │ - SAN, HP, conditions            │  │
+│  │                     │    │ - Module-specific state          │  │
+│  │ - Heuristic        │    │ - Session transcripts            │  │
+│  │ - ModelGuided      │    │ (not yet implemented)            │  │
+│  └─────────────────────┘    └──────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-The important constraint is **single-writer per campaign**. A Discord campaign thread should process one authoritative turn at a time. That prevents race conditions when two players post simultaneously, especially once initiative, HP, conditions, and resources become canonical.
+### Current Data Flow
 
-## State Model Boundaries
-
-Keep state in three layers:
-
-| State Layer | Examples | Owner |
-|-------------|----------|-------|
-| `canonical game state` | Campaign, channel/thread binding, party roster, scene, combatants, initiative, HP, conditions, clocks, inventory/resource counters, event log | `state-store` |
-| `derived operational state` | Prompt summaries, turn digests, semantic recall snippets, pinned combat summary, unread queue state | `projection-read-models` |
-| `external source of truth` | Character sheets from D&D Beyond/Dicecloud/Sheets, SRD compendium data, MCP lookup caches | External adapters |
-
-Rules:
-
-- Never let the narration model write canonical state directly.
-- Never treat imported character sheets as fully owned local state; store references plus normalized snapshots.
-- Persist **events first**, then rebuild prompt summaries and combat views from projections.
-- Store raw Discord message IDs and interaction IDs, but not Discord message text as the only canonical history; the campaign event log is the authoritative history.
-
-## Integration Boundaries
-
-Use mature external projects as **read/execute adapters**, not as your core domain model.
-
-| External Project | Recommended Boundary |
-|------------------|----------------------|
-| `dnd-mcp` | Optional lookup/verification adapter for fuzzy rules questions and structured compendium access. Useful as a sidecar or internal tool bridge, but not the source of combat truth. |
-| `5e-srd-api` / `dnd5eapi` | Read-only compendium adapter for SRD classes, spells, monsters, equipment, and features. Mirror/cache locally for reliability. |
-| `Avrae` | Reference implementation for Discord UX, combat affordances, and character import surfaces. Do not embed it as the runtime core. Copy proven interaction patterns, not its whole command architecture. |
-| Character providers | Wrap D&D Beyond, Dicecloud, and Sheets behind `character-source` ports so combat and narration consume one normalized character model. |
-
-The architecture should assume these external systems can be unavailable, slow, or schema-unstable. Cache reads, normalize responses, and keep your own canonical combat/campaign state independent.
-
-## Extensibility Points
-
-Design these interfaces now:
-
-```ts
-type TurnPlan = {
-  mode: "dm" | "scene" | "combat";
-  toolCalls: ToolCall[];
-  stateIntents: StateIntent[];
-  speakerPlan: SpeakerPlan[];
-};
+```
+User Answer → BuilderSession.answers[slot] → SemanticExtractor.extract()
+                                                    ↓
+                                            Heuristic OR ModelGuided
+                                                    ↓
+                                    create_profile() → ArchiveRepository
 ```
 
-```ts
-interface RulesAdapter {
-  lookup(query: RulesQuery): Promise<RulesResult>;
-  execute(action: MechanicalAction, state: GameState): Promise<ActionResult>;
-}
+### Current Problems
+
+1. **ModelGuidedArchiveSemanticExtractor** currently receives raw answers and returns them almost verbatim — it paraphrases but doesn't synthesize
+2. **No normalized character sheet sections** — archive fields don't map cleanly to COC 7e character sheet sections
+3. **Heuristic fallbacks are brittle** — keyword matching produces inconsistent results
+
+## Proposed Architecture: Synthesis-First Builder
+
+### System Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    ENHANCED CHARACTER LAYER (Track B v2.3)                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                    BUILDER INTERVIEW LAYER                          │   │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────┐ │   │
+│  │  │ BuilderSession  │  │ InterviewPlanner│  │ AnswerNormalizer   │ │   │
+│  │  │ (unchanged)     │  │ (unchanged)     │  │ (NEW: normalizes   │ │   │
+│  │  │                 │  │                 │  │  raw answers to    │ │   │
+│  │  │                 │  │                 │  │  canonical slots)  │ │   │
+│  │  └────────┬────────┘  └────────┬────────┘  └──────────┬──────────┘ │   │
+│  └───────────┼───────────────────┼──────────────────────┼────────────┘   │
+│              │                   │                      │                  │
+│              ▼                   ▼                      ▼                  │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                 AI SUMMARIZATION SYNTHESIS LAYER (NEW)             │   │
+│  │                                                                     │   │
+│  │  ┌───────────────────────┐    ┌─────────────────────────────────┐  │   │
+│  │  │ CharacterSheetSynthesizer│  │ SectionNormalizer              │  │   │
+│  │  │                        │    │                                 │  │   │
+│  │  │ - Receives normalized │    │ - Maps synthesis output to     │  │   │
+│  │  │   interview answers    │    │   COC 7e character sheet       │  │   │
+│  │  │ - Synthesizes into    │    │   sections                     │  │   │
+│  │  │   cohesive narrative  │    │ - Validates against COC rules  │  │   │
+│  │  │ - Returns structured  │    │                                 │  │   │
+│  │  │   synthesis result   │    │                                 │  │   │
+│  │  └───────────┬───────────┘    └──────────────┬──────────────────┘  │   │
+│  └──────────────┼────────────────────────────────┼────────────────────┘   │
+│                 │                                 │                       │
+│                 ▼                                 ▼                       │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                    ARCHIVE CONTRACT LAYER                           │   │
+│  │                                                                     │   │
+│  │  ┌─────────────────────────────────────────────────────────────┐  │   │
+│  │  │ ArchiveProfile (ENHANCED)                                    │  │   │
+│  │  │                                                             │  │   │
+│  │  │ EXISTING:          │  NEW COC 7e NORMALIZED SECTIONS:        │  │   │
+│  │  │ - name             │  - portrait_summary                    │  │   │
+│  │  │ - occupation      │  - character_concept (from synthesis)   │  │   │
+│  │  │ - background      │  - backstory_narrative                  │  │   │
+│  │  │ - persona fields │  - mental_disorders                     │  │   │
+│  │  │ - COC stats       │  - injuries_scars                       │  │   │
+│  │  │                   │  - phobias_manias                      │  │   │
+│  │  │                   │  - significant_characters               │  │   │
+│  │  │                   │  - possessions_assets                   │  │   │
+│  │  │                   │  - income_spending                      │  │   │
+│  │  └─────────────────────────────────────────────────────────────┘  │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-```ts
-interface CharacterSourceAdapter {
-  import(ref: CharacterRef): Promise<NormalizedCharacter>;
-  refresh(ref: CharacterRef): Promise<NormalizedCharacter>;
-}
+### Component Responsibilities
+
+| Component | Responsibility | Implementation Approach |
+|-----------|----------------|------------------------|
+| `AnswerNormalizer` | Normalizes raw user input to canonical slot format | Regex + keyword extraction, handles variations in Chinese input |
+| `CharacterSheetSynthesizer` | Transforms normalized answers into cohesive character narrative | Model-guided with structured output schema |
+| `SectionNormalizer` | Maps synthesis output to COC 7e character sheet sections | Rule-based mapping with validation |
+| `ArchiveProfile` (enhanced) | Stores both legacy fields and new normalized sections | Backward-compatible Pydantic model extension |
+
+## Recommended Project Structure
+
+```
+src/dm_bot/coc/
+├── __init__.py
+├── archive.py              # EXISTING: InvestigatorArchiveProfile, Repository
+├── builder.py              # EXISTING: ConversationalCharacterBuilder
+├── assets.py               # EXISTING: COC asset loading
+├── panels.py               # EXISTING: Character panel display
+├── models.py               # EXISTING: COCInvestigatorProfile, COCAttributes
+│
+├── synthesis/              # NEW: AI Summarization Layer
+│   ├── __init__.py
+│   ├── synthesizer.py      # CharacterSheetSynthesizer
+│   ├── normalizer.py       # SectionNormalizer for COC 7e
+│   ├── contracts.py        # Pydantic contracts for synthesis I/O
+│   └── prompts.py          # Synthesis prompt templates
+│
+├── contracts/              # NEW: Archive-Builder Contract Layer
+│   ├── __init__.py
+│   ├── archive_profile.py  # Enhanced ArchiveProfile with normalized sections
+│   ├── builder_session.py  # Updated BuilderSession with normalized answers
+│   └── profile_factory.py  # Creates profiles from synthesis results
+│
+└── normalization/          # NEW: Answer Normalization
+    ├── __init__.py
+    ├── answer_normalizer.py
+    └── slot_mapping.py
 ```
 
-That gives you clean insertion points for:
+### Structure Rationale
 
-- a real combat engine with initiative phases, reactions, legendary actions, and effect durations
-- richer character sync/import from D&D Beyond, Dicecloud, or sheets
-- alternate narration models
-- stricter rule adjudication policies per campaign
+- **`synthesis/`:** Isolates AI summarization logic — keeps model interaction patterns separate from business logic
+- **`contracts/`:** Centralizes data structure definitions — ensures archive-builder communication has explicit schemas
+- **`normalization/`:** Isolates input preprocessing — separates "how we clean user input" from "how we synthesize character"
 
-## Recommended Shape
+## Architectural Patterns
 
-Start with:
+### Pattern 1: Synthesis-First Semantic Extraction
 
-- one process for `discord-adapter` + `turn-orchestrator`
-- one local database, preferably PostgreSQL
-- one background worker loop keyed by `campaign_id`
-- local model runners behind two ports: `router-engine` and `narration-engine`
-- adapter packages for compendium/rules/character integrations
+**What:** Instead of extracting semantic fields directly from raw interview answers, first synthesize the answers into a cohesive character narrative, then extract canonical fields from that synthesis.
 
-Do **not** start with:
+**When to use:** When AI summarization tends to merely copy/paraphrase rather than synthesize.
 
-- separate services for each module
-- direct model access from Discord handlers
-- a shared mutable in-memory campaign object
-- tool adapters writing canonical state behind the orchestrator's back
+**Trade-offs:**
+- Pros: Produces more cohesive characters; separates "what the user said" from "what the character is"
+- Cons: Adds an extra LLM call; requires careful prompt design to avoid hallucination
 
-## Why This Is Best
+**Example:**
+```python
+class CharacterSheetSynthesizer:
+    async def synthesize(self, answers: dict[str, str]) -> CharacterSynthesisResult:
+        # Step 1: Synthesize cohesive narrative from raw answers
+        narrative = await self._synthesize_narrative(answers)
+        
+        # Step 2: Extract canonical fields from synthesis
+        extracted = await self._extract_fields(narrative)
+        
+        return CharacterSynthesisResult(
+            narrative=narrative,
+            character_concept=extracted.character_concept,
+            backstory_narrative=extracted.backstory,
+            # ... normalized COC 7e sections
+        )
+```
 
-This gives the project the right balance:
+### Pattern 2: COC 7e Section Normalization
 
-- **Discord-native:** fast defer/followup flow matches Discord interactions and channel/thread play.
-- **Local-AI friendly:** router and narrator remain independent model ports.
-- **Rules-heavy without rewrite risk:** compendium and character systems stay replaceable.
-- **Persistent multiplayer-safe:** campaign-scoped serialization prevents state corruption.
-- **Non-monolithic in practice:** the hard boundaries are at module and data ownership lines, which matters more than splitting into many processes too early.
+**What:** Map all character information to standard COC 7e character sheet sections, with explicit validation.
+
+**When to use:** When character data needs to be exportable or compatible with standard COC tools.
+
+**Trade-offs:**
+- Pros: Standard compliance; easier integration with external tools
+- Cons: May require field expansion for non-standard character concepts
+
+**Example:**
+```python
+class SectionNormalizer:
+    COC7E_SECTIONS = [
+        "personal_data",           # name, age, occupation, residence
+        "character_concept",       # one-line concept
+        "backstory_narrative",     # long-form backstory
+        "mental_disorders",        # disorders (if any)
+        "injuries_scars",          # physical marks
+        "phobias_manias",          # fears and obsessions
+        "significant_characters",  # important NPCs
+        "possessions_assets",      # gear and money
+        "income_spending",         # cash flow
+    ]
+    
+    def normalize(self, synthesis: CharacterSynthesisResult) -> COC7eProfileSections:
+        # Map synthesis output to canonical sections
+        # Validate against COC rules (e.g., occupation skill limits)
+        pass
+```
+
+### Pattern 3: Contract-Driven Archive Creation
+
+**What:** Use explicit Pydantic contracts for all archive-builder communication, with clear schemas for input and output.
+
+**When to use:** When the system needs to be maintainable and testable.
+
+**Trade-offs:**
+- Pros: Type safety; explicit interfaces; easier testing
+- Cons: More upfront schema design work
+
+## Data Flow
+
+### New Builder Flow
+
+```
+1. User provides answer
+       ↓
+2. BuilderSession.answers[slot] = answer
+       ↓
+3. AnswerNormalizer.normalizeslot → canonical_format
+       ↓
+4. InterviewPlanner.next_question → next user prompt
+       ↓ (when builder complete)
+5. CharacterSheetSynthesizer.synthesize(all_normalized_answers)
+       ↓
+6. SectionNormalizer.normalize(synthesis_result)
+       ↓
+7. ArchiveProfileFactory.create_profile(normalized_sections)
+       ↓
+8. ArchiveRepository.create_profile() → persistent archive
+```
+
+### Key Data Transformations
+
+| Stage | Input | Output | Purpose |
+|-------|-------|--------|---------|
+| `AnswerNormalizer` | `"我叫张建国，是个落魄的医生"` | `{name: "张建国", occupation: "医生", concept: "落魄的医生"}` | Clean input variations |
+| `CharacterSheetSynthesizer` | Normalized answers | `{character_concept: "...", backstory: "..."}` | Synthesize cohesive narrative |
+| `SectionNormalizer` | Synthesis result | `COC7eProfileSections` | Map to COC 7e standard |
+| `ArchiveProfileFactory` | COC7e sections | `InvestigatorArchiveProfile` | Create persistent archive |
+
+## Integration Points
+
+### Internal Boundaries
+
+| Boundary | Communication | Notes |
+|----------|---------------|-------|
+| Builder → Synthesis | `CharacterSheetSynthesizer.synthesize()` | Called once at builder completion |
+| Synthesis → Archive | `ArchiveProfileFactory.create_profile()` | Creates profile from synthesis |
+| Archive → Projection | Standard projection flow | Unchanged from current architecture |
+
+### External Services
+
+| Service | Integration Pattern | Notes |
+|---------|---------------------|-------|
+| Local Model (Ollama) | OpenAI-compatible API | Used for synthesis; router model for structured output |
+| COC Rules Data | 5e-srd-api style endpoint | For occupation skills, rules lookup |
+
+## Scaling Considerations
+
+| Scale | Architecture Adjustments |
+|-------|--------------------------|
+| 0-10 concurrent builders | Current architecture fine; synthesis adds ~1-2s per character |
+| 10-100 concurrent builders | Consider caching synthesis prompts; add synthesis request queue |
+| 100+ concurrent builders | Consider pre-computing common occupation templates |
+
+### Scaling Priorities
+
+1. **First bottleneck:** Model inference time for synthesis — mitigate with timeout handling and fallback to heuristic extraction
+2. **Second bottleneck:** Archive creation serialization — already handled by current in-memory repository
+
+## Anti-Patterns
+
+### Anti-Pattern 1: Synthesis Without Validation
+
+**What people do:** Pass synthesis output directly to archive without validating against COC rules.
+
+**Why it's wrong:** AI can suggest invalid occupation skills or impossible attribute combinations.
+
+**Do this instead:** Always validate synthesis output through `SectionNormalizer` with COC rule checks.
+
+### Anti-Pattern 2: Replacing Heuristics Entirely
+
+**What people do:** Remove all heuristic fallbacks and rely entirely on model-guided extraction.
+
+**Why it's wrong:** Model can fail silently; no graceful degradation.
+
+**Do this instead:** Keep heuristic extractors as fallback — use model-guided as primary with heuristic as safety net.
+
+### Anti-Pattern 3: Premature Section Expansion
+
+**What people do:** Add many COC 7e sections before validating the core synthesis flow works.
+
+**Why it's wrong:** Complexity explodes; hard to debug.
+
+**Do this instead:** Implement core synthesis first, then add sections incrementally.
+
+## Build Order Recommendation
+
+### Phase 1: Foundation (Week 1)
+
+1. Create `synthesis/contracts.py` with Pydantic schemas for synthesis I/O
+2. Implement `AnswerNormalizer` with basic slot cleaning
+3. Update `BuilderSession` to store normalized answers alongside raw answers
+
+### Phase 2: Core Synthesis (Week 2)
+
+1. Implement `CharacterSheetSynthesizer` with narrative synthesis prompt
+2. Add `SectionNormalizer` with basic COC 7e section mapping
+3. Create `ArchiveProfileFactory` to construct profiles from synthesis
+
+### Phase 3: Integration (Week 3)
+
+1. Update `ConversationalCharacterBuilder` to use new synthesis flow
+2. Add backward compatibility layer for existing archive fields
+3. Implement fallback from synthesis to heuristic extraction
+
+### Phase 4: Polish (Week 4)
+
+1. Expand COC 7e sections based on playtesting feedback
+2. Add validation rules for occupation skills and attributes
+3. Optimize synthesis prompt based on character quality evaluation
 
 ## Sources
 
-- Discord interactions docs: https://docs.discord.com/developers/interactions/receiving-and-responding
-- `dnd-mcp` repository README: https://github.com/procload/dnd-mcp
-- D&D 5e API homepage/docs: https://www.dnd5eapi.co/
-- Avrae getting started: https://avrae.readthedocs.io/en/latest/cheatsheets/get_started.html
-- Avrae DM combat guide: https://avrae.readthedocs.io/en/stable/cheatsheets/dm_combat.html
-- Avrae D&D Beyond integration: https://avrae.readthedocs.io/en/latest/ddb.html
+- Current archive implementation: `src/dm_bot/coc/archive.py`
+- Current builder implementation: `src/dm_bot/coc/builder.py`
+- Current COC models: `src/dm_bot/characters/models.py`
+- Track B roadmap: `.planning/ROADMAP.md` Track B section
+- COC 7e character sheet reference: Chaosium official character sheets
+
+---
+
+*Architecture research for: Archive/Builder Normalization with AI Summarization*
+*Researched: 2026-03-28*
