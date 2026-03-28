@@ -27,7 +27,7 @@
 - [x] Phase 47: Session Phases (1/1 plan) — 2026-03-28 ✅
 - [x] Phase 48: Pre-Play Onboarding — session briefing and minimum-rules intro ✅
 - [x] Phase 49: Scene Round Collection — collect player inputs before KP output ✅
-- [ ] Phase 50: Message Intent Routing — smarter message handling beyond ignore/process
+- [x] Phase 50: Message Intent Routing — smarter message handling beyond ignore/process (completed 2026-03-28)
 
 **Completed focus:**
 - ✅ ready-check plus admin-start discipline (Phase 47)
@@ -62,8 +62,8 @@
 | 46. Guidance & Polish | 1/1 | ✅ Complete | 2026-03-28 |
 | 47. Session Phases | 1/1 | ✅ Complete | 2026-03-28 |
 | 48. Pre-Play Onboarding | 1/1 | ✅ Complete | 2026-03-28 |
-| 49. Scene Round Collection | 1/1 | ✅ Complete | 2026-03-28 |
-| 50. Message Intent Routing | - | ○ Not Started | - |
+| 49. Scene Round Collection | 1/1 | Complete    | 2026-03-28 |
+| 50. Message Intent Routing | - | Complete    | 2026-03-28 |
 | 51. Campaign Status Visibility | - | ○ Deferred to vC.1.3 | - |
 
 ---
