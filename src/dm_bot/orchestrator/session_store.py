@@ -150,6 +150,7 @@ class SessionStore:
         session = self._sessions[channel_id]
         session.member_ids.discard(user_id)
         session.active_characters.pop(user_id, None)
+        session.clear_player_action(user_id)
         return session
 
     def bind_character(
