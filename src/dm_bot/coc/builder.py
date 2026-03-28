@@ -35,6 +35,9 @@ class NormalizedBuilderAnswers(BaseModel):
     key_past_event: str = ""
     life_goal: str = ""
     weakness: str = ""
+    important_person: str = ""
+    significant_location: str = ""
+    treasured_possession: str = ""
     disposition: str = ""
     favored_skills: list[str] = Field(default_factory=list)
 
@@ -60,6 +63,12 @@ class ArchiveWritebackPayload(BaseModel):
     residence: str = ""
     family: str = ""
     education_background: str = ""
+    important_person: str = ""
+    significant_location: str = ""
+    treasured_possession: str = ""
+    trait_notes: str = ""
+    scars_and_injuries: str = ""
+    phobias_and_manias: str = ""
     disposition: str = ""
     favored_skills: list[str] = Field(default_factory=list)
 
@@ -92,6 +101,9 @@ class AnswerNormalizer:
             key_past_event=answers.get("key_past_event", ""),
             life_goal=answers.get("life_goal", ""),
             weakness=answers.get("weakness", ""),
+            important_person=answers.get("important_person", ""),
+            significant_location=answers.get("significant_location", ""),
+            treasured_possession=answers.get("treasured_possession", ""),
             disposition=answers.get("disposition", ""),
             favored_skills=_normalize_skill_list(answers.get("favored_skills", "")),
         )
@@ -119,6 +131,12 @@ class AnswerNormalizer:
             residence="",
             family="",
             education_background="",
+            important_person=normalized.important_person or semantic_fields.get("important_person", ""),
+            significant_location=normalized.significant_location or semantic_fields.get("significant_location", ""),
+            treasured_possession=normalized.treasured_possession or semantic_fields.get("treasured_possession", ""),
+            trait_notes=semantic_fields.get("trait_notes", ""),
+            scars_and_injuries=semantic_fields.get("scars_and_injuries", ""),
+            phobias_and_manias=semantic_fields.get("phobias_and_manias", ""),
             disposition=normalized.disposition,
             favored_skills=normalized.favored_skills,
             portrait_summary=_build_portrait_summary(answers),
@@ -156,6 +174,12 @@ class CharacterSheetSynthesis(BaseModel):
     residence: str = ""
     family: str = ""
     education_background: str = ""
+    important_person: str = ""
+    significant_location: str = ""
+    treasured_possession: str = ""
+    trait_notes: str = ""
+    scars_and_injuries: str = ""
+    phobias_and_manias: str = ""
 
 
 class CharacterSheetSynthesizer(Protocol):
@@ -177,6 +201,21 @@ class HeuristicInterviewPlanner:
             return BuilderQuestionChoice(
                 slot="weakness",
                 question="他最致命的弱点、劣势或坏习惯是什么？",
+            )
+        if "important_person" not in session.answers:
+            return BuilderQuestionChoice(
+                slot="important_person",
+                question="在他心里，最重要的那个人是谁？为什么偏偏是这个人？",
+            )
+        if "significant_location" not in session.answers:
+            return BuilderQuestionChoice(
+                slot="significant_location",
+                question="对他而言最重要的地方是哪里？那个地方为什么一直留在他心里？",
+            )
+        if "treasured_possession" not in session.answers:
+            return BuilderQuestionChoice(
+                slot="treasured_possession",
+                question="他一直舍不得丢、甚至会随身带着的珍贵之物是什么？",
             )
         if "disposition" not in session.answers:
             return BuilderQuestionChoice(
@@ -236,6 +275,12 @@ class HeuristicArchiveSemanticExtractor:
             "material_desire": _infer_material_desire(answers),
             "fear_or_taboo": _infer_fear_or_taboo(answers),
             "important_tie": _infer_important_tie(answers),
+            "important_person": answers.get("important_person", "") or _infer_important_person(answers),
+            "significant_location": answers.get("significant_location", "") or _infer_significant_location(answers),
+            "treasured_possession": answers.get("treasured_possession", "") or _infer_treasured_possession(answers),
+            "trait_notes": _infer_trait_notes(answers),
+            "scars_and_injuries": _infer_scars_and_injuries(answers),
+            "phobias_and_manias": _infer_phobias_and_manias(answers),
         }
 
 
@@ -252,7 +297,8 @@ class ModelGuidedArchiveSemanticExtractor:
                 "不要编造采访里完全不存在的事实。"
                 "可以做适度归纳，但必须忠于原意。"
                 "只返回 JSON，不要解释。"
-                '返回键限定为: occupation_detail, specialty, career_arc, core_belief, material_desire, fear_or_taboo, important_tie。'
+                "返回键限定为: occupation_detail, specialty, career_arc, core_belief, material_desire, fear_or_taboo, important_tie, "
+                "important_person, significant_location, treasured_possession, trait_notes, scars_and_injuries, phobias_and_manias。"
                 "值必须是简洁中文字符串；没有把握就返回空字符串。"
             ),
             user_prompt=f"采访答案:\n{json.dumps(session.answers, ensure_ascii=False)}",
@@ -269,6 +315,12 @@ class ModelGuidedArchiveSemanticExtractor:
                 "material_desire",
                 "fear_or_taboo",
                 "important_tie",
+                "important_person",
+                "significant_location",
+                "treasured_possession",
+                "trait_notes",
+                "scars_and_injuries",
+                "phobias_and_manias",
             }
             normalized = {
                 key: str(payload.get(key, "") or "").strip()
@@ -296,6 +348,12 @@ class HeuristicCharacterSheetSynthesizer:
             weakness=answers.get("weakness", ""),
             fear_or_taboo=semantic_fields.get("fear_or_taboo", "") or _infer_fear_or_taboo(answers),
             important_tie=semantic_fields.get("important_tie", "") or _infer_important_tie(answers),
+            important_person=semantic_fields.get("important_person", "") or answers.get("important_person", ""),
+            significant_location=semantic_fields.get("significant_location", "") or answers.get("significant_location", ""),
+            treasured_possession=semantic_fields.get("treasured_possession", "") or answers.get("treasured_possession", ""),
+            trait_notes=semantic_fields.get("trait_notes", "") or _infer_trait_notes(answers),
+            scars_and_injuries=semantic_fields.get("scars_and_injuries", "") or _infer_scars_and_injuries(answers),
+            phobias_and_manias=semantic_fields.get("phobias_and_manias", "") or _infer_phobias_and_manias(answers),
             disposition=answers.get("disposition", ""),
             favored_skills=_normalize_skill_list(answers.get("favored_skills", "")),
             portrait_summary=_build_portrait_summary(answers),
@@ -323,7 +381,8 @@ class ModelGuidedCharacterSheetSynthesizer:
                 f"{json.dumps(semantic_fields, ensure_ascii=False)}\n"
                 "请输出这些字段：occupation_detail, specialty, background, career_arc, key_past_event, "
                 "core_belief, life_goal, material_desire, weakness, fear_or_taboo, important_tie, disposition, "
-                "favored_skills, portrait_summary, birthplace, residence, family, education_background。"
+                "favored_skills, portrait_summary, birthplace, residence, family, education_background, "
+                "important_person, significant_location, treasured_possession, trait_notes, scars_and_injuries, phobias_and_manias。"
             ),
             response_format={"type": "json_object"},
         )
@@ -371,6 +430,12 @@ class SectionNormalizer:
             weakness=normalized.weakness or synthesis.weakness,
             fear_or_taboo=synthesis.fear_or_taboo,
             important_tie=synthesis.important_tie,
+            important_person=normalized.important_person or synthesis.important_person or synthesis.important_tie,
+            significant_location=normalized.significant_location or synthesis.significant_location,
+            treasured_possession=normalized.treasured_possession or synthesis.treasured_possession,
+            trait_notes=synthesis.trait_notes or normalized.disposition or synthesis.disposition,
+            scars_and_injuries=synthesis.scars_and_injuries,
+            phobias_and_manias=synthesis.phobias_and_manias,
             disposition=normalized.disposition or synthesis.disposition,
             favored_skills=explicit_skills or synthesis.favored_skills,
             portrait_summary=synthesis.portrait_summary or _build_portrait_summary(answers),
@@ -481,7 +546,16 @@ class ConversationalCharacterBuilder:
         raise KeyError(expr)
 
 
-DYNAMIC_SLOT_ORDER = ["key_past_event", "life_goal", "weakness", "disposition", "favored_skills"]
+DYNAMIC_SLOT_ORDER = [
+    "key_past_event",
+    "life_goal",
+    "weakness",
+    "important_person",
+    "significant_location",
+    "treasured_possession",
+    "disposition",
+    "favored_skills",
+]
 DOWNFALL_KEYWORDS = ("落魄", "潦倒", "失意", "破产", "酗酒", "停职", "离婚", "退学", "失业")
 
 
@@ -613,6 +687,42 @@ def _infer_important_tie(answers: dict[str, str]) -> str:
     event = answers.get("key_past_event", "")
     if "病人" in event or "患者" in event:
         return "那位改变他职业命运的病人与其家属。"
+    return ""
+
+
+def _infer_important_person(answers: dict[str, str]) -> str:
+    return answers.get("important_person", "")
+
+
+def _infer_significant_location(answers: dict[str, str]) -> str:
+    return answers.get("significant_location", "")
+
+
+def _infer_treasured_possession(answers: dict[str, str]) -> str:
+    return answers.get("treasured_possession", "")
+
+
+def _infer_trait_notes(answers: dict[str, str]) -> str:
+    disposition = answers.get("disposition", "").strip()
+    weakness = answers.get("weakness", "").strip()
+    if disposition and weakness:
+        return f"{disposition}；同时也{weakness}"
+    return disposition or ""
+
+
+def _infer_scars_and_injuries(answers: dict[str, str]) -> str:
+    event = answers.get("key_past_event", "")
+    if any(keyword in event for keyword in ("手术", "枪", "爆炸", "车祸", "烧伤", "断", "伤")):
+        return "可能留下与那段过往有关的旧伤，但调查员本人并不愿主动提起。"
+    return ""
+
+
+def _infer_phobias_and_manias(answers: dict[str, str]) -> str:
+    combined = " ".join(answers.values())
+    if "酗酒" in combined:
+        return "在压力或愧疚下容易借酒失控。"
+    if "真相" in combined and "执" in combined:
+        return "对某些真相有近乎偏执的追逐倾向。"
     return ""
 
 

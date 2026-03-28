@@ -14,7 +14,7 @@
 **vB.1.2** - B2 Investigator Archive Card Completion
 - **Primary Track:** Track B - 人物构建与管理层
 - **Goal:** Expand archive and profile presentation toward a fuller COC investigator card, aligned with `charSheetGenerator`-style sections while preserving local COC rule truth
-- **Status:** Planned
+- **Status:** Completed
 
 ---
 
@@ -110,10 +110,10 @@
 
 ## vB.1.2 Phases
 
-- [ ] **Phase 44: Archive Card Schema Expansion** - Add richer long-lived investigator card fields and backward-compatible defaults
-- [ ] **Phase 45: Builder Writeback To Card Sections** - Map interview answers into clearer card sections instead of generic summaries
-- [ ] **Phase 46: Rich Card Presentation** - Improve `/profile_detail` and archive `/sheet` to feel like full investigator cards
-- [ ] **Phase 47: Archive And Projection Boundary Audit** - Reassert which fields remain long-lived vs campaign/module-local
+- [x] **Phase 44: Archive Card Schema Expansion** - Add richer long-lived investigator card fields and backward-compatible defaults
+- [x] **Phase 45: Builder Writeback To Card Sections** - Map interview answers into clearer card sections instead of generic summaries
+- [x] **Phase 46: Rich Card Presentation** - Improve `/profile_detail` and archive `/sheet` to feel like full investigator cards
+- [x] **Phase 47: Archive And Projection Boundary Audit** - Reassert which fields remain long-lived vs campaign/module-local
 
 ### Phase 44: Archive Card Schema Expansion
 
@@ -163,10 +163,10 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 44. Archive Card Schema Expansion | 0/1 | Not started | - |
-| 45. Builder Writeback To Card Sections | 0/1 | Not started | - |
-| 46. Rich Card Presentation | 0/1 | Not started | - |
-| 47. Archive And Projection Boundary Audit | 0/1 | Not started | - |
+| 44. Archive Card Schema Expansion | 1/1 | Completed | 2026-03-28 |
+| 45. Builder Writeback To Card Sections | 1/1 | Completed | 2026-03-28 |
+| 46. Rich Card Presentation | 1/1 | Completed | 2026-03-28 |
+| 47. Archive And Projection Boundary Audit | 1/1 | Completed | 2026-03-28 |
 
 ---
 *Last updated: 2026-03-28 for milestones vB.1.1 and vB.1.2*

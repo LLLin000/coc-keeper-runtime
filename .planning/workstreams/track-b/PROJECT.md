@@ -139,9 +139,9 @@ When work genuinely spans multiple tracks:
 
 ## Active Milestone
 
-- Current milestone: `vB.1.2`
+- Most recently completed milestone: `vB.1.2`
 - Primary track: `Track B - 人物构建与管理层`
-- Goal: Expand archive and profile presentation toward a fuller COC investigator card, aligned with the sections exposed by `charSheetGenerator`
+- Goal achieved: Expanded archive and profile presentation toward a fuller COC investigator card, aligned with the sections exposed by `charSheetGenerator`
 
 ## Milestone vB.1.2: B2 Investigator Archive Card Completion
 

@@ -89,7 +89,23 @@ class ChannelEnforcer:
         if policy is None:
             return True, None
 
+        if not self._has_any_allowed_channel(guild_id, policy.allowed_types):
+            return True, None
+
         if channel_type in policy.allowed_types:
             return True, None
 
         return False, policy.redirect_message
+
+    def _has_any_allowed_channel(self, guild_id: str, allowed_types: set[ChannelType]) -> bool:
+        if ChannelType.ARCHIVE in allowed_types and self._session_store.archive_channel_for(guild_id):
+            return True
+        if ChannelType.ADMIN in allowed_types and self._session_store.admin_channel_for(guild_id):
+            return True
+        if ChannelType.TRACE in allowed_types and self._session_store.trace_channel_for(guild_id):
+            return True
+        if ChannelType.GAME in allowed_types and self._session_store.game_channel_for(guild_id):
+            return True
+        if ChannelType.GENERAL in allowed_types:
+            return True
+        return False

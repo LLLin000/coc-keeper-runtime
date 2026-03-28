@@ -77,27 +77,27 @@ Milestone: Investigator Archive Card Completion
 
 ### Archive Card Completeness
 
-- [ ] **AC-01**: Long-lived archive schema covers a broader set of COC-style investigator card sections inspired by `charSheetGenerator`
-- [ ] **AC-02**: New card sections remain backward compatible with old archive payloads
-- [ ] **AC-03**: New card sections are explicitly classified as long-lived archive truth, not campaign-local state
+- [x] **AC-01**: Long-lived archive schema covers a broader set of COC-style investigator card sections inspired by `charSheetGenerator`
+- [x] **AC-02**: New card sections remain backward compatible with old archive payloads
+- [x] **AC-03**: New card sections are explicitly classified as long-lived archive truth, not campaign-local state
 
 ### Builder Writeback Quality
 
-- [ ] **BW-01**: Builder interview answers write back into richer card sections instead of only background summaries
-- [ ] **BW-02**: AI enrichment can extend card sections without silently overriding explicit player-provided answers
-- [ ] **BW-03**: Builder writeback still respects local COC rules and does not invent illegal rule-facing values
+- [x] **BW-01**: Builder interview answers write back into richer card sections instead of only background summaries
+- [x] **BW-02**: AI enrichment can extend card sections without silently overriding explicit player-provided answers
+- [x] **BW-03**: Builder writeback still respects local COC rules and does not invent illegal rule-facing values
 
 ### Presentation
 
-- [ ] **PR-01**: `/profile_detail` presents richer card sections with clear grouping and readability
-- [ ] **PR-02**: Archive-channel `/sheet` shows the long-lived card in a fuller investigator-card layout
-- [ ] **PR-03**: Card presentation surfaces enough detail that collaborators can understand a character without reading raw builder transcripts
+- [x] **PR-01**: `/profile_detail` presents richer card sections with clear grouping and readability
+- [x] **PR-02**: Archive-channel `/sheet` shows the long-lived card in a fuller investigator-card layout
+- [x] **PR-03**: Card presentation surfaces enough detail that collaborators can understand a character without reading raw builder transcripts
 
 ### Archive / Projection Boundary
 
-- [ ] **AP-01**: Richer archive cards do not cause module-local state to leak back into long-lived archives
-- [ ] **AP-02**: Projection sync still works after archive schema expansion
-- [ ] **AP-03**: Diagnostics or documentation clearly explain archive vs projection boundaries for new card fields
+- [x] **AP-01**: Richer archive cards do not cause module-local state to leak back into long-lived archives
+- [x] **AP-02**: Projection sync still works after archive schema expansion
+- [x] **AP-03**: Diagnostics or documentation clearly explain archive vs projection boundaries for new card fields
 
 ## vB.1.2 Traceability
 
@@ -115,3 +115,8 @@ Milestone: Investigator Archive Card Completion
 | AP-01 | Phase 47 |
 | AP-02 | Phase 47 |
 | AP-03 | Phase 47 |
+
+**Coverage:**
+- vB.1.2 requirements: 12 total
+- Mapped to phases: 12
+- Unmapped: 0 ✓

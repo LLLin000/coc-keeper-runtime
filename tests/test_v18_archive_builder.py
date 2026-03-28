@@ -111,6 +111,12 @@ class FakeInterviewPlanner:
             return FakeQuestionChoice(slot="life_goal", question="如果这一切还没把他压垮，他现在最想达成的人生目标是什么？")
         if "weakness" not in session.answers:
             return FakeQuestionChoice(slot="weakness", question="他最致命的弱点或劣势是什么？")
+        if "important_person" not in session.answers:
+            return FakeQuestionChoice(slot="important_person", question="在他心里最重要的人是谁？")
+        if "significant_location" not in session.answers:
+            return FakeQuestionChoice(slot="significant_location", question="对他而言最重要的地方是哪里？")
+        if "treasured_possession" not in session.answers:
+            return FakeQuestionChoice(slot="treasured_possession", question="他最珍贵、舍不得丢的东西是什么？")
         if "disposition" not in session.answers:
             return FakeQuestionChoice(slot="disposition", question="别人通常会怎么评价他的处事方式？")
         return FakeQuestionChoice(slot="favored_skills", question="列出 2-4 个他最拿手的技能，用逗号分隔。")
@@ -154,7 +160,7 @@ def test_sheet_command_redirects_from_game_hall_to_archive_channel() -> None:
     interaction = FakeInteraction(channel_id="hall-1")
     asyncio.run(commands.show_sheet(interaction))
 
-    assert "archive-1" in interaction.response.messages[0][0]
+    assert "角色档案" in interaction.response.messages[0][0]
 
 
 def test_conversational_builder_creates_archive_profile() -> None:
@@ -182,6 +188,9 @@ def test_conversational_builder_creates_archive_profile() -> None:
     asyncio.run(commands.builder_reply(interaction, answer="我总在夜里追新闻，结果因为一篇得罪人的报道被行业封杀。"))
     asyncio.run(commands.builder_reply(interaction, answer="我想查清那篇报道背后的真相，重新拿回自己的名字。"))
     asyncio.run(commands.builder_reply(interaction, answer="我太执拗，也太容易因为愧疚把自己逼进死角。"))
+    asyncio.run(commands.builder_reply(interaction, answer="我姐姐，她还愿意相信我。"))
+    asyncio.run(commands.builder_reply(interaction, answer="旧报社顶楼，那是我最后一次觉得自己真的做对了事的地方。"))
+    asyncio.run(commands.builder_reply(interaction, answer="那支录下关键证词的钢笔录音笔。"))
     asyncio.run(commands.builder_reply(interaction, answer="冷静但固执。"))
     asyncio.run(commands.builder_reply(interaction, answer="图书馆使用,聆听,心理学"))
 
@@ -193,6 +202,9 @@ def test_conversational_builder_creates_archive_profile() -> None:
     assert profiles[0].life_goal.startswith("我想查清")
     assert "执拗" in profiles[0].weakness
     assert "低谷" in profiles[0].background or "命运" in profiles[0].background
+    assert "姐姐" in profiles[0].important_person
+    assert "旧报社顶楼" in profiles[0].significant_location
+    assert "录音笔" in profiles[0].treasured_possession
     assert profiles[0].finishing.recommended_interest_skills
     assert "规则" in profiles[0].finishing.rules_note
     assert "不会静默覆盖" in interaction.response.messages[-1][0]
@@ -331,6 +343,9 @@ def test_archive_channel_plain_messages_can_finish_builder_session() -> None:
         "三年前的一场手术纠纷把我从医院里赶了出来。",
         "我想证明那次事故里真正犯错的人不是我。",
         "我太骄傲，也太容易在压力下酗酒。",
+        "我的导师，他教我怎么拿起手术刀。",
+        "老医院的手术准备室。",
+        "那支导师送我的钢笔。",
         "外冷内热，但防备心很重。",
         "医学,急救,心理学",
     ]:
@@ -343,6 +358,7 @@ def test_archive_channel_plain_messages_can_finish_builder_session() -> None:
     assert profiles[0].coc.occupation == "临床医生"
     assert "证明" in profiles[0].life_goal
     assert profiles[0].specialty
+    assert "导师" in profiles[0].important_person
 
 
 def test_ready_projects_selected_archive_profile_without_mutating_archive() -> None:
@@ -393,6 +409,40 @@ def test_ready_projects_selected_archive_profile_without_mutating_archive() -> N
     assert panel["name"] == "林秋"
     assert panel["san"] == archive_profile.coc.san - 5
     assert archive_profile.coc.san == 70
+    assert archive_profile.important_person == ""
+
+
+def test_archive_detail_view_surfaces_richer_card_sections() -> None:
+    from dm_bot.coc.archive import InvestigatorArchiveRepository
+
+    repo = InvestigatorArchiveRepository()
+    profile = repo.create_profile(
+        user_id="user-1",
+        name="林秋",
+        occupation="记者",
+        age=26,
+        background="夜班记者",
+        concept="26岁的夜班记者",
+        important_person="姐姐",
+        significant_location="旧报社顶楼",
+        treasured_possession="录音笔",
+        trait_notes="冷静、偏执、抗压",
+        scars_and_injuries="左手虎口有一道旧伤",
+        phobias_and_manias="面对失控现场时会过度清醒",
+        disposition="冷静但固执",
+        favored_skills=["图书馆使用", "聆听", "心理学"],
+        generation={
+            "str": 50, "con": 55, "dex": 60, "app": 65, "pow": 70, "siz": 50, "int": 75, "edu": 80, "luck": 45
+        },
+    )
+
+    detail = profile.detail_view()
+
+    assert "以下内容属于长期档案" in detail
+    assert "重要之人：姐姐" in detail
+    assert "重要场所：旧报社顶楼" in detail
+    assert "珍贵之物：录音笔" in detail
+    assert "伤口与疤痕：左手虎口有一道旧伤" in detail
 
 
 def test_select_profile_immediately_syncs_projection_panel() -> None:

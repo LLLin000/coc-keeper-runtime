@@ -37,6 +37,12 @@ class InvestigatorArchiveProfile(BaseModel):
     residence: str = ""
     family: str = ""
     education_background: str = ""
+    important_person: str = ""
+    significant_location: str = ""
+    treasured_possession: str = ""
+    trait_notes: str = ""
+    scars_and_injuries: str = ""
+    phobias_and_manias: str = ""
     disposition: str = ""
     favored_skills: list[str] = Field(default_factory=list)
     portrait_summary: str = ""
@@ -54,12 +60,20 @@ class InvestigatorArchiveProfile(BaseModel):
         occ_skills = "、".join(self.finishing.recommended_occupation_skills) if self.finishing.recommended_occupation_skills else "未记录"
         interest_skills = "、".join(self.finishing.recommended_interest_skills) if self.finishing.recommended_interest_skills else "未记录"
         adjustments = "；".join(self.finishing.allowed_adjustments) if self.finishing.allowed_adjustments else "无"
+        important_person = self.important_person or self.important_tie or "未记录"
         lines = [
             "【调查员档案】",
             f"{self.name} / {self.coc.occupation} / {self.age}岁 / {self.status}",
+            "以下内容属于长期档案，不包含当前模组里的临时 SAN、伤势、装备和秘密状态。",
+            "",
+            "【身份】",
+            f"骨架：{self.concept or '未记录'}",
+            f"出生地：{self.birthplace or '未记录'}",
+            f"现居地：{self.residence or '未记录'}",
+            f"家庭：{self.family or '未记录'}",
+            f"教育：{self.education_background or '未记录'}",
             "",
             "【人物】",
-            f"骨架：{self.concept or '未记录'}",
             f"职业细化：{self.occupation_detail or self.occupation or '未记录'}",
             f"专长：{self.specialty or '未记录'}",
             f"职业轨迹：{self.career_arc or self.background or '未记录'}",
@@ -70,12 +84,13 @@ class InvestigatorArchiveProfile(BaseModel):
             f"人生目标：{self.life_goal or '未记录'}",
             f"物质欲望：{self.material_desire or '未记录'}",
             f"弱点：{self.weakness or '未记录'}",
+            f"特质：{self.trait_notes or self.disposition or '未记录'}",
+            f"重要之人：{important_person}",
+            f"重要场所：{self.significant_location or '未记录'}",
+            f"珍贵之物：{self.treasured_possession or '未记录'}",
             f"恐惧/禁忌：{self.fear_or_taboo or '未记录'}",
-            f"重要关系：{self.important_tie or '未记录'}",
-            f"出生地：{self.birthplace or '未记录'}",
-            f"现居地：{self.residence or '未记录'}",
-            f"家庭：{self.family or '未记录'}",
-            f"教育：{self.education_background or '未记录'}",
+            f"伤口与疤痕：{self.scars_and_injuries or '未记录'}",
+            f"恐惧症/躁狂症：{self.phobias_and_manias or '未记录'}",
             f"处事方式：{self.disposition or '未记录'}",
             "",
             "【数值】",
@@ -122,6 +137,12 @@ class InvestigatorArchiveRepository:
         residence: str = "",
         family: str = "",
         education_background: str = "",
+        important_person: str = "",
+        significant_location: str = "",
+        treasured_possession: str = "",
+        trait_notes: str = "",
+        scars_and_injuries: str = "",
+        phobias_and_manias: str = "",
         disposition: str,
         favored_skills: list[str],
         generation: dict[str, int],
@@ -148,6 +169,7 @@ class InvestigatorArchiveRepository:
             concept=concept,
         )
         profile = InvestigatorArchiveProfile(
+            schema_version=3,
             profile_id=str(uuid4()),
             user_id=user_id,
             name=name,
@@ -169,6 +191,12 @@ class InvestigatorArchiveRepository:
             residence=residence,
             family=family,
             education_background=education_background,
+            important_person=important_person,
+            significant_location=significant_location,
+            treasured_possession=treasured_possession,
+            trait_notes=trait_notes,
+            scars_and_injuries=scars_and_injuries,
+            phobias_and_manias=phobias_and_manias,
             disposition=disposition,
             favored_skills=favored,
             portrait_summary=portrait_summary or f"{occupation}。{background} 性格上{disposition}",
