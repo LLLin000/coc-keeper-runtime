@@ -1,4 +1,5 @@
 import json
+import asyncio
 from collections.abc import Awaitable, Callable
 
 from dm_bot.config import Settings, get_settings
@@ -41,17 +42,18 @@ class BotCommands:
         return self._enforcer.check_command(command_name, guild_id, channel_id)
 
     async def setup_check(self, interaction) -> None:
+        await interaction.response.defer(thinking=True, ephemeral=True)
         # Build channel structure guidance
         guild_id = str(interaction.guild_id) if interaction.guild_id else None
         channel_guidance = self._build_channel_guidance(guild_id) if guild_id else ""
 
-        snapshot = build_health_snapshot(self._settings)
+        snapshot = await asyncio.to_thread(build_health_snapshot, self._settings)
         health_info = json.dumps(snapshot.model_dump(), ensure_ascii=False)
 
         full_message = (
             f"**频道结构指引：**\n{channel_guidance}\n\n**运行状态：**\n{health_info}"
         )
-        await interaction.response.send_message(full_message, ephemeral=True)
+        await interaction.followup.send(full_message, ephemeral=True)
 
     def _build_channel_guidance(self, guild_id: str) -> str:
         if self._session_store is None:

@@ -88,8 +88,9 @@ def test_setup_command_reports_models() -> None:
 
     asyncio.run(commands.setup_check(interaction))
 
-    assert interaction.response.messages
-    assert "router_model" in interaction.response.messages[0][0]
+    assert interaction.response.deferred is True
+    assert interaction.followup.messages
+    assert "router_model" in interaction.followup.messages[0]
 
 
 def test_bind_and_join_commands_manage_campaign_session() -> None:
