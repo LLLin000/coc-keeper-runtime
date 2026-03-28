@@ -15,7 +15,13 @@
     { "key": "saint_candidate", "default": "", "visibility": "secret" },
     { "key": "administrator_truth", "default": "管理员少女是奈亚拉托提普的化身", "visibility": "gm_only" },
     { "key": "countdown_active", "default": true, "visibility": "public" },
-    { "key": "blood_exit_open", "default": false, "visibility": "public" }
+    { "key": "blood_exit_open", "default": false, "visibility": "public" },
+    { "key": "san_lost", "default": 0, "visibility": "discoverable" },
+    { "key": "trades_made", "default": 0, "visibility": "discoverable" },
+    { "key": "sacrifice_made", "default": false, "visibility": "discoverable" },
+    { "key": "library_researched", "default": false, "visibility": "discoverable" },
+    { "key": "statue_worshipped", "default": false, "visibility": "discoverable" },
+    { "key": "admin_killed", "default": false, "visibility": "secret" }
   ],
   "start_location_id": "central_hall",
   "locations": [
@@ -395,6 +401,36 @@
       "table_summary": "你们看清了墙上的数字钟，它正在稳定倒计时，说明这不是单纯的摆设，而是会真正决定生死的压力源。"
     },
     {
+      "id": "time_tick",
+      "event_kind": "chain",
+      "action_id": "time_tick",
+      "effects": [
+        { "kind": "increment_module_state", "key": "time_remaining", "amount": -1 }
+      ],
+      "table_summary": "时间一秒秒地流逝，倒计时在继续..."
+    },
+    {
+      "id": "greed_trade_attempt",
+      "event_kind": "action",
+      "action_id": "trade_with_admin",
+      "effects": [
+        { "kind": "increment_module_state", "key": "trades_made", "amount": 1 }
+      ],
+      "table_summary": "你们尝试与管理员交易..."
+    },
+    {
+      "id": "greed_trade_san_loss",
+      "event_kind": "roll",
+      "pending_roll_id": "greed_trade_roll",
+      "roll_action": "ability_check",
+      "conditions": { "location_id": "greed_hall" },
+      "effects": [
+        { "kind": "add_clue", "clue_id": "trade_made" },
+        { "kind": "clear_pending_roll" }
+      ],
+      "table_summary": "与管理员交易导致理智损失..."
+    },
+    {
       "id": "life_books_prompt",
       "event_kind": "action",
       "action_id": "search_books",
@@ -420,6 +456,7 @@
       },
       "effects": [
         { "kind": "add_clue", "clue_id": "life_library_notes" },
+        { "kind": "set_module_state", "key": "library_researched", "value": true },
         { "kind": "clear_pending_roll" }
       ],
       "table_summary": "你从旧笔记和诡异书页里拼出了关键线索：管理员并非不可触及，而生命之馆的馈赠背后确实藏着代价。"
@@ -439,6 +476,26 @@
       "table_summary": "你翻了几页就被那些扭曲内容扰乱了思路，只能确认这里确实藏着重要信息，但暂时还没整理出关键脉络。"
     },
     {
+      "id": "life_statue_worship",
+      "event_kind": "action",
+      "action_id": "worship_statue",
+      "effects": [
+        { "kind": "add_clue", "clue_id": "statue_worshipped" },
+        { "kind": "set_module_state", "key": "statue_worshipped", "value": true }
+      ],
+      "table_summary": "你向雕像祈祷，身体开始发生变化..."
+    },
+    {
+      "id": "death_sacrifice",
+      "event_kind": "action",
+      "action_id": "use_cross",
+      "effects": [
+        { "kind": "add_clue", "clue_id": "sacrifice_made" },
+        { "kind": "set_module_state", "key": "sacrifice_made", "value": true }
+      ],
+      "table_summary": "你将自己献祭在十字架上..."
+    },
+    {
       "id": "blood_wall_read",
       "event_kind": "action",
       "action_id": "read_wall",
@@ -446,6 +503,37 @@
         { "kind": "add_clue", "clue_id": "blood_exit_rule" }
       ],
       "table_summary": "你们辨认出墙上的句子，它直白得近乎恶毒：唯有伤痛之后流下的鲜血，才会为离开之路开门。"
+    },
+    {
+      "id": "blood_exit_unlocked",
+      "event_kind": "action",
+      "action_id": "blood_collected",
+      "conditions": { "state_matches": { "blood_collected": 25 } },
+      "effects": [
+        { "kind": "add_clue", "clue_id": "exit_opened" },
+        { "kind": "set_module_state", "key": "blood_exit_open", "value": true }
+      ],
+      "table_summary": "血池开始翻滚，池底露出了向下的楼梯！"
+    },
+    {
+      "id": "admin_attack",
+      "event_kind": "action",
+      "action_id": "attack_admin",
+      "effects": [
+        { "kind": "add_clue", "clue_id": "admin_revealed" },
+        { "kind": "set_module_state", "key": "admin_killed", "value": true }
+      ],
+      "table_summary": "你们攻击了管理员少女..."
+    },
+    {
+      "id": "countdown_expire",
+      "event_kind": "chain",
+      "action_id": "time_expire",
+      "conditions": { "state_matches": { "time_remaining": 0 } },
+      "effects": [
+        { "kind": "add_clue", "clue_id": "time_expired" }
+      ],
+      "table_summary": "倒计时结束！白光吞噬了一切..."
     }
   ],
   "endings": [
@@ -463,6 +551,21 @@
       "id": "sea_escape",
       "title": "破墙逃生",
       "summary": "调查员以重武器破开墙壁，从南海的急流中求得一线生机。"
+    },
+    {
+      "id": "saint_ending",
+      "title": "圣子结局",
+      "summary": "调查员自愿成为祭品，被选为圣子，在白光中重生。"
+    },
+    {
+      "id": "admin_curse",
+      "title": "管理员诅咒",
+      "summary": "调查员激怒了管理员少女，被困在永恒的交易中。"
+    },
+    {
+      "id": "time_expire",
+      "title": "时间耗尽",
+      "summary": "倒计时结束，除圣子外所有调查员被白光吞噬。"
     }
   ]
 }

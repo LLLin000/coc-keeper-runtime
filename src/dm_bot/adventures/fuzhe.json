@@ -1,11 +1,13 @@
 {
   "slug": "fuzhe",
   "title": "覆辙",
-  "premise": "一场车祸、一个论坛、一群魔法少女与调查员，被同一条异常轨迹拉入真相。",
+  "premise": "一场车祸、一个论坛、一群魔法少女与调查员，被同一条异常轨迹拉入真相。调查员偶然目击魔法少女的存在，魔法少女在聊天室接到任务，双方在湿地公园相遇并共同探索X公司的真相。",
   "objectives": [
     "查清车祸与神秘少女的关系",
     "进入湿地公园并应对第一次异常战斗",
-    "在不同身份与立场下拼合关于X公司与魔法少女的真相"
+    "探索便利店、餐馆、文化街等日常场景",
+    "调查化工厂获取X公司真相",
+    "前往X公司总部面对最终战斗"
   ],
   "start_scene_id": "car_crash_scene",
   "start_location_id": "car_crash_intersection",
@@ -13,7 +15,20 @@
   "state_fields": [
     {"key": "san_pressure", "default": 0, "visibility": "discoverable"},
     {"key": "danger_level", "default": "low", "visibility": "discoverable"},
-    {"key": "module_rule_mode", "default": "fuzhe", "visibility": "gm_only"}
+    {"key": "module_rule_mode", "default": "fuzhe", "visibility": "gm_only"},
+    {"key": "car_crash_witnessed", "default": false, "visibility": "discoverable"},
+    {"key": "forum_researched", "default": false, "visibility": "discoverable"},
+    {"key": "spring_shock_defeated", "default": false, "visibility": "discoverable"},
+    {"key": "blood_angel_joined", "default": false, "visibility": "discoverable"},
+    {"key": "convenience_store_visited", "default": false, "visibility": "discoverable"},
+    {"key": "restaurant_visited", "default": false, "visibility": "discoverable"},
+    {"key": "cultural_street_visited", "default": false, "visibility": "discoverable"},
+    {"key": "school_concert_visited", "default": false, "visibility": "discoverable"},
+    {"key": "chemical_factory_searched", "default": false, "visibility": "discoverable"},
+    {"key": "x_company_visited", "default": false, "visibility": "discoverable"},
+    {"key": "sritika_killed", "default": false, "visibility": "discoverable"},
+    {"key": "magical_girl_count", "default": 0, "visibility": "discoverable"},
+    {"key": "current_investigation_stage", "default": "intro", "visibility": "discoverable"}
   ],
   "onboarding_tracks": [
     {
@@ -42,7 +57,7 @@
       "title": "调查员导入",
       "summary": "调查员从车祸与论坛接触异常。",
       "location_id": "car_crash_intersection",
-      "next_node_ids": ["forum_investigation", "wetland_ambush"]
+      "next_node_ids": ["forum_investigation", "wetland_ambush", "convenience_store", "restaurant", "cultural_street"]
     },
     {
       "id": "magical_girl_intro",
@@ -50,7 +65,7 @@
       "title": "魔法少女导入",
       "summary": "魔法少女从瓦尔与聊天室进入任务。",
       "location_id": "wetland_gate",
-      "next_node_ids": ["wetland_ambush"]
+      "next_node_ids": ["wetland_ambush", "convenience_store", "restaurant", "cultural_street"]
     },
     {
       "id": "forum_investigation",
@@ -58,60 +73,39 @@
       "title": "论坛调查",
       "summary": "调查员在论坛和只言片语的新闻中寻找神秘少女踪迹。",
       "location_id": "mystery_forum",
-      "next_node_ids": ["wetland_ambush"]
+      "next_node_ids": ["wetland_ambush", "convenience_store", "restaurant", "cultural_street", "chemical_factory"]
     },
     {
       "id": "wetland_ambush",
       "kind": "event",
       "title": "湿地公园遭遇",
-      "summary": "调查员与魔法少女在湿地公园第一次共同遭遇异常战斗。",
+      "summary": "调查员与魔法少女在湿地公园第一次共同遭遇异常战斗，春响魔物出现。",
       "location_id": "wetland_gate",
+      "next_node_ids": ["convenience_store", "restaurant", "cultural_street", "xinhai_school", "chemical_factory"]
+    },
+    {
+      "id": "school_concert",
+      "kind": "event",
+      "title": "校园演唱会",
+      "summary": "新海中学举办演唱会，春响再次出现，揭示更多真相。",
+      "location_id": "xinhai_school",
+      "next_node_ids": ["chemical_factory", "x_company"]
+    },
+    {
+      "id": "chemical_factory_investigation",
+      "kind": "scene",
+      "title": "化工厂调查",
+      "summary": "玩家调查废弃化工厂，发现X药剂的制作场所和公司内幕。",
+      "location_id": "chemical_factory",
+      "next_node_ids": ["x_company"]
+    },
+    {
+      "id": "final_battle",
+      "kind": "event",
+      "title": "X公司最终战斗",
+      "summary": "玩家前往X公司总部，与斯瑞提卡进行最终对决。",
+      "location_id": "x_company",
       "next_node_ids": []
-    }
-  ],
-  "scenes": [
-    {
-      "id": "car_crash_scene",
-      "title": "车祸路口",
-      "summary": "傍晚的十字路口被车祸和人群的骚动打破。",
-      "guidance": {
-        "ambient_focus": ["车祸现场", "围观者反应", "离去的金发少女"],
-        "light_hint": "你可以观察现场、询问路人，或在事后继续追查新闻与论坛。",
-        "rescue_hint": "如果卡住了，可以从车祸新闻、论坛照片、湿地公园这三条线索继续推进。 "
-      },
-      "presentation": {
-        "entry_text": "空气中弥漫着汽油和血腥味，晚霞像什么都没发生一样铺在路面上。",
-        "choice_prompt": "你最先关注的是惨烈现场、周围人的反应，还是那名异样的少女？"
-      },
-      "interactables": [
-        {
-          "id": "inspect_crash",
-          "title": "查看车祸现场",
-          "keywords": ["车祸", "现场", "少女", "路口"],
-          "judgement": "auto",
-          "trigger_ids": ["fuzhe_inspect_crash"]
-        }
-      ]
-    },
-    {
-      "id": "forum_scene",
-      "title": "神秘论坛",
-      "summary": "都市灵异与魔法少女传闻混杂的论坛出现在屏幕上。",
-      "guidance": {
-        "ambient_focus": ["论坛照片", "阴谋论新闻", "模糊影像"],
-        "light_hint": "你可以比对照片、翻看帖子，或追查背后提到的组织与地点。",
-        "rescue_hint": "论坛的价值不在于真假，而在于它把你引向更具体的人和地点。 "
-      }
-    },
-    {
-      "id": "wetland_scene",
-      "title": "城南湿地公园",
-      "summary": "夜色中的湿地公园安静得过分，像是在等待什么。",
-      "guidance": {
-        "ambient_focus": ["稀疏路灯", "草叶摩挲声", "同行者的反应"],
-        "light_hint": "这里很适合分辨队伍状态、安排站位，或警惕是否有异样接近。",
-        "rescue_hint": "第一次真正的异常遭遇将在这里发生，不要忽视声音、气温和同行者的异常。 "
-      }
     }
   ],
   "locations": [
@@ -119,30 +113,449 @@
       "id": "car_crash_intersection",
       "scene_id": "car_crash_scene",
       "title": "车祸路口",
-      "aliases": ["路口", "事故现场"],
+      "aliases": ["路口", "事故现场", "车祸"],
       "landmarks": ["两辆相撞的轿车", "围观群众", "散开的血迹"],
       "connections": [
-        {"to_location_id": "mystery_forum", "keywords": ["论坛", "上网", "搜索"], "travel_text": "你把车祸带来的不安延伸到了网络与论坛。"},
-        {"to_location_id": "wetland_gate", "keywords": ["公园", "湿地", "周末"], "travel_text": "时间流逝后，你来到城南湿地公园。"}
+        {"to_location_id": "mystery_forum", "keywords": ["论坛", "上网", "搜索", "调查"], "travel_text": "你把车祸带来的不安延伸到了网络与论坛。"},
+        {"to_location_id": "wetland_gate", "keywords": ["公园", "湿地", "周末"], "travel_text": "时间流逝后，你来到城南湿地公园。"},
+        {"to_location_id": "convenience_store", "keywords": ["便利店", "超市"], "travel_text": "你走进附近的便利店想要平复心情。"},
+        {"to_location_id": "restaurant", "keywords": ["饭店", "餐馆", "吃饭"], "travel_text": "你来到梅华饭店用餐。"}
       ]
     },
     {
       "id": "mystery_forum",
       "scene_id": "forum_scene",
       "title": "神秘论坛",
-      "aliases": ["论坛", "网站"],
+      "aliases": ["论坛", "网站", "调查"],
       "landmarks": ["模糊影像", "清晰照片", "关于魔法少女的帖子"],
       "connections": [
-        {"to_location_id": "wetland_gate", "keywords": ["公园", "湿地"], "travel_text": "你带着论坛中的疑点，走向了湿地公园。"}
+        {"to_location_id": "wetland_gate", "keywords": ["公园", "湿地"], "travel_text": "你带着论坛中的疑点，走向了湿地公园。"},
+        {"to_location_id": "chemical_factory", "keywords": ["化工厂", "工厂"], "travel_text": "根据论坛线索，你找到了信材化工。"},
+        {"to_location_id": "convenience_store", "keywords": ["便利店"], "travel_text": "你离开论坛，来到便利店。"}
       ]
     },
     {
       "id": "wetland_gate",
       "scene_id": "wetland_scene",
       "title": "湿地公园入口",
-      "aliases": ["公园", "入口"],
+      "aliases": ["公园", "入口", "湿地"],
       "landmarks": ["低矮路灯", "树影", "通往深处的小路"],
-      "connections": []
+      "connections": [
+        {"to_location_id": "convenience_store", "keywords": ["便利店"], "travel_text": "你离开湿地公园，来到便利店。"},
+        {"to_location_id": "restaurant", "keywords": ["饭店", "餐馆"], "travel_text": "你来到梅华饭店。"},
+        {"to_location_id": "cultural_street", "keywords": ["文化街"], "travel_text": "你来到文化街。"},
+        {"to_location_id": "xinhai_school", "keywords": ["学校", "新海中学", "演唱会"], "travel_text": "你前往新海中学。"}
+      ]
+    },
+    {
+      "id": "convenience_store",
+      "scene_id": "convenience_store_scene",
+      "title": "便利店",
+      "aliases": ["超市", "商店"],
+      "landmarks": ["货架", "收银台", "冰柜"],
+      "connections": [
+        {"to_location_id": "car_crash_intersection", "keywords": ["回去", "路口"], "travel_text": "你离开便利店。"},
+        {"to_location_id": "wetland_gate", "keywords": ["公园", "湿地"], "travel_text": "你前往湿地公园。"},
+        {"to_location_id": "restaurant", "keywords": ["饭店"], "travel_text": "你来到梅华饭店。"},
+        {"to_location_id": "cultural_street", "keywords": ["文化街"], "travel_text": "你来到文化街。"}
+      ]
+    },
+    {
+      "id": "restaurant",
+      "scene_id": "restaurant_scene",
+      "title": "梅华饭店",
+      "aliases": ["饭店", "餐馆", "快餐店"],
+      "landmarks": ["收银台", "二楼座位", "菜单"],
+      "connections": [
+        {"to_location_id": "car_crash_intersection", "keywords": ["回去"], "travel_text": "你离开饭店。"},
+        {"to_location_id": "convenience_store", "keywords": ["便利店"], "travel_text": "你来到便利店。"},
+        {"to_location_id": "wetland_gate", "keywords": ["公园"], "travel_text": "你前往湿地公园。"},
+        {"to_location_id": "cultural_street", "keywords": ["文化街"], "travel_text": "你来到文化街。"}
+      ]
+    },
+    {
+      "id": "cultural_street",
+      "scene_id": "cultural_street_scene",
+      "title": "文化街",
+      "aliases": ["街", "集市"],
+      "landmarks": ["摊位", "文创", "小吃"],
+      "connections": [
+        {"to_location_id": "wetland_gate", "keywords": ["公园"], "travel_text": "你离开文化街，前往湿地公园。"},
+        {"to_location_id": "convenience_store", "keywords": ["便利店"], "travel_text": "你来到便利店。"},
+        {"to_location_id": "restaurant", "keywords": ["饭店"], "travel_text": "你来到梅华饭店。"},
+        {"to_location_id": "xinhai_school", "keywords": ["学校"], "travel_text": "你前往新海中学。"}
+      ]
+    },
+    {
+      "id": "xinhai_school",
+      "scene_id": "school_concert_scene",
+      "title": "新海中学",
+      "aliases": ["学校", "校园", "演唱会"],
+      "landmarks": ["校门", "足球场", "舞台"],
+      "connections": [
+        {"to_location_id": "wetland_gate", "keywords": ["公园"], "travel_text": "你离开学校。"},
+        {"to_location_id": "cultural_street", "keywords": ["文化街"], "travel_text": "你来到文化街。"},
+        {"to_location_id": "chemical_factory", "keywords": ["化工厂", "工厂"], "travel_text": "你根据线索前往化工厂。"},
+        {"to_location_id": "x_company", "keywords": ["X公司", "总部"], "travel_text": "你根据斯瑞提卡给的地址前往X公司。"}
+      ]
+    },
+    {
+      "id": "chemical_factory",
+      "scene_id": "chemical_factory_scene",
+      "title": "信材化工厂",
+      "aliases": ["化工厂", "工厂", "废弃工厂"],
+      "landmarks": ["反应釜", "职工宿舍", "办公楼", "仓库"],
+      "connections": [
+        {"to_location_id": "mystery_forum", "keywords": ["论坛", "回去"], "travel_text": "你离开化工厂。"},
+        {"to_location_id": "x_company", "keywords": ["X公司", "总部"], "travel_text": "你根据线索前往X公司总部。"}
+      ]
+    },
+    {
+      "id": "x_company",
+      "scene_id": "x_company_scene",
+      "title": "X公司总部",
+      "aliases": ["X公司", "公司", "总部"],
+      "landmarks": ["异次元空间", "扭曲的走廊", "斯瑞提卡的房间"],
+      "connections": [
+        {"to_location_id": "chemical_factory", "keywords": ["化工厂", "回去"], "travel_text": "你离开X公司。"},
+        {"to_location_id": "xinhai_school", "keywords": ["学校", "新海中学"], "travel_text": "你回到学校。"}
+      ]
+    }
+  ],
+  "scenes": [
+    {
+      "id": "car_crash_scene",
+      "title": "车祸路口",
+      "summary": "傍晚的十字路口被车祸和人群的骚动打破。调查员目击金发少女从车祸中离开。",
+      "guidance": {
+        "ambient_focus": ["车祸现场", "围观者反应", "离去的金发少女"],
+        "light_hint": "你可以观察现场、询问路人，或在事后继续追查新闻与论坛。",
+        "rescue_hint": "如果卡住了，可以从车祸新闻、论坛照片、湿地公园这三条线索继续推进。"
+      },
+      "presentation": {
+        "entry_text": "空气中弥漫着汽油和血腥味，晚霞像什么都没发生一样铺在路面上。",
+        "pressure_text": "人群发出巨大的骚乱，有人尖叫，有人报警。",
+        "choice_prompt": "你最先关注的是惨烈现场、周围人的反应，还是这名异样的少女？"
+      },
+      "interactables": [
+        {
+          "id": "inspect_crash",
+          "title": "查看车祸现场",
+          "keywords": ["车祸", "现场", "少女", "路口", "观察"],
+          "judgement": "roll",
+          "roll_type": "ability_check",
+          "roll_label": "Listen",
+          "prompt_text": "先聆听周围的声音..."
+        },
+        {
+          "id": "witness_girl",
+          "title": "目击金发少女",
+          "keywords": ["金发", "少女", "翅膀", "目击"],
+          "judgement": "auto",
+          "result_text": "你的视线中出现了一个奇怪的少女：你确信她是一个女孩，她有着金色的长发，和不该属于人体的翅膀。她从损坏的车中出来，像是受到了惊吓，飞速扇动翅膀离开了。"
+        }
+      ],
+      "clues": ["金发少女存在", "车祸不是普通事故"],
+      "reveals": ["魔法少女确实存在"],
+      "combat": false,
+      "exits": ["mystery_forum", "wetland_gate", "convenience_store", "restaurant"]
+    },
+    {
+      "id": "forum_scene",
+      "title": "神秘论坛",
+      "summary": "都市灵异与魔法少女传闻混杂的论坛。调查员发现与车祸中金发少女相似的照片。",
+      "guidance": {
+        "ambient_focus": ["论坛照片", "阴谋论新闻", "模糊影像"],
+        "light_hint": "你可以比对照片、翻看帖子，或追查背后提到的组织与地点。",
+        "rescue_hint": "论坛的价值不在于真假，而在于它把你引向更具体的人和地点。"
+      },
+      "presentation": {
+        "entry_text": "这是一个莫名其妙的小网站，似乎是一群相信世上存在魔法少女的人搜集的证据。",
+        "pressure_text": "忽然，你的目光被一张照片锁定了。",
+        "choice_prompt": "你可以搜索更多资料，或前往其他地点。"
+      },
+      "interactables": [
+        {
+          "id": "search_forum",
+          "title": "搜索论坛",
+          "keywords": ["搜索", "调查", "帖子"],
+          "judgement": "roll",
+          "roll_type": "ability_check",
+          "roll_label": "LibraryUse",
+          "prompt_text": "进行图书馆使用检定..."
+        },
+        {
+          "id": "find_photo",
+          "title": "发现照片",
+          "keywords": ["照片", "金发", "魔法少女"],
+          "judgement": "auto",
+          "result_text": "你看到了一张难得清晰的照片，而照片边角出现的金色长发女孩，与你在事故当场所见的女孩，一模一样。"
+        }
+      ],
+      "clues": ["照片中的金发少女", "魔法少女传闻", "X公司相关线索"],
+      "reveals": ["存在名为X公司的组织"],
+      "combat": false,
+      "exits": ["wetland_gate", "chemical_factory", "convenience_store"]
+    },
+    {
+      "id": "wetland_scene",
+      "title": "城南湿地公园",
+      "summary": "夜色中的湿地公园安静得过分，第一次异常遭遇发生，春响魔物出现。",
+      "guidance": {
+        "ambient_focus": ["稀疏路灯", "草叶摩挲声", "同行者的反应"],
+        "light_hint": "这里很适合分辨队伍状态、安排站位，或警惕是否有异样接近。",
+        "rescue_hint": "第一次真正的异常遭遇将在这里发生，不要忽视声音、气温和同行者的异常。"
+      },
+      "presentation": {
+        "entry_text": "公园晚上也会有不少人前来，但内部人流较少。你不远处有一个沉默的过客。",
+        "pressure_text": "你忽然觉得脊背发凉，扭头却看到一个可怖的人形怪物向你冲来！",
+        "choice_prompt": "你该怎么办？"
+      },
+      "interactables": [
+        {
+          "id": "listen_noise",
+          "title": "聆听",
+          "keywords": ["聆听", "听"],
+          "judgement": "roll",
+          "roll_type": "ability_check",
+          "roll_label": "Listen",
+          "prompt_text": "进行聆听检定..."
+        },
+        {
+          "id": "spring_shock_battle",
+          "title": "春响魔物战斗",
+          "keywords": ["战斗", "魔物", "春响", "怪物"],
+          "judgement": "auto",
+          "result_text": "你看到了那个魔物，那个女孩。她有了基本的人形，身上穿着新海中学的校服。她的眼神中没有疯狂。"
+        }
+      ],
+      "clues": ["春响是曾经的魔法少女", "魔法少女会变成魔物"],
+      "reveals": ["魔法少女的真相"],
+      "combat": true,
+      "exits": ["convenience_store", "restaurant", "cultural_street", "xinhai_school"]
+    },
+    {
+      "id": "convenience_store_scene",
+      "title": "便利店",
+      "summary": "日常场景，可能遇到血天使。可购买补给。",
+      "guidance": {
+        "ambient_focus": ["货架", "收银台", "冰柜", "店员"],
+        "light_hint": "这里可以休息和获取信息。",
+        "rescue_hint": "注意观察店员的反应和店内细节。"
+      },
+      "presentation": {
+        "entry_text": "这是一家中式便利店，干净明亮。你透过玻璃窗看到了自己的脸和衣着。",
+        "pressure_text": "店里还有其他人，但你需要的是什么？",
+        "choice_prompt": "你可以购买物品，或与店员交谈。"
+      },
+      "interactables": [
+        {
+          "id": "buy_items",
+          "title": "购买物品",
+          "keywords": ["购买", "买", "补给"],
+          "judgement": "auto",
+          "result_text": "你购买了必要的生活物资。"
+        },
+        {
+          "id": "talk_clerk",
+          "title": "与店员交谈",
+          "keywords": ["交谈", "问", "店员"],
+          "judgement": "auto",
+          "result_text": "店员表示不知道最近发生了什么奇怪的事。"
+        },
+        {
+          "id": "blood_angel_encounter",
+          "title": "偶遇血天使",
+          "keywords": ["血天使", "魔法少女", "金发"],
+          "judgement": "auto",
+          "result_text": "一名金发少女走进便利店，她言简意赅地告诉你自己来这里买吃的，然后拿走了两个红糖馒头。"
+        }
+      ],
+      "clues": ["便利店曾是魔法少女母亲所开", "二号魔法少女被抹消"],
+      "reveals": [],
+      "combat": false,
+      "exits": ["car_crash_intersection", "wetland_gate", "restaurant", "cultural_street"]
+    },
+    {
+      "id": "restaurant_scene",
+      "title": "梅华饭店",
+      "summary": "日常场景，可以用餐并可能遇到血天使。",
+      "guidance": {
+        "ambient_focus": ["收银台", "二楼座位", "菜单"],
+        "light_hint": "这里可以休息和获取食物。",
+        "rescue_hint": "与店员交谈可能获得信息。"
+      },
+      "presentation": {
+        "entry_text": "梅华饭店坐落于中学后门，门口有两盆发财树。今天客流量较多。",
+        "pressure_text": "服务员笑盈盈走来：几位是要来就餐的吗？",
+        "choice_prompt": "你可以点餐、探索店内，或与店员交谈。"
+      },
+      "interactables": [
+        {
+          "id": "order_food",
+          "title": "点餐",
+          "keywords": ["点餐", "吃饭", "食物"],
+          "judgement": "auto",
+          "result_text": "你点了今天的新品炸鸡排。"
+        },
+        {
+          "id": "blood_angel_meal",
+          "title": "血天使一起用餐",
+          "keywords": ["血天使", "一起", "吃饭"],
+          "judgement": "auto",
+          "result_text": "血天使对于油炸食品很感兴趣。她从小口小口到大口大口：'很好吃，我以前没吃过这个。'"
+        }
+      ],
+      "clues": [],
+      "reveals": ["血天使的家庭背景"],
+      "combat": false,
+      "exits": ["car_crash_intersection", "convenience_store", "wetland_gate", "cultural_street"]
+    },
+    {
+      "id": "cultural_street_scene",
+      "title": "文化街",
+      "summary": "娱乐地点，有各种摊位和小游戏。",
+      "guidance": {
+        "ambient_focus": ["摊位", "文创", "小吃", "行人"],
+        "light_hint": "这里可以放松和娱乐。",
+        "rescue_hint": "注意观察各种有趣的摊位和人物。"
+      },
+      "presentation": {
+        "entry_text": "这是一条相当热闹的街道。大大小小摊位卖各种本地文创和七零八碎的小玩意。",
+        "pressure_text": "路上有社会实践的大学生，有遛宠物的本地人，还有手牵手的小学生。",
+        "choice_prompt": "你可以逛街、抽奖、或 просто 散步。"
+      },
+      "interactables": [
+        {
+          "id": "stroll",
+          "title": "逛街",
+          "keywords": ["逛街", "散步", "逛"],
+          "judgement": "auto",
+          "result_text": "你感受着人间百态，生活不止有打魔物，还有人间烟火。"
+        }
+      ],
+      "clues": [],
+      "reveals": [],
+      "combat": false,
+      "exits": ["wetland_gate", "convenience_store", "restaurant", "xinhai_school"]
+    },
+    {
+      "id": "school_concert_scene",
+      "title": "新海中学演唱会",
+      "summary": "校园演唱会，莫莫缇演出。春响再次出现并揭示更多真相。",
+      "guidance": {
+        "ambient_focus": ["校门", "足球场", "舞台", "射灯"],
+        "light_hint": "这是发现春响真相的关键地点。",
+        "rescue_hint": "演唱会期间可能会有异常事件发生。"
+      },
+      "presentation": {
+        "entry_text": "新海中学大门敞开，被装饰得十分漂亮。足球场上挤满了学生和家长。",
+        "pressure_text": "射灯闪烁了两下后，足球场再次灯火通明。",
+        "choice_prompt": "你可以观看演出，或探索校园。"
+      },
+      "interactables": [
+        {
+          "id": "watch_concert",
+          "title": "观看演唱会",
+          "keywords": ["演唱会", "观看", "演出"],
+          "judgement": "auto",
+          "result_text": "莫莫缇走上舞台，歌声充满元气与活力。但这无法掩盖空气中的不安。"
+        },
+        {
+          "id": "spring_shock_reveal",
+          "title": "春响出现",
+          "keywords": ["春响", "魔物", "战斗"],
+          "judgement": "auto",
+          "result_text": "春响出现了。她穿着新海中学的校服，平静地看着你们：'你们认为自己代表正义吗？'"
+        }
+      ],
+      "clues": ["春响曾是魔法少女", "X药剂的真相", "魔物来源"],
+      "reveals": ["魔法少女本就是一个彻头彻尾的谎言"],
+      "combat": true,
+      "exits": ["chemical_factory", "x_company"]
+    },
+    {
+      "id": "chemical_factory_scene",
+      "title": "信材化工厂",
+      "summary": "废弃化工厂，发现X药剂的制作场所和公司内幕。",
+      "guidance": {
+        "ambient_focus": ["反应釜", "职工宿舍", "办公楼", "仓库"],
+        "light_hint": "这里藏着X公司的秘密。",
+        "rescue_hint": "仔细搜索每个区域可能发现不同线索。"
+      },
+      "presentation": {
+        "entry_text": "信材化工的厂区在夜晚漆黑一片。你看到叫不出名字的巨大机器，它们已经坏了。",
+        "pressure_text": "空气中弥漫着尘土味与过去化学品残留的刺激气息。",
+        "choice_prompt": "你可以探索厂区、职工宿舍或办公楼。"
+      },
+      "interactables": [
+        {
+          "id": "search_reactor",
+          "title": "调查反应釜",
+          "keywords": ["反应釜", "车间", "调查"],
+          "judgement": "roll",
+          "roll_type": "ability_check",
+          "roll_label": "SpotHidden",
+          "prompt_text": "侦查检定..."
+        },
+        {
+          "id": "search_dormitory",
+          "title": "调查职工宿舍",
+          "keywords": ["宿舍", "日记", "调查"],
+          "judgement": "roll",
+          "roll_type": "ability_check",
+          "roll_label": "Luck",
+          "prompt_text": "幸运检定..."
+        },
+        {
+          "id": "search_office",
+          "title": "调查办公楼",
+          "keywords": ["办公楼", "文件", "调查"],
+          "judgement": "roll",
+          "roll_type": "ability_check",
+          "roll_label": "SpotHidden",
+          "prompt_text": "侦查检定..."
+        }
+      ],
+      "clues": ["X公司曾用化工厂生产X药剂", "X药剂的副作用", "魔法少女计划的真相"],
+      "reveals": ["自然界中的魔法能量可以被捕获并制成X药剂", "长期使用会导致变成魔物"],
+      "combat": false,
+      "exits": ["mystery_forum", "x_company"]
+    },
+    {
+      "id": "x_company_scene",
+      "title": "X公司总部",
+      "summary": "X公司内部是异次元空间，最终战斗发生地。斯瑞提卡在此出现。",
+      "guidance": {
+        "ambient_focus": ["异次元空间", "扭曲的走廊", "斯瑞提卡的房间"],
+        "light_hint": "这是最终的地点。",
+        "rescue_hint": "准备好面对最终挑战。"
+      },
+      "presentation": {
+        "entry_text": "你来到了一栋普通的写字楼前。斯瑞提卡提供的楼层是十三。X公司的内部与写字楼平层差别很大，像是动画片中的异次元空间。",
+        "pressure_text": "肆意的魔物，有着很多肢体的人类，飞来飞去的儿童...它们，齐齐看向了你。",
+        "choice_prompt": "你准备好面对斯瑞提卡了吗？"
+      },
+      "interactables": [
+        {
+          "id": "sritika_encounter",
+          "title": "与斯瑞提卡交谈",
+          "keywords": ["斯瑞提卡", "交谈", "对话"],
+          "judgement": "auto",
+          "result_text": "斯瑞提卡笑着望向你们：'你们做出了有趣的决定哦。'她知无不言，但你们无法感化她。"
+        },
+        {
+          "id": "final_battle",
+          "title": "最终战斗",
+          "keywords": ["战斗", "斯瑞提卡", "最终"],
+          "judgement": "auto",
+          "result_text": "在斯瑞提卡耐心耗尽或你们主动攻击后，战斗轮开始。她可以改变空间，需要近身才能对其造成伤害。"
+        }
+      ],
+      "clues": ["X公司改造人计划", "斯瑞提卡是被架空的领导者", "魔法少女计划的真相"],
+      "reveals": ["魔法少女是公司高层的踏板", "X药剂会让人变成魔物"],
+      "combat": true,
+      "exits": []
     }
   ],
   "triggers": [
@@ -154,11 +567,171 @@
         {"kind": "record_knowledge", "title": "神秘少女目击", "content": "你确信自己看到了一个长着翅膀的金发少女。", "scope": "player"},
         {"kind": "move_story_node", "key": "forum_investigation"},
         {"kind": "increment_module_state", "key": "san_pressure", "amount": 1},
-        {"kind": "set_module_state", "key": "danger_level", "value": "rising"}
+        {"kind": "set_module_state", "key": "danger_level", "value": "rising"},
+        {"kind": "set_module_state", "key": "car_crash_witnessed", "value": true},
+        {"kind": "set_module_state", "key": "current_investigation_stage", "value": "forum"}
       ],
       "table_summary": "那名从车祸中离开的金发少女，让这一切不再像普通事故。",
       "gm_summary": "调查员线从车祸推进到论坛调查。"
+    },
+    {
+      "id": "forum_search_success",
+      "event_kind": "roll",
+      "pending_roll_id": "forum_library_check",
+      "roll_action": "ability_check",
+      "roll_label": "LibraryUse",
+      "conditions": {"min_total": 10},
+      "effects": [
+        {"kind": "set_module_state", "key": "forum_researched", "value": true},
+        {"kind": "set_module_state", "key": "current_investigation_stage", "value": "wetland"},
+        {"kind": "clear_pending_roll"}
+      ],
+      "table_summary": "你查到了X公司的相关信息，发现了化工厂的位置。"
+    },
+    {
+      "id": "forum_search_fail",
+      "event_kind": "roll",
+      "pending_roll_id": "forum_library_check",
+      "roll_action": "ability_check",
+      "roll_label": "LibraryUse",
+      "conditions": {"max_total": 9},
+      "effects": [
+        {"kind": "clear_pending_roll"}
+      ],
+      "table_summary": "你翻了几页就被那些信息扰乱了思路，没有获得有价值的线索。"
+    },
+    {
+      "id": "wetland_listen_success",
+      "event_kind": "roll",
+      "pending_roll_id": "wetland_listen_check",
+      "roll_action": "ability_check",
+      "roll_label": "Listen",
+      "conditions": {"min_total": 10},
+      "effects": [
+        {"kind": "move_story_node", "key": "wetland_ambush"},
+        {"kind": "set_module_state", "key": "current_investigation_stage", "value": "battle"},
+        {"kind": "clear_pending_roll"}
+      ],
+      "table_summary": "你听到了簌簌的草叶摩擦声，循声望去，你看到一个可怖的人形怪物向你冲来！"
+    },
+    {
+      "id": "wetland_listen_fail",
+      "event_kind": "roll",
+      "pending_roll_id": "wetland_listen_check",
+      "roll_action": "ability_check",
+      "roll_label": "Listen",
+      "conditions": {"max_total": 9},
+      "effects": [
+        {"kind": "move_story_node", "key": "wetland_ambush"},
+        {"kind": "set_module_state", "key": "current_investigation_stage", "value": "battle"},
+        {"kind": "clear_pending_roll"}
+      ],
+      "table_summary": "你叹了口气，忽然觉得脊背发凉，扭头却看到一个可怖的人形怪物向你冲来！"
+    },
+    {
+      "id": "spring_shock_defeated",
+      "event_kind": "action",
+      "action_id": "spring_shock_battle",
+      "effects": [
+        {"kind": "set_module_state", "key": "spring_shock_defeated", "value": true},
+        {"kind": "add_clue", "clue_id": "spring_shock_defeated"}
+      ],
+      "table_summary": "扣除春响25的生命后她离开了。她不会在这里和玩家过多纠缠。"
+    },
+    {
+      "id": "convenience_store_visit",
+      "event_kind": "action",
+      "action_id": "buy_items",
+      "effects": [
+        {"kind": "set_module_state", "key": "convenience_store_visited", "value": true}
+      ],
+      "table_summary": "你离开了便利店，补充了必要的物资。"
+    },
+    {
+      "id": "blood_angel_joins",
+      "event_kind": "action",
+      "action_id": "blood_angel_encounter",
+      "effects": [
+        {"kind": "set_module_state", "key": "blood_angel_joined", "value": true},
+        {"kind": "increment_module_state", "key": "magical_girl_count", "amount": 1}
+      ],
+      "table_summary": "血天使成为了你的同伴。她会飞，可以在战斗中提供高伤害支援。"
+    },
+    {
+      "id": "restaurant_visit",
+      "event_kind": "action",
+      "action_id": "order_food",
+      "effects": [
+        {"kind": "set_module_state", "key": "restaurant_visited", "value": true}
+      ],
+      "table_summary": "你在梅华饭店享用了一顿饭，感受到了片刻的安宁。"
+    },
+    {
+      "id": "cultural_street_visit",
+      "event_kind": "action",
+      "action_id": "stroll",
+      "effects": [
+        {"kind": "set_module_state", "key": "cultural_street_visited", "value": true}
+      ],
+      "table_summary": "你在文化街感受着人间百态，生活不止有打魔物，还有人间烟火。"
+    },
+    {
+      "id": "school_concert_visit",
+      "event_kind": "action",
+      "action_id": "watch_concert",
+      "effects": [
+        {"kind": "set_module_state", "key": "school_concert_visited", "value": true},
+        {"kind": "set_module_state", "key": "current_investigation_stage", "value": "concert"}
+      ],
+      "table_summary": "演唱会在设备故障后恢复，但春响的出现打破了这表面的和平。"
+    },
+    {
+      "id": "chemical_factory_search",
+      "event_kind": "action",
+      "action_id": "search_reactor",
+      "effects": [
+        {"kind": "set_module_state", "key": "chemical_factory_searched", "value": true},
+        {"kind": "set_module_state", "key": "current_investigation_stage", "value": "factory"}
+      ],
+      "table_summary": "你在反应釜处发现了X药剂的残留，魔法少女玩家会感受到身体的微妙反应。"
+    },
+    {
+      "id": "x_company_enter",
+      "event_kind": "action",
+      "action_id": "sritika_encounter",
+      "effects": [
+        {"kind": "set_module_state", "key": "x_company_visited", "value": true},
+        {"kind": "set_module_state", "key": "current_investigation_stage", "value": "final"},
+        {"kind": "increment_module_state", "key": "san_pressure", "amount": 1}
+      ],
+      "table_summary": "你进入了X公司的异次元空间，这里的景象让所有人都感到恐惧。全员SC1/1d3。"
+    },
+    {
+      "id": "sritika_killed",
+      "event_kind": "action",
+      "action_id": "final_battle",
+      "conditions": {"state_matches": {"sritika_killed": true}},
+      "effects": [
+        {"kind": "set_module_state", "key": "sritika_killed", "value": true}
+      ],
+      "table_summary": "你们成功杀死了斯瑞提卡，但X公司的人并不会惊慌失措..."
     }
   ],
-  "endings": []
+  "endings": [
+    {
+      "id": "nothing_happens",
+      "title": "结局1: 无事发生",
+      "summary": "如果玩家在前期放弃调查。调查员玩家继续自己的工作，魔法少女继续当超级英雄。你们并没有在日后相遇。一段时间后，新闻中开始出现'改造人'的字眼。"
+    },
+    {
+      "id": "dream_broken",
+      "title": "结局2: 梦破",
+      "summary": "伴随着最后一位同伴的倒下，你们好像真的成为了斯瑞提卡的玩具。这个世界上每天都会死很多人，没有人知道你们在相遇相识相知后一步步揭开了一个怎样的谜团。你们以人类的身份死亡了。"
+    },
+    {
+      "id": "fuzhe",
+      "title": "结局3: 覆辙",
+      "summary": "杀死斯瑞提卡后，你们被迫从X公司离开。你们无法再回想起X公司的地址了。那天夜里，瓦尔来到了魔法少女玩家的面前：'你们想的话，我可以收回变身器与你们身上的魔能。'第二天，新闻席卷了各大平台：超能力者与改造人的存在被公之于众。你们做了很多，却好像什么也没做。"
+    }
+  ]
 }

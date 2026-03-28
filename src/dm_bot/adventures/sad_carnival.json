@@ -1,0 +1,702 @@
+{
+  "slug": "sad_carnival",
+  "title": "凄夜的游乐场",
+  "premise": "调查员作为万事屋成员，接受高价委托前往废弃游乐场寻找走失孩子。实际这是一个怪物为补充祭品而设下的陷阱——游乐场在天亮时连接怪物世界，天黑时连接人类世界。4个孩子已经遇难，幸存的小男孩被困在鬼屋中。",
+  "start_scene_id": "entrance",
+  "objectives": [
+    "找到并救出被困的小男孩",
+    "调查游乐场的真相",
+    "在天亮前逃离游乐场",
+    "避免被怪物杀害"
+  ],
+  "state_fields": [
+    {"key": "san_lost", "default": 0, "visibility": "discoverable"},
+    {"key": "has_hairpin", "default": false, "visibility": "discoverable"},
+    {"key": "has_coins", "default": false, "visibility": "discoverable"},
+    {"key": "has_shoes", "default": false, "visibility": "discoverable"},
+    {"key": "has_left_arm", "default": false, "visibility": "discoverable"},
+    {"key": "has_right_arm", "default": false, "visibility": "discoverable"},
+    {"key": "has_tongue", "default": false, "visibility": "discoverable"},
+    {"key": "boy_rescued", "default": false, "visibility": "discoverable"},
+    {"key": "monster_house_destroyed", "default": false, "visibility": "discoverable"}
+  ],
+  "start_location_id": "entrance",
+  "locations": [
+    {
+      "id": "entrance",
+      "scene_id": "entrance",
+      "title": "游乐场大门",
+      "aliases": ["西门", "入口", "正门"],
+      "landmarks": ["安检机", "门票", "游乐场地图"],
+      "connections": [
+        {"to_location_id": "admin_room", "keywords": ["管理员室", "管理室"]},
+        {"to_location_id": "ferris_wheel", "keywords": ["摩天轮"]},
+        {"to_location_id": "bumper_cars", "keywords": ["碰碰车"]},
+        {"to_location_id": "carousel", "keywords": ["旋转木马"]},
+        {"to_location_id": "haunted_house", "keywords": ["鬼屋"]},
+        {"to_location_id": "north_gate", "keywords": ["北门", "特殊出口"]},
+        {"to_location_id": "east_gate", "keywords": ["东门"]},
+        {"to_location_id": "south_gate", "keywords": ["南门", "怪物屋"]}
+      ]
+    },
+    {
+      "id": "admin_room",
+      "scene_id": "admin_room",
+      "title": "管理员室",
+      "aliases": ["管理室"],
+      "landmarks": ["工具", "床", "笔记本", "配电柜"],
+      "connections": [
+        {"to_location_id": "entrance", "keywords": ["回到大门", "出去", "返回"]}
+      ]
+    },
+    {
+      "id": "ferris_wheel",
+      "scene_id": "ferris_wheel",
+      "title": "摩天轮",
+      "landmarks": ["控制台", "红色轿厢", "黄色轿厢"],
+      "connections": [
+        {"to_location_id": "entrance", "keywords": ["回到入口", "出去"]}
+      ]
+    },
+    {
+      "id": "bumper_cars",
+      "scene_id": "bumper_cars",
+      "title": "碰碰车场",
+      "landmarks": ["控制台", "碰碰车", "支撑柱"],
+      "connections": [
+        {"to_location_id": "entrance", "keywords": ["回到入口", "出去"]}
+      ]
+    },
+    {
+      "id": "carousel",
+      "scene_id": "carousel",
+      "title": "旋转木马",
+      "landmarks": ["木马", "控制台", "无头马"],
+      "connections": [
+        {"to_location_id": "entrance", "keywords": ["回到入口", "出去"]}
+      ]
+    },
+    {
+      "id": "haunted_house",
+      "scene_id": "haunted_house",
+      "title": "鬼屋",
+      "landmarks": ["小丑入口", "模型", "暗格", "小男孩"],
+      "connections": [
+        {"to_location_id": "entrance", "keywords": ["回到入口", "出去"]},
+        {"to_location_id": "dog_hole", "keywords": ["狗洞", "西北角", "离开"]}
+      ]
+    },
+    {
+      "id": "north_gate",
+      "scene_id": "north_gate",
+      "title": "北门",
+      "aliases": ["特殊需求出口"],
+      "landmarks": ["浓雾", "野兽脚印"],
+      "connections": [
+        {"to_location_id": "entrance", "keywords": ["回到入口", "回去"]}
+      ]
+    },
+    {
+      "id": "east_gate",
+      "scene_id": "east_gate",
+      "title": "东门",
+      "landmarks": ["空门框", "软体道路"],
+      "connections": [
+        {"to_location_id": "entrance", "keywords": ["回到入口", "回去"]}
+      ]
+    },
+    {
+      "id": "south_gate",
+      "scene_id": "south_gate",
+      "title": "南门",
+      "aliases": ["怪物屋"],
+      "landmarks": ["豪宅", "篱笆", "猫眼"],
+      "connections": [
+        {"to_location_id": "entrance", "keywords": ["回到入口", "回去"]},
+        {"to_location_id": "monster_house", "keywords": ["进入房子", "进去"]}
+      ]
+    },
+    {
+      "id": "monster_house",
+      "scene_id": "monster_house",
+      "title": "怪物小屋",
+      "landmarks": ["触手", "黑暗"],
+      "connections": [
+        {"to_location_id": "south_gate", "keywords": ["逃出去", "离开"]}
+      ]
+    },
+    {
+      "id": "dog_hole",
+      "scene_id": "dog_hole",
+      "title": "西北角狗洞",
+      "landmarks": ["狗洞", "裂纹墙"],
+      "connections": [
+        {"to_location_id": "haunted_house", "keywords": ["回到游乐场", "回去"]}
+      ]
+    }
+  ],
+  "scenes": [
+    {
+      "id": "entrance",
+      "title": "游乐场入口",
+      "summary": "废弃游乐场的西门入口，安检机上放着3张崭新门票。",
+      "guidance": {
+        "ambient_focus": ["安检机", "门票", "地图"],
+        "light_hint": "安检机似乎是绞肉机改造的，门票背后有血迹。",
+        "rescue_hint": "先探索管理员室获取工具，或直接前往各个游乐设施。"
+      },
+      "presentation": {
+        "entry_text": "半开的大门右侧放着一台锈迹斑斑的安检机，传送带没有运作。从机器边上伸出一个小槽，里面放着3张游乐场崭新的门票。",
+        "pressure_text": "游乐场散发着不祥的气息，天色已晚，必须尽快行动。",
+        "choice_prompt": "可以查看门票、地图，或前往各个设施探索。"
+      },
+      "interactables": [
+        {
+          "id": "ticket",
+          "title": "门票",
+          "keywords": ["门票"],
+          "judgement": "auto",
+          "result_text": "门票正面写着'欢迎来到游乐场'，背景是小丑头像，在阴暗光线下笑容显得扭曲。背面有黑白涂鸦和鲜红斑点。",
+          "discover_clue": "ticket_blood_count"
+        },
+        {
+          "id": "map",
+          "title": "游乐场地图",
+          "keywords": ["地图"],
+          "judgement": "auto",
+          "result_text": "地图上的文字已模糊，只看到管理员室几个字。"
+        },
+        {
+          "id": "scanner",
+          "title": "安检机",
+          "keywords": ["安检机", "机器"],
+          "judgement": "roll",
+          "roll_type": "skill_check",
+          "roll_label": "SpotHidden",
+          "prompt_text": "安检机看起来很可疑，是否要仔细检查？"
+        }
+      ],
+      "clues": [
+        "门票背面的红点数暗示死亡人数",
+        "安检机实际上是绞肉机"
+      ],
+      "reveals": [
+        "已经有3个人遇难"
+      ],
+      "combat": false,
+      "exits": ["admin_room", "ferris_wheel", "bumper_cars", "carousel", "haunted_house", "north_gate", "east_gate", "south_gate"]
+    },
+    {
+      "id": "admin_room",
+      "title": "管理员室",
+      "summary": "破败的管理员室，工具齐全，床下有发卡，笔记本记载着管理员的愤怒。",
+      "guidance": {
+        "ambient_focus": ["工具", "床", "笔记本", "配电柜"],
+        "light_hint": "床下的发卡是关键线索，笔记本最后一页画着4个小人。",
+        "rescue_hint": "找到发卡和笔记本，获取工具准备后续探索。"
+      },
+      "presentation": {
+        "entry_text": "管理员室充满霉味，床上放着叠整齐的被子和枕头，电视机是老式的，配电柜门开着。",
+        "pressure_text": "这里似乎经常有人出入，不是真正的废弃状态。",
+        "choice_prompt": "可以查看床铺、工具、笔记本，或操作配电柜。"
+      },
+      "interactables": [
+        {
+          "id": "bed",
+          "title": "床铺",
+          "keywords": ["床", "枕头", "被子"],
+          "judgement": "roll",
+          "roll_type": "skill_check",
+          "roll_label": "SpotHidden",
+          "prompt_text": "检查床铺是否有什么发现？"
+        },
+        {
+          "id": "under_bed",
+          "title": "床底",
+          "keywords": ["床底", "床下"],
+          "judgement": "auto",
+          "result_text": "床底有厚厚一层灰，一个粉红色发卡落在床下。",
+          "discover_clue": "hairpin"
+        },
+        {
+          "id": "notebook",
+          "title": "笔记本",
+          "keywords": ["笔记", "笔记本"],
+          "judgement": "auto",
+          "result_text": "笔记本上混杂着奇怪图案和计数符号，最后一页画着4个小人，其中3个画了圈，最后一个小人被笔尖狠狠划破。",
+          "discover_clue": "notebook_secret"
+        },
+        {
+          "id": "tools",
+          "title": "工具",
+          "keywords": ["工具", "剪刀", "铁锹", "锤"],
+          "judgement": "auto",
+          "result_text": "工具都涂油保养过，可以正常使用。"
+        },
+        {
+          "id": "breaker",
+          "title": "配电柜闸门",
+          "keywords": ["配电柜", "闸门", "电闸"],
+          "judgement": "auto",
+          "result_text": "推上闸门，游乐场电路恢复运作，灯光亮起。"
+        },
+        {
+          "id": "tv",
+          "title": "电视机",
+          "keywords": ["电视", "电视机"],
+          "judgement": "auto",
+          "result_text": "电视只有白天才有信号，现在只有雪花和噪音。"
+        }
+      ],
+      "clues": [
+        "发卡暗示小女孩的存在",
+        "笔记本显示4个孩子，3个已遇害",
+        "管理员似乎对小男孩怀有特殊愤怒"
+      ],
+      "reveals": [
+        "发卡可以交给遇难者家属获得奖励",
+        "推闸门可以点亮游乐场"
+      ],
+      "combat": false,
+      "exits": ["entrance"]
+    },
+    {
+      "id": "ferris_wheel",
+      "title": "摩天轮",
+      "summary": "巨大的废弃摩天轮，红色轿厢内有木制手臂，黄色轿厢有游戏币和血迹。",
+      "guidance": {
+        "ambient_focus": ["控制台", "红色轿厢", "黄色轿厢"],
+        "light_hint": "黄色轿厢底部有褐红色血迹，暗示坠落事故。",
+        "rescue_hint": "启动摩天轮可以获取更多信息，但有坠落风险。"
+      },
+      "presentation": {
+        "entry_text": "摩天轮上零散挂着彩色轿厢，大部分已锈蚀。只有红色和黄色轿厢保存较好。",
+        "pressure_text": "远处的浓雾中似乎有穿着小丑服的人在移动。",
+        "choice_prompt": "可以检查轿厢，或启动摩天轮。"
+      },
+      "interactables": [
+        {
+          "id": "red_car",
+          "title": "红色轿厢",
+          "keywords": ["红色轿厢", "红轿厢"],
+          "judgement": "auto",
+          "result_text": "轿厢里有巨大座位，上面有黏液痕迹，椅面放着一只木制手臂。",
+          "discover_clue": "left_arm"
+        },
+        {
+          "id": "yellow_car",
+          "title": "黄色轿厢",
+          "keywords": ["黄色轿厢", "黄轿厢"],
+          "judgement": "roll",
+          "roll_type": "skill_check",
+          "roll_label": "SpotHidden",
+          "prompt_text": "黄色轿厢似乎有什么发现？"
+        },
+        {
+          "id": "ferris_start",
+          "title": "启动摩天轮",
+          "keywords": ["启动", "开动"],
+          "judgement": "auto",
+          "result_text": "摩天轮缓缓转动，从高处可以看清游乐场全貌，浓雾中有小丑若隐若现。"
+        }
+      ],
+      "clues": [
+        "木制手臂可以与旗杆组合",
+        "浓雾中的小丑是真实威胁",
+        "黄色轿厢坠落导致一名孩子死亡"
+      ],
+      "reveals": [
+        "从高处可以看到完整地图"
+      ],
+      "combat": true,
+      "exits": ["entrance"]
+    },
+    {
+      "id": "bumper_cars",
+      "title": "碰碰车场",
+      "summary": "散落的碰碰车，支撑柱上有木制手臂。启动后会造成损坏。",
+      "guidance": {
+        "ambient_focus": ["控制台", "碰碰车", "支撑柱"],
+        "light_hint": "启动碰碰车会导致事故，可借此获取手臂。",
+        "rescue_hint": "可以启动碰碰车获取手臂，或直接攀爬获取。"
+      },
+      "presentation": {
+        "entry_text": "碰碰车几乎没有完好无损的，支撑柱似乎被什么东西撞过。",
+        "pressure_text": "启动开关似乎有问题。",
+        "choice_prompt": "可以检查碰碰车，或启动设施。"
+      },
+      "interactables": [
+        {
+          "id": "bumper_start",
+          "title": "启动碰碰车",
+          "keywords": ["启动", "开动"],
+          "judgement": "auto",
+          "result_text": "碰碰车开始自动运动，互相撞击。最后会撞坏柱子。"
+        },
+        {
+          "id": "climb_pole",
+          "title": "攀爬支撑柱",
+          "keywords": ["攀爬", "爬上去"],
+          "judgement": "roll",
+          "roll_type": "ability_check",
+          "roll_label": "Climb",
+          "prompt_text": "尝试攀爬三米高的支撑柱获取手臂？"
+        }
+      ],
+      "clues": [
+        "碰碰车底部沾有血迹",
+        "木制手臂可以获取"
+      ],
+      "reveals": [
+        "支撑柱被撞断后可获得右手手臂"
+      ],
+      "combat": true,
+      "exits": ["entrance"]
+    },
+    {
+      "id": "carousel",
+      "title": "旋转木马",
+      "summary": "华丽的旋转木马，部分木马是温热的，里面似乎藏着血肉。",
+      "guidance": {
+        "ambient_focus": ["木马", "控制台", "无头马"],
+        "light_hint": "冰凉的木马会咬人，马肚里有血肉。",
+        "rescue_hint": "不要骑冰凉的木马，不要砸开温暖的木马。"
+      },
+      "presentation": {
+        "entry_text": "8匹木马做得十分真实，似乎是温热的皮制品。有2匹马的肚子是冰凉的。",
+        "pressure_text": "另一侧地上有一个碎裂的血肉模糊的马头。",
+        "choice_prompt": "可以检查木马，或启动旋转木马。"
+      },
+      "interactables": [
+        {
+          "id": "cold_horse",
+          "title": "冰凉的马",
+          "keywords": ["冰凉", "冷"],
+          "judgement": "auto",
+          "result_text": "冰凉的马会扭头咬人！"
+        },
+        {
+          "id": "warm_horse",
+          "title": "温暖的马",
+          "keywords": ["温暖", "热"],
+          "judgement": "auto",
+          "result_text": "这匹马肚子是温暖的，如果砸开会有血肉和鞋子。"
+        },
+        {
+          "id": "clown_head",
+          "title": "小丑头部",
+          "keywords": ["小丑头", "头"],
+          "judgement": "auto",
+          "result_text": "木制小丑头部，舌头被拆下。"
+        },
+        {
+          "id": "carousel_start",
+          "title": "启动旋转木马",
+          "keywords": ["启动", "开动"],
+          "judgement": "auto",
+          "result_text": "旋转木马启动，冰凉的马会开始攻击。"
+        }
+      ],
+      "clues": [
+        "温暖的马肚子有人体血肉",
+        "无头马脖子有小孩尸体"
+      ],
+      "reveals": [
+        "小男孩的鞋子在马肚里"
+      ],
+      "combat": true,
+      "exits": ["entrance"]
+    },
+    {
+      "id": "haunted_house",
+      "title": "鬼屋",
+      "summary": "小丑张开的入口，内部有模型和被困的小男孩。",
+      "guidance": {
+        "ambient_focus": ["小丑入口", "模型", "暗格", "小男孩"],
+        "light_hint": "小男孩抱着木制舌头蜷缩在暗格里。",
+        "rescue_hint": "与小男孩交流可以获取情报，但不要启动鬼屋。"
+      },
+      "presentation": {
+        "entry_text": "鬼屋门口是小丑张开的大嘴，里面黑洞洞的。隐约有哭声传来。",
+        "pressure_text": "进入后会看到令人不适的模型，启动后模型会攻击。",
+        "choice_prompt": "可以寻找小男孩，或探索鬼屋内部。"
+      },
+      "interactables": [
+        {
+          "id": "search_boy",
+          "title": "寻找小男孩",
+          "keywords": ["小男孩", "小孩", "找"],
+          "judgement": "roll",
+          "roll_type": "skill_check",
+          "roll_label": "SpotHidden",
+          "prompt_text": "寻找被困的小男孩？"
+        },
+        {
+          "id": "talk_boy",
+          "title": "与小男孩交谈",
+          "keywords": ["交谈", "对话", "问"],
+          "judgement": "roll",
+          "roll_type": "skill_check",
+          "roll_label": "Psychology",
+          "prompt_text": "尝试与小男孩交流？"
+        },
+        {
+          "id": "boy_info",
+          "title": "小男孩提供情报",
+          "keywords": ["舌头", "重要"],
+          "judgement": "auto",
+          "result_text": "'我们5个，不，我们4个，那个不是人，是小丑！''莉莉被撞死了，我们跟着小丑一起笑。'"
+        },
+        {
+          "id": "haunted_start",
+          "title": "启动鬼屋",
+          "keywords": ["启动", "开动"],
+          "judgement": "auto",
+          "result_text": "模型动起来攻击！怪物群魔乱舞，发出刺耳尖叫，小男孩停止哭泣昏倒。"
+        }
+      ],
+      "clues": [
+        "小丑是怪物不是人",
+        "舌头指向出口方向",
+        "4个孩子已遇害"
+      ],
+      "reveals": [
+        "舌头是小丑假人舌头，组合后指向西北（离开方向）",
+        "小男孩需要被救走才能达成最佳结局"
+      ],
+      "combat": true,
+      "exits": ["entrance", "dog_hole"]
+    },
+    {
+      "id": "north_gate",
+      "title": "北门",
+      "summary": "特殊需求出口，浓雾中有怪物。",
+      "guidance": {
+        "ambient_focus": ["浓雾", "脚印", "声音"],
+        "light_hint": "继续前进会进入结局1，被小丑杀死。",
+        "rescue_hint": "不要继续前进，立即返回。"
+      },
+      "presentation": {
+        "entry_text": "北门比其他门大了一倍以上，路面布满巨大的野兽脚印。浓雾中有金属摩擦声。",
+        "pressure_text": "灵感提醒：你无法预知这条路最终会通向何方。",
+        "choice_prompt": "可以返回，或继续前进（危险）。"
+      },
+      "interactables": [
+        {
+          "id": "fog_listen",
+          "title": "聆听",
+          "keywords": ["聆听", "听"],
+          "judgement": "auto",
+          "result_text": "浓雾中有金属摩擦的声音传来。"
+        },
+        {
+          "id": "proceed_north",
+          "title": "继续前进",
+          "keywords": ["前进", "走", "出去"],
+          "judgement": "auto",
+          "result_text": "你们进入浓雾..."
+        }
+      ],
+      "clues": [
+        "浓雾中有致命威胁"
+      ],
+      "reveals": [
+        "继续前进会死亡"
+      ],
+      "combat": false,
+      "exits": ["entrance"]
+    },
+    {
+      "id": "east_gate",
+      "title": "东门",
+      "summary": "空荡的东门，道路像软体动物。",
+      "guidance": {
+        "ambient_focus": ["空门框", "软体道路"],
+        "light_hint": "继续前进会进入结局1。",
+        "rescue_hint": "立即返回。"
+      },
+      "presentation": {
+        "entry_text": "东门只有一个空荡荡的门框，道路踩起来像某种软体动物。",
+        "pressure_text": "浓雾中似乎有小丑拿着砍刀闪过。",
+        "choice_prompt": "可以返回，或继续前进（危险）。"
+      },
+      "interactables": [
+        {
+          "id": "proceed_east",
+          "title": "继续前进",
+          "keywords": ["前进", "走", "出去"],
+          "judgement": "auto",
+          "result_text": "你们进入黑暗..."
+        }
+      ],
+      "clues": [
+        "小丑在浓雾中等待"
+      ],
+      "reveals": [
+        "继续前进会死亡"
+      ],
+      "combat": false,
+      "exits": ["entrance"]
+    },
+    {
+      "id": "south_gate",
+      "title": "南门",
+      "summary": "通向怪物小屋的门，有危险警告。",
+      "guidance": {
+        "ambient_focus": ["豪宅", "篱笆", "猫眼"],
+        "light_hint": "房子里有怪物，会邀请PC进入并捕获。",
+        "rescue_hint": "不要进入房子，不要让小男孩进入。"
+      },
+      "presentation": {
+        "entry_text": "南门外有一栋豪宅，颜色令人不适，墙上布满黏液。门窗都关着，屋内似乎有人。",
+        "pressure_text": "门内有机械合成音邀请进入，这是陷阱。",
+        "choice_prompt": "可以观察、敲门，或进入（危险）。"
+      },
+      "interactables": [
+        {
+          "id": "knock_door",
+          "title": "敲门",
+          "keywords": ["敲门", "敲"],
+          "judgement": "auto",
+          "result_text": "里面突然安静，然后传来机械合成音：'是谁。'"
+        },
+        {
+          "id": "monster_invite",
+          "title": "怪物邀请",
+          "keywords": ["邀请", "进去"],
+          "judgement": "auto",
+          "result_text": "怪物非常热情邀请你们进去，从门缝看是一片黑暗。"
+        },
+        {
+          "id": "enter_house",
+          "title": "进入房子",
+          "keywords": ["进入", "进去"],
+          "judgement": "roll",
+          "roll_type": "combat_check",
+          "roll_label": "Dodge",
+          "prompt_text": "尝试进入怪物小屋？"
+        }
+      ],
+      "clues": [
+        "房子里的怪物不能走出屋子",
+        "他们发布寻人任务作为诱饵"
+      ],
+      "reveals": [
+        "进入房子会死亡"
+      ],
+      "combat": true,
+      "exits": ["entrance", "monster_house"]
+    },
+    {
+      "id": "monster_house",
+      "title": "怪物小屋内部",
+      "summary": "怪物的巢穴，进入后无法生还。",
+      "guidance": {
+        "ambient_focus": ["触手", "黑暗", "怪物"],
+        "light_hint": "进入后会被触手捕获，无法逃生。",
+        "rescue_hint": "不要进入！放火可以消灭他们。"
+      },
+      "presentation": {
+        "entry_text": "大门关闭，屋内亮起绿莹莹的光，大量怪物直愣愣地看着你。",
+        "pressure_text": "'那么，开饭了。'",
+        "choice_prompt": "只能等死，或放火。"
+      },
+      "interactables": [
+        {
+          "id": "burn_house",
+          "title": "放火",
+          "keywords": ["放火", "火", "烧"],
+          "judgement": "auto",
+          "result_text": "你们放火烧掉小屋，触手徒劳挥舞，最终化为灰烬。"
+        }
+      ],
+      "clues": [],
+      "reveals": [],
+      "combat": false,
+      "exits": []
+    },
+    {
+      "id": "dog_hole",
+      "title": "西北角狗洞",
+      "summary": "逃离游乐场的出口，需要钻狗洞。",
+      "guidance": {
+        "ambient_focus": ["狗洞", "裂纹墙"],
+        "light_hint": "这是唯一安全的出口。",
+        "rescue_hint": "带着小男孩钻狗洞可以达成最佳结局。"
+      },
+      "presentation": {
+        "entry_text": "西北角围墙边有一个狗洞，墙已布满裂纹。体型60以下可以钻过。",
+        "pressure_text": "钻过狗洞就能离开游乐场。",
+        "choice_prompt": "可以钻出去，或返回游乐场。"
+      },
+      "interactables": [
+        {
+          "id": "squeeze_through",
+          "title": "钻狗洞",
+          "keywords": ["钻", "爬", "出去"],
+          "judgement": "roll",
+          "roll_type": "ability_check",
+          "roll_label": "Jump",
+          "prompt_text": "尝试钻过狗洞？"
+        },
+        {
+          "id": "escape",
+          "title": "逃离成功",
+          "keywords": ["逃离", "离开"],
+          "judgement": "auto",
+          "result_text": "你们钻出狗洞，雾气散去，前方是来时的路。天亮了，游乐场消失了。"
+        }
+      ],
+      "clues": [
+        "这是唯一安全的出口"
+      ],
+      "reveals": [
+        "成功逃离即可生存"
+      ],
+      "combat": false,
+      "exits": []
+    }
+  ],
+  "endings": [
+    {
+      "id": "death_fog",
+      "title": "结局1: 迷雾之死",
+      "summary": "调查员从大门进入浓雾，被小丑发现并杀害。门票又多了两张。"
+    },
+    {
+      "id": "daylight_death",
+      "title": "结局2: 怪物世界",
+      "summary": "调查员在游乐场待到天亮，整个游乐场变成怪物世界，调查员被怪物包围。"
+    },
+    {
+      "id": "monster_eaten",
+      "title": "结局3: 怪物巢穴",
+      "summary": "调查员进入南边小屋，被怪物杀害并吞噬。"
+    },
+    {
+      "id": "escape_no_boy",
+      "title": "结局4: 任务失败",
+      "summary": "调查员没有找到小男孩就离开了，任务失败，但没有生命危险。"
+    },
+    {
+      "id": "push_boy",
+      "title": "结局5: 背叛",
+      "summary": "调查员将小男孩推入怪物小屋换取报酬。获得丰厚收入但丧失人性。"
+    },
+    {
+      "id": "best_ending",
+      "title": "结局6: 最佳结局",
+      "summary": "调查员救走小男孩，小男孩与家人团聚。调查员获得报酬和SAN值恢复。"
+    },
+    {
+      "id": "perfect_ending",
+      "title": "完美结局",
+      "summary": "交出发卡、游戏币、血鞋，获得额外奖励：信誉+1D5、草药、锦旗。"
+    },
+    {
+      "id": "burn_carnival",
+      "title": "放火追加结局",
+      "summary": "调查员放火焚毁游乐场，怪物在火焰中哀嚎。"
+    }
+  ]
+}
