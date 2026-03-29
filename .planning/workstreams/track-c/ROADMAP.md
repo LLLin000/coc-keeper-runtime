@@ -4,7 +4,7 @@
 
 - ✅ **vC.1.1** — Channel Governance (Phases 44-46) — SHIPPED 2026-03-28
 - ✅ **vC.1.2** — Multiplayer Session Governance (Phases 47-50) — SHIPPED 2026-03-29
-- 🔄 **vC.1.3** — Campaign Surfaces And Intent Clarity (Phases 51-55)
+- ✅ **vC.1.3** — Campaign Surfaces And Intent Clarity (Phases 51-55) — SHIPPED 2026-03-29
 
 ---
 
@@ -43,7 +43,7 @@
 
 ---
 
-## vC.1.3 Phases (IN PROGRESS)
+## vC.1.3 Phases (COMPLETE)
 
 **Goal:** Make campaign/adventure/session state legible in Discord and make message handling reasons explicit to players and operators through logic-first visibility contracts and reusable surfaces.
 
@@ -72,9 +72,9 @@
   4. Inactive or unloaded states are explained explicitly instead of failing silently
 
 ### Phase 53: Handling Reason Surfaces
-- Status: ✅ Context Ready
-- Plans: 0/0
-- Completed: -
+- Status: Complete
+- Plans: 1/1
+- Completed: 2026-03-29
 - Goal: Add concise player-facing explanations for why messages were ignored, buffered, deferred, or otherwise routed differently.
 - Requirements: PLAY-03, PLAY-04
 - Success Criteria:
@@ -83,9 +83,9 @@
   3. Explanations stay concise enough for ordinary play channels
 
 ### Phase 54: KP Ops Surfaces
-- Status: Not Started
-- Plans: 0/0
-- Completed: -
+- Status: Complete
+- Plans: 1/1
+- Completed: 2026-03-29
 - Goal: Add a separate KP/operator operational surface showing session ops, runtime state, player participation, and routing diagnostics.
 - Requirements: OPS-01, OPS-02, OPS-03
 - Success Criteria:
@@ -94,9 +94,9 @@
   3. KP/operators can inspect routing outcomes without digging through raw logs
 
 ### Phase 55: Activity-Ready Boundary Polish
-- Status: Not Started
-- Plans: 0/0
-- Completed: -
+- Status: Complete
+- Plans: 1/1
+- Completed: 2026-03-29
 - Goal: Consolidate the visibility contracts and surfaces so future Discord Activity UI can reuse the same business logic without rewriting the model.
 - Requirements: ACT-01, ACT-02
 - Success Criteria:
@@ -129,10 +129,10 @@
 | 50. Message Intent Routing | 1/1 | ✅ Complete | 2026-03-28 |
 | 51. Visibility Core Contracts | 1/1 | ✅ Complete | 2026-03-29 |
 | 52. Player Status Surfaces | 1/1 | ✅ Complete | 2026-03-29 |
-| 53. Handling Reason Surfaces | - | ✅ Context Ready | - |
-| 54. KP Ops Surfaces | - | ○ Not Started | - |
-| 55. Activity-Ready Boundary Polish | - | ○ Not Started | - |
+| 53. Handling Reason Surfaces | - | ✅ Complete | 2026-03-29 |
+| 54. KP Ops Surfaces | - | ✅ Complete | 2026-03-29 |
+| 55. Activity-Ready Boundary Polish | - | ✅ Complete | 2026-03-29 |
 
 ---
 
-*Last updated: 2026-03-29 — initialized vC.1.3 after vC.1.2 completion*
+*Last updated: 2026-03-29 — vC.1.3 SHIPPED*

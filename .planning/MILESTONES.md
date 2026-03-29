@@ -2,6 +2,25 @@
 
 Historical milestones remain linear for GSD continuity. Each milestone now includes a primary track label so collaborators can understand where it belongs in the long-term product map.
 
+## vC.1.3 [Track C] Campaign Surfaces And Intent Clarity (Shipped: 2026-03-29)
+
+**Goal:**
+
+- Make campaign/adventure/session state legible in Discord and make message handling reasons explicit to players and operators through logic-first visibility contracts and reusable surfaces.
+
+**Phases completed:** 5 phases (51-55)
+
+**Key accomplishments:**
+
+- Created VisibilitySnapshot with canonical campaign/adventure/session state
+- Implemented player-facing status surfaces with current context visibility
+- Added handling reason surfaces for buffered/ignored/deferred messages
+- Built KP/operator operational dashboard with session diagnostics
+- Established Activity-ready boundary with clear separation of concerns
+- 15/15 requirements shipped
+
+---
+
 ## vB.1.1 [Track B] B1 Archive And Builder Normalization (Planned: 2026-03-28)
 
 **Goal:**
