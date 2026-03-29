@@ -75,8 +75,8 @@
 ## vE.2.1 Phases
 
 - [ ] **Phase 60: Test Infrastructure & Process Health** — FakeInteraction factory, model mock fixtures, VCR.py setup, pytest-bdd scaffolding
-- [ ] **Phase 61: Discord Command/Adapter Layer** — Command handlers, channel enforcement, session binding gates
-- [ ] **Phase 62: Session / Orchestrator Layer** — Campaign lifecycle, join/ready/leave, multi-user state sync
+- [x] **Phase 61: Discord Command/Adapter Layer** — Command handlers, channel enforcement, session binding gates
+- [x] **Phase 62: Session / Orchestrator Layer** — Campaign lifecycle, join/ready/leave, multi-user state sync
 - [ ] **Phase 63: Adventure Runtime** — fuzhe_mini load, trigger chains, room transitions, reveal gates, consequence verification
 - [ ] **Phase 64: Rules Engine Flow** — COC checks, SAN rolls, combat resolution, pushed rolls
 - [ ] **Phase 65: Character / Archive Flow** — Character creation, profile projection, archive persistence
