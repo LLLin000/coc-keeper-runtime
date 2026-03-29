@@ -6,7 +6,6 @@ from dm_bot.orchestrator.onboarding import (
     get_default_coc7e_onboarding,
     merge_with_adventure_onboarding,
 )
-from dm_bot.discord_bot.onboarding_views import OnboardingView
 
 
 class OnboardingController:
@@ -47,8 +46,9 @@ class OnboardingController:
                 pending.append(member_id)
         return pending
 
-    def create_view(self, user_id: str) -> OnboardingView:
-        return OnboardingView.create_persistent(user_id=user_id, content=self.content)
+    def get_onboarding_content(self) -> OnboardingContent:
+        """Return onboarding content data for use by Discord layer to create views."""
+        return self.content
 
     def transition_to_scene_if_ready(self) -> bool:
         if self.can_transition_to_scene():
@@ -61,7 +61,7 @@ class OnboardingController:
         for member_id in self.session.member_ids:
             self.session.set_onboarding_complete(member_id, False)
 
-    def get_onboarding_message(self) -> tuple[str, OnboardingView | None]:
+    def get_onboarding_message(self) -> tuple[str, OnboardingContent | None]:
         if self.should_show_onboarding():
             pending = self.get_pending_players()
             if pending:
@@ -69,7 +69,7 @@ class OnboardingController:
                     "📋 **游戏即将开始！**\n\n"
                     "在开始探索之前，请先完成规则概览。\n"
                     f"待确认玩家：{len(pending)} 人",
-                    None,
+                    self.content,
                 )
         return "", None
 
