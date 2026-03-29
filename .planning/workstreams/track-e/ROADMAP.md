@@ -79,7 +79,7 @@
 - [x] **Phase 62: Session / Orchestrator Layer** — Campaign lifecycle, join/ready/leave, multi-user state sync
 - [ ] **Phase 63: Adventure Runtime** — fuzhe_mini load, trigger chains, room transitions, reveal gates, consequence verification
 - [ ] **Phase 64: Rules Engine Flow** — COC checks, SAN rolls, combat resolution, pushed rolls
-- [ ] **Phase 65: Character / Archive Flow** — Character creation, profile projection, archive persistence
+- [x] **Phase 65: Character / Archive Flow** — Character creation, profile projection, archive persistence
 - [ ] **Phase 66: Model / Router Flow** — Intent classification, turn plan generation, buffering, multi-user routing
 - [ ] **Phase 67: Narration Pipeline Flow** — Prompt construction, streaming output, KP/player visibility separation
 - [ ] **Phase 68: Persistence + End-to-End Integration** — DB recovery, full 15-turn scenario, Chaos lobby stress test
@@ -165,7 +165,7 @@
 | 62. Session / Orchestrator Layer | 1/1 | ✓ Complete | — |
 | 63. Adventure Runtime | 0/1 | Planned | — |
 | 64. Rules Engine Flow | 0/1 | Planned | — |
-| 65. Character / Archive Flow | 0/1 | Planned | — |
+| 65. Character / Archive Flow | 1/1 | ✓ Complete | 2026-03-29 |
 | 66. Model / Router Flow | 0/1 | Planned | — |
 | 67. Narration Pipeline Flow | 0/1 | Planned | — |
 | 68. Persistence + End-to-End Integration | 0/1 | Planned | — |
