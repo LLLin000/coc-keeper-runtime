@@ -1,68 +1,79 @@
 # Phase 51: Campaign Status Visibility - Context
 
-**Gathered:** 2026-03-28
-**Status:** Deferred to vC.1.3 pending future planning
-**Source:** Discuss phase with user; overall research boundary review
+**Gathered:** 2026-03-29
+**Status:** Ready for planning
 
 <domain>
 ## Phase Boundary
 
-Implement campaign and adventure status visibility surfaces that show players what's loaded, who's participating, and where they are in the story. Information is rich, real-time, and contextual to the current scene.
+Define the canonical visibility state for campaign, adventure, session, waiting reasons, routing outcomes, and existing player snapshot state so later Discord surfaces can render from one shared logic-first model instead of assembling ad hoc strings.
 
-**Requirements addressed:** VIS-01, VIS-02, VIS-03
-**Milestone note:** Overall research concluded this phase belongs with vC.1.3 visibility/intake clarity work rather than vC.1.2 governance/control-flow work.
+This phase delivers the shared visibility contract layer, not the full player-facing or KP-facing surface rollout. It should make later chat surfaces and future Discord Activity rendering reuse the same business logic.
 
 </domain>
 
 <decisions>
 ## Implementation Decisions
 
-### Adventure Information Display
-- **VIS-01:** Rich adventure information:
-  - Adventure name, synopsis, current chapter/progress
-  - Discovered clues (hidden vs revealed)
-  - Visited locations
-  - Key NPCs encountered
-- Use Discord embed with collapsible sections for detail
+### Visibility contract shape
+- **D-01:** Phase 51 should define a top-level `VisibilitySnapshot` rather than separate unrelated contracts or one flat blob.
+- **D-02:** `VisibilitySnapshot` should be explicitly partitioned into these sub-blocks: `campaign`, `adventure`, `session`, `waiting`, `players`, and `routing`.
+- **D-03:** Later phases should consume these sub-blocks selectively instead of inventing separate visibility sources per surface.
 
-### Member Status Display
-- **VIS-02:** Real-time member status updates:
-  - Campaign members with ready/not ready status
-  - HP and SAN values (player can see their own, KP sees all)
-  - Real-time notifications in channel when anyone ready/unready
-  - Status updates posted as the bot
+### Waiting / blocker reasons
+- **D-04:** Waiting state should use a stable reason code plus a short display message.
+- **D-05:** Waiting state should also carry a small amount of structured metadata, such as pending user ids, related phase, or round linkage when relevant.
+- **D-06:** The canonical layer should own the reason code and metadata; renderers may vary wording later without changing the logic contract.
 
-### Scene/Location Display
-- **VIS-03:** Complete scene state displayed:
-  - Current scene type: combat / exploration / roleplay / none
-  - Participating players
-  - Round status (if applicable)
-  - Current location name + description
-  - Available actions / exploration options
-- Updates automatically when scene changes
+### Player snapshot boundary
+- **D-07:** Player visibility in Phase 51 should surface existing canonical player snapshot state only; this phase must not redesign character semantics.
+- **D-08:** The player snapshot should include participation state, bound character identity, and existing canonical HP / SAN / a small set of key attributes that are already stable in the runtime.
+- **D-09:** Full sheet detail, skill dumps, journal/history, and richer role/character redesign are out of scope for this phase.
+
+### Routing visibility scope
+- **D-10:** Routing visibility in the Phase 51 contract should expose routing outcome plus a short explanation contract so later player and operator surfaces can render different views from the same source.
+- **D-11:** Phase 51 should support richer downstream rendering later, but the core contract should stay concise and not become a raw debug dump.
 
 ### the agent's Discretion
-- How often to auto-post status (on phase change only, or periodic)
-- Whether to show "none active" state and what that means
-- How to handle very long adventure summaries (truncation vs detailed view command)
+- Exact field names and nesting depth inside each visibility sub-block
+- Whether campaign and adventure are nested or sibling sub-blocks if both preserve the six-block contract cleanly
+- Which existing player attributes qualify as the minimal “small set of key attributes” beyond HP and SAN
+- Whether routing metadata stores both canonical reason code and already-rendered short text, or computes the short text from the code at snapshot-build time
 
 </decisions>
+
+<specifics>
+## Specific Ideas
+
+- Logic first, renderer second
+- One canonical visibility model reused by player chat surfaces, KP ops surfaces, and future Discord Activity UI
+- Future Activity support should come from reusing the same visibility contract, not by rebuilding the state model later
+- 玩家状态里需要包含现有 canonical 的 HP / SAN / 少量关键属性，但只做展示，不做角色系统重构
+
+</specifics>
 
 <canonical_refs>
 ## Canonical References
 
-**From Track C:**
-- `.planning/workstreams/track-c/REQUIREMENTS.md` — vC.1.2 VIS requirements that now inform future vC.1.3 visibility work
-- `.planning/workstreams/track-c/ROADMAP.md` — milestone boundary showing Phase 51 deferred to vC.1.3
-- `.planning/workstreams/track-c/research/vC.1.2-OVERALL-RESEARCH.md` — boundary review recommending defer to vC.1.3
-- `.planning/workstreams/track-c/phases/47-Session-Phases/47-CONTEXT.md` — Session phase model
-- `.planning/workstreams/track-c/phases/48-Pre-Play-Onboarding/48-CONTEXT.md` — Phase 48 decisions
-- `.planning/workstreams/track-c/phases/49-Scene-Round-Collection/49-CONTEXT.md` — Phase 49 decisions
-- `.planning/workstreams/track-c/phases/50-Message-Intent-Routing/50-CONTEXT.md` — Phase 50 decisions
+**Downstream agents MUST read these before planning or implementing.**
 
-**From Project:**
-- `src/dm_bot/discord_bot/commands.py` — Existing command implementation
-- `src/dm_bot/orchestrator/session_store.py` — Session state management
+### Milestone and phase definition
+- `.planning/workstreams/track-c/PROJECT.md` — vC.1.3 milestone goal, track boundary, secondary impact, and migration notes
+- `.planning/workstreams/track-c/REQUIREMENTS.md` — vC.1.3 requirements for SURF-01/02/03/04 and related downstream surface requirements
+- `.planning/workstreams/track-c/ROADMAP.md` — Phase 51 goal, mapped requirements, and success criteria
+
+### Prior Track C decisions that constrain Phase 51
+- `.planning/workstreams/track-c/phases/47-Session-Phases/47-CONTEXT.md` — established explicit session phases and phase visibility expectations
+- `.planning/workstreams/track-c/phases/48-Pre-Play-Onboarding/48-CONTEXT.md` — onboarding completion and phase-transition state already belong to canonical session visibility
+- `.planning/workstreams/track-c/phases/49-Scene-Round-Collection/49-CONTEXT.md` — round submission state and pending-player visibility already exist and should feed the new visibility model
+- `.planning/workstreams/track-c/phases/50-Message-Intent-Routing/50-CONTEXT.md` — routing outcomes are phase-aware and explanations should remain short
+
+### Existing code contracts and reusable state
+- `src/dm_bot/orchestrator/session_store.py` — canonical session state already includes phase, ready state, onboarding completion, pending actions, and submitter tracking
+- `src/dm_bot/router/intent_handler.py` — routing decisions and short feedback behavior already exist conceptually and should inform routing visibility contracts
+- `src/dm_bot/router/message_buffer.py` — buffered message state and summary behavior inform waiting/routing visibility
+- `src/dm_bot/coc/panels.py` — existing investigator panel exposes current HP, SAN, and related player state that may be surfaced read-only
+- `src/dm_bot/discord_bot/commands.py` — current Discord command/message layer and existing status/guidance patterns that later phases will render through
 
 </canonical_refs>
 
@@ -70,39 +81,35 @@ Implement campaign and adventure status visibility surfaces that show players wh
 ## Existing Code Insights
 
 ### Reusable Assets
-- Session phase model provides phase context
-- Campaign/adventure state already persisted
-- Ready status tracking from Phase 47/48
+- `CampaignSession` in `src/dm_bot/orchestrator/session_store.py` already stores session phase, ready state, onboarding completion, pending round actions, and action submitters.
+- `InvestigatorPanel` in `src/dm_bot/coc/panels.py` already exposes HP, SAN, MP, luck, and related player state that can inform a read-only snapshot.
+- `IntentHandlingResult` and feedback generation in `src/dm_bot/router/intent_handler.py` already model routing outcomes and short explanations.
+- `MessageBuffer` in `src/dm_bot/router/message_buffer.py` already models buffered messages and buffer summaries.
 
 ### Established Patterns
-- Rich embeds used in existing commands
-- Real-time updates via bot messages
+- Session and routing behavior already use structured runtime models before rendering user-facing text.
+- Phase-aware behavior is already a core pattern across vC.1.2 features.
+- Existing Discord UX tends to use concise status/guidance text plus structured backend state.
 
 ### Integration Points
-- Status surfaces connect to session_store
-- Adventure data from module runtime
-- Uses existing Discord message delivery
+- The new visibility contract should aggregate existing data from `session_store`, routing/buffer modules, and existing player panel state.
+- Later phases will render this contract through player-facing shared surfaces, KP/operator surfaces, and eventually Activity-ready renderers.
+- This phase should sit between canonical runtime state and Discord renderers, not inside any one renderer.
 
 </code_context>
-
-<specifics>
-## Specific Ideas
-
-- "丰富信息" - 冒险名称 + 线索 + 地点 + NPC
-- "实时更新通知" - 成员状态变化实时通知
-- "完整场景状态" - 场景类型 + 参与者 + 回合状态 + 位置
-- Keep this phase planning-ready, but treat it as queued behind vC.1.2 governance work
-
-</specifics>
 
 <deferred>
 ## Deferred Ideas
 
-- Deferred from vC.1.2 to vC.1.3 after overall research boundary review
+- Rich player-facing status surfaces belong primarily to Phase 52, not Phase 51
+- Short player-facing handling explanation surfaces belong primarily to Phase 53, not Phase 51
+- Separate KP/operator operational surfaces belong primarily to Phase 54, not Phase 51
+- Future Discord Activity UI implementation belongs after the activity-ready core is complete
+- Character-system redesign, full sheet expansion, and broader character semantics normalization remain outside this phase and outside Track C’s primary scope
 
 </deferred>
 
 ---
 
 *Phase: 51-Campaign-Status-Visibility*
-*Context gathered: 2026-03-28; boundary updated after overall research review*
+*Context gathered: 2026-03-29*

@@ -47,7 +47,7 @@
 
 **Goal:** Make campaign/adventure/session state legible in Discord and make message handling reasons explicit to players and operators through logic-first visibility contracts and reusable surfaces.
 
-- [ ] **Phase 51: Visibility Core Contracts**
+- [x] **Phase 51: Visibility Core Contracts** — 2026-03-29
   - **Goal:** Define canonical visibility state for campaign, adventure, session, waiting reasons, routing outcomes, and existing player snapshot state.
   - **Requirements:** SURF-01, SURF-02, SURF-03, SURF-04
   - **Success criteria:**
@@ -112,7 +112,7 @@
 | 48. Pre-Play Onboarding | 1/1 | ✅ Complete | 2026-03-28 |
 | 49. Scene Round Collection | 1/1 | ✅ Complete | 2026-03-28 |
 | 50. Message Intent Routing | 1/1 | ✅ Complete | 2026-03-28 |
-| 51. Visibility Core Contracts | - | ○ Not Started | - |
+| 51. Visibility Core Contracts | 1/1 | ✅ Complete | 2026-03-29 |
 | 52. Player Status Surfaces | - | ○ Not Started | - |
 | 53. Handling Reason Surfaces | - | ○ Not Started | - |
 | 54. KP Ops Surfaces | - | ○ Not Started | - |

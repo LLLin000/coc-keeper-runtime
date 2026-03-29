@@ -83,10 +83,10 @@ Milestone: C3 Campaign Surfaces And Intent Clarity
 
 ### Visibility Core
 
-- [ ] **SURF-01**: Discord-facing surfaces read from a canonical visibility model for campaign, adventure, session, and current runtime state rather than assembling ad hoc text independently per command
-- [ ] **SURF-02**: The visibility model includes explicit waiting/blocker reasons so users and operators can see what the session is currently waiting on
-- [ ] **SURF-03**: The visibility model includes routing outcome plus a short explanation contract describing why a message was processed, buffered, ignored, or deferred
-- [ ] **SURF-04**: The visibility model can surface existing canonical player snapshot state, including participation status and already-existing HP / SAN / attribute values, without redefining character semantics in Track C
+- [x] **SURF-01**: Discord-facing surfaces read from a canonical visibility model for campaign, adventure, session, and current runtime state rather than assembling ad hoc text independently per command
+- [x] **SURF-02**: The visibility model includes explicit waiting/blocker reasons so users and operators can see what the session is currently waiting on
+- [x] **SURF-03**: The visibility model includes routing outcome plus a short explanation contract describing why a message was processed, buffered, ignored, or deferred
+- [x] **SURF-04**: The visibility model can surface existing canonical player snapshot state, including participation status and already-existing HP / SAN / attribute values, without redefining character semantics in Track C
 
 ### Player-Facing Surfaces
 
@@ -154,10 +154,10 @@ Milestone: C3 Campaign Surfaces And Intent Clarity
 | VIS-01 | 51 | Pending |
 | VIS-02 | 51 | Pending |
 | VIS-03 | 51 | Pending |
-| SURF-01 | TBD | Pending |
-| SURF-02 | TBD | Pending |
-| SURF-03 | TBD | Pending |
-| SURF-04 | TBD | Pending |
+| SURF-01 | 51 | Complete |
+| SURF-02 | 51 | Complete |
+| SURF-03 | 51 | Complete |
+| SURF-04 | 51 | Complete |
 | PLAY-01 | TBD | Pending |
 | PLAY-02 | TBD | Pending |
 | PLAY-03 | TBD | Pending |
