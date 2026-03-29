@@ -160,7 +160,7 @@
 
 | Phase | Plans | Status | Completed |
 |-------|-------|--------|-----------|
-| 60. Test Infrastructure & Process Health | 0/1 | Planned | — |
+| 60. Test Infrastructure & Process Health | 1/1 | ✓ Complete | 2026-03-30 |
 | 61. Discord Command/Adapter Layer | 1/1 | ✓ Complete | — |
 | 62. Session / Orchestrator Layer | 1/1 | ✓ Complete | — |
 | 63. Adventure Runtime | 0/1 | Planned | — |

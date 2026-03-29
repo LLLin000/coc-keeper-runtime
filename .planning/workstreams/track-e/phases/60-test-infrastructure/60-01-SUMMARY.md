@@ -70,23 +70,23 @@ completed: 2026-03-29
 
 ## Performance
 
-- **Duration:** 25 min
+- **Duration:** 25 min (session 1) + 15 min (session 2)
 - **Started:** 2026-03-29T14:35:00Z
-- **Completed:** 2026-03-29T15:00:00Z
-- **Tasks:** 3
-- **Files modified:** 14 (6 created, 8 modified)
+- **Completed:** 2026-03-30 (ongoing refinement)
+- **Tasks:** 6
+- **Files modified:** 17 (9 created, 8 modified)
 
 ## Accomplishments
 
-- Created `tests/fakes/discord.py` with `FakeResponse`, `FakeFollowup`, `fake_user`, `fake_channel`, `fake_guild`, `fake_interaction`, `fake_context`
+- Created `tests/fakes/discord.py` with `FakeResponse`, `FakeFollowup`, `FakeChannel`, `fake_user`, `fake_channel`, `fake_guild`, `fake_interaction`, `fake_context`
 - Created `tests/fakes/models.py` with `StubModelClient`, `FastMock`, `SlowMock`, `ErrorMock`
-- Created `tests/conftest.py` with 8 shared fixtures
-- Created `tests/features/combat_round.feature` with Gherkin scenario
-- Created `tests/bdd/test_combat_round_bdd.py` with pytest-bdd step definitions
+- Created `tests/conftest.py` with 7 shared fixtures
+- Created `tests/features/combat_round.feature` with 5 Gherkin scenarios (hit, miss, pushed roll, fumble, initiative)
+- Created `tests/bdd/__init__.py` and `tests/bdd/test_combat_round_bdd.py` with pytest-bdd step definitions
 - Added `pytest-bdd>=8.0.0` and `vcrpy>=6.0.0` to dev dependencies
 - Modified `PersistenceStore` to accept `str | Path`
-- Migrated 6 test files to use shared fakes
-- **403 tests pass, 1 skipped, no regressions**
+- Migrated 8 test files to use shared fakes
+- **408 tests pass, no regressions**
 
 ## Task Commits
 
@@ -96,15 +96,25 @@ Each task was committed atomically:
 2. **Task 2: VCR.py and pytest-bdd scaffolding** - `31c6c0e` (test)
 3. **Task 3: Migrate existing tests** - `d1da372` (test)
 
+### E60-01 Session Commits (2026-03-30)
+
+4. **E60-01: Add combat round BDD feature and step definitions** - `094d76a` (test)
+   - 3 files: `tests/bdd/__init__.py`, `tests/features/combat_round.feature`, `tests/bdd/test_combat_round_bdd.py`
+5. **E60-02: Migrate test_discord_commands.py to shared fakes** - `95cb466` (test)
+   - 2 files: `tests/fakes/discord.py`, `tests/test_discord_commands.py`
+6. **E60-03: Migrate test_phase2_integration.py to shared fakes** - `e3b65bd` (test)
+   - 1 file: `tests/test_phase2_integration.py`
+
 ## Files Created/Modified
 
 **Created:**
 - `tests/fakes/__init__.py` - Package marker
-- `tests/fakes/discord.py` - FakeResponse (AsyncMock-based), FakeFollowup, fake_interaction, fake_context
+- `tests/fakes/discord.py` - FakeResponse (AsyncMock-based), FakeFollowup, FakeChannel, fake_interaction, fake_context
 - `tests/fakes/models.py` - StubModelClient, FastMock, SlowMock, ErrorMock
-- `tests/conftest.py` - interaction_factory, context_factory, sqlite_memory_store, sqlite_memory_path, fast_model_mock, slow_model_mock, error_model_mock, vcr_config
-- `tests/features/combat_round.feature` - Gherkin scenario for combat round
-- `tests/bdd/test_combat_round_bdd.py` - pytest-bdd step definitions (stubbed)
+- `tests/conftest.py` - 7 shared fixtures
+- `tests/features/combat_round.feature` - 5 Gherkin scenarios for combat round
+- `tests/bdd/__init__.py` - pytest-bdd package marker
+- `tests/bdd/test_combat_round_bdd.py` - pytest-bdd step definitions (all 5 scenarios)
 
 **Modified:**
 - `src/dm_bot/persistence/store.py` - Constructor accepts `str | Path`
@@ -115,6 +125,8 @@ Each task was committed atomically:
 - `tests/test_lobby_flow.py` - Migrated to fake_interaction
 - `tests/test_dual_model_orchestration.py` - Migrated to FastMock
 - `tests/test_narration_service.py` - Migrated to FastMock, updated narrator_requests
+- `tests/test_discord_commands.py` - Migrated to shared fakes
+- `tests/test_phase2_integration.py` - Migrated to shared fakes
 
 ## Decisions Made
 
@@ -136,26 +148,38 @@ None - plan executed exactly as written.
 
 3. **test_investigator_panels failure** - `interaction.response.messages` was MagicMock instead of list. Fixed by using `FakeResponse` class instead of `AsyncMock()`
 
+4. **pytest-bdd fixture registration** - Fixtures are registered by step text (string), NOT function names. Using `target_fixture="..."` parameter creates named fixtures referenceable by other steps.
+
+5. **Quote mismatch between feature and step** - Feature used `"1d6+3"` (double quotes) but step definition used `'1d6+3'` (single quotes) → fixed to match
+
+6. **Two `combat_hit` fixture functions** - Hit and miss scenarios had same `@given` step text, making `combat_hit` the actual fixture name. Fixed with `target_fixture` differentiation.
+
+7. **Dice roller couldn't parse `1d20+-5`** - `attack_bonus=-5` created invalid expression. Fixed by using `attack_bonus=0` with controlled low roll.
+
+8. **`fake_interaction()` missing `channel` attribute** - Migrated code called `interaction.channel.send()`. Added `FakeChannel` to shared fakes.
+
 ## Acceptance Criteria Verified
 
 - `grep -R "def fake_interaction" tests/fakes/discord.py` ✓
 - `grep -R "def fake_context" tests/fakes/discord.py` ✓
-- `grep -R "@pytest.fixture" tests/conftest.py` ✓ (8 fixtures)
+- `grep -R "@pytest.fixture" tests/conftest.py` ✓ (7 fixtures)
 - `grep -R "sqlite_memory_store" tests/conftest.py` ✓
 - `grep -R "class FastMock" tests/fakes/models.py` ✓
 - `grep -R "class SlowMock" tests/fakes/models.py` ✓
 - `grep -R "class ErrorMock" tests/fakes/models.py` ✓
 - `grep -n "pytest-bdd" pyproject.toml` ✓
 - `grep -n "vcrpy" pyproject.toml` ✓
-- `grep -R "Scenario:" tests/features/combat_round.feature` ✓
+- `grep -R "Scenario:" tests/features/combat_round.feature` ✓ (5 scenarios)
+- `uv run pytest -q` ✓ (408 passed)
 
 ## Next Phase Readiness
 
-- Shared FakeInteraction and FakeContext factories available
+- Shared FakeInteraction, FakeContext, FakeChannel factories available
 - FastMock, SlowMock, ErrorMock model fixtures available
 - VCR.py and pytest-bdd scaffolding in place
 - In-memory SQLite fixture available
-- 403 tests passing, no regressions
+- BDD combat round feature with 5 scenarios
+- 408 tests passing, no regressions
 - Ready for next phase in Track E
 
 ---
