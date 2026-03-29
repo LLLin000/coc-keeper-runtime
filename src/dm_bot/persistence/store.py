@@ -9,7 +9,10 @@ class PersistenceStore:
         self._init_db()
 
     def _connect(self) -> sqlite3.Connection:
-        return sqlite3.connect(self._path)
+        path_str = str(self._path)
+        if path_str == ":memory:":
+            return sqlite3.connect("file::memory:?cache=shared", uri=True)
+        return sqlite3.connect(path_str)
 
     def _init_db(self) -> None:
         with self._connect() as conn:
@@ -52,14 +55,28 @@ class PersistenceStore:
 
     def load_sessions(self) -> dict[str, dict[str, object]]:
         with self._connect() as conn:
-            row = conn.execute("select sessions_json from campaign_sessions where id = 1").fetchone()
+            row = conn.execute(
+                "select sessions_json from campaign_sessions where id = 1"
+            ).fetchone()
         return json.loads(row[0]) if row else {}
 
-    def append_event(self, *, campaign_id: str, trace_id: str, event_type: str, payload: dict[str, object]) -> None:
+    def append_event(
+        self,
+        *,
+        campaign_id: str,
+        trace_id: str,
+        event_type: str,
+        payload: dict[str, object],
+    ) -> None:
         with self._connect() as conn:
             conn.execute(
                 "insert into campaign_events(campaign_id, trace_id, event_type, payload_json) values(?, ?, ?, ?)",
-                (campaign_id, trace_id, event_type, json.dumps(payload, ensure_ascii=False)),
+                (
+                    campaign_id,
+                    trace_id,
+                    event_type,
+                    json.dumps(payload, ensure_ascii=False),
+                ),
             )
 
     def list_events(self, campaign_id: str) -> list[dict[str, object]]:
@@ -87,5 +104,7 @@ class PersistenceStore:
 
     def load_archive_profiles(self) -> dict[str, object]:
         with self._connect() as conn:
-            row = conn.execute("select profiles_json from archive_profiles where id = 1").fetchone()
+            row = conn.execute(
+                "select profiles_json from archive_profiles where id = 1"
+            ).fetchone()
         return json.loads(row[0]) if row else {}
