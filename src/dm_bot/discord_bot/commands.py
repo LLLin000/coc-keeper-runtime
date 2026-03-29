@@ -1243,7 +1243,25 @@ class BotCommands:
             is_admin=self._is_admin_user(user_id, session),
         )
 
-        if classification and self._should_buffer_message(
+        if classification and self._intent_handler_registry:
+            handling_result = await self._intent_handler_registry.handle_message(
+                user_id=user_id,
+                content=content,
+                classification=classification,
+                session_phase=session_phase,
+                is_admin=self._is_admin_user(user_id, session),
+            )
+            if handling_result.should_buffer:
+                self._buffer_message(
+                    channel_id, user_id, content, classification.intent, session_phase
+                )
+            if handling_result.feedback_message:
+                await self._feedback_service.send_feedback(
+                    channel_id=channel_id,
+                    user_id=user_id,
+                    message=handling_result.feedback_message,
+                )
+        elif classification and self._should_buffer_message(
             classification.intent, session_phase
         ):
             self._buffer_message(
@@ -1256,10 +1274,12 @@ class BotCommands:
                 if self._intent_classifier
                 else None
             )
-            return (
-                feedback
-                or f"_Your message has been buffered until the {session_phase} phase ends._"
-            )
+            if feedback:
+                await self._feedback_service.send_feedback(
+                    channel_id=channel_id,
+                    user_id=user_id,
+                    message=feedback,
+                )
 
         if session.session_phase == SessionPhase.SCENE_ROUND_OPEN:
             return await self._handle_round_action(
