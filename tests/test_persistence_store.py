@@ -5,7 +5,12 @@ from dm_bot.characters.sources import DicecloudSnapshotSource
 from dm_bot.coc.archive import InvestigatorArchiveRepository
 from dm_bot.gameplay.combat import Combatant
 from dm_bot.orchestrator.gameplay import CharacterRegistry, GameplayOrchestrator
-from dm_bot.orchestrator.session_store import SessionStore
+from dm_bot.orchestrator.session_store import (
+    CampaignRole,
+    CampaignMember,
+    CampaignCharacterInstance,
+    SessionStore,
+)
 from dm_bot.persistence.store import PersistenceStore
 from dm_bot.rules.compendium import FixtureCompendium
 from dm_bot.rules.engine import RulesEngine
@@ -34,8 +39,18 @@ def build_gameplay() -> GameplayOrchestrator:
                             "charisma": 8,
                         },
                         "skills": {"stealth": 5},
-                        "attacks": [{"name": "Longbow", "attack_bonus": 5, "damage": "1d8+3 piercing"}],
-                        "spellcasting": {"ability": "wisdom", "save_dc": 12, "attack_bonus": 4},
+                        "attacks": [
+                            {
+                                "name": "Longbow",
+                                "attack_bonus": 5,
+                                "damage": "1d8+3 piercing",
+                            }
+                        ],
+                        "spellcasting": {
+                            "ability": "wisdom",
+                            "save_dc": 12,
+                            "attack_bonus": 4,
+                        },
                         "resources": {"spell_slots_1": 3},
                     }
                 }
@@ -45,13 +60,17 @@ def build_gameplay() -> GameplayOrchestrator:
     return GameplayOrchestrator(
         importer=importer,
         registry=CharacterRegistry(),
-        rules_engine=RulesEngine(compendium=FixtureCompendium(baseline="2014", fixtures={})),
+        rules_engine=RulesEngine(
+            compendium=FixtureCompendium(baseline="2014", fixtures={})
+        ),
     )
 
 
 def test_persistence_store_saves_and_restores_campaign_state(tmp_path: Path) -> None:
     gameplay = build_gameplay()
-    gameplay.import_character(user_id="user-1", provider="dicecloud_snapshot", external_id="char-1")
+    gameplay.import_character(
+        user_id="user-1", provider="dicecloud_snapshot", external_id="char-1"
+    )
     gameplay.enter_scene(speakers=["守卫", "老板"])
     gameplay.start_combat(
         combatants=[
@@ -88,12 +107,18 @@ def test_persistence_store_appends_trace_linked_events(tmp_path: Path) -> None:
 def test_persistence_store_saves_and_restores_campaign_sessions(tmp_path: Path) -> None:
     store = PersistenceStore(tmp_path / "campaign.sqlite3")
     sessions = SessionStore()
-    sessions.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    sessions.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
     sessions.join_campaign(channel_id="chan-1", user_id="user-2")
-    sessions.bind_character(channel_id="chan-1", user_id="user-1", character_name="Alice")
+    sessions.bind_character(
+        channel_id="chan-1", user_id="user-1", character_name="Alice"
+    )
     sessions.bind_archive_channel(guild_id="guild-1", channel_id="archive-1")
     sessions.bind_admin_channel(guild_id="guild-1", channel_id="admin-1")
-    sessions.select_archive_profile(channel_id="chan-1", user_id="user-1", profile_id="profile-1")
+    sessions.select_archive_profile(
+        channel_id="chan-1", user_id="user-1", profile_id="profile-1"
+    )
 
     store.save_sessions(sessions.dump_sessions())
     restored = store.load_sessions()
@@ -117,7 +142,17 @@ def test_persistence_store_saves_and_restores_archive_profiles(tmp_path: Path) -
         background="夜班记者",
         disposition="冷静",
         favored_skills=["图书馆使用", "聆听"],
-        generation={"str": 50, "con": 55, "dex": 60, "app": 65, "pow": 70, "siz": 50, "int": 75, "edu": 80, "luck": 45},
+        generation={
+            "str": 50,
+            "con": 55,
+            "dex": 60,
+            "app": 65,
+            "pow": 70,
+            "siz": 50,
+            "int": 75,
+            "edu": 80,
+            "luck": 45,
+        },
     )
 
     store.save_archive_profiles(repo.export_state())
@@ -185,3 +220,61 @@ def test_archive_repository_imports_older_profile_payload_with_new_defaults() ->
     assert profile.residence == ""
     assert profile.family == ""
     assert profile.education_background == ""
+
+
+def test_persistence_round_trip_campaign_members(tmp_path: Path) -> None:
+    store = PersistenceStore(tmp_path / "campaign.sqlite3")
+    sessions = SessionStore()
+    sessions.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
+    sessions.join_campaign(channel_id="chan-1", user_id="user-2")
+    sessions.bind_character(
+        channel_id="chan-1", user_id="user-1", character_name="Alice"
+    )
+    sessions.select_archive_profile(
+        channel_id="chan-1", user_id="user-1", profile_id="prof-1"
+    )
+
+    store.save_sessions(sessions.dump_sessions())
+    restored_payload = store.load_sessions()
+
+    restored = SessionStore()
+    restored.load_sessions(restored_payload)
+
+    session = restored.get_by_channel("chan-1")
+    assert session is not None
+
+    assert "user-1" in session.members
+    assert "user-2" in session.members
+    assert session.members["user-1"].role == CampaignRole.OWNER
+    assert session.members["user-2"].role == CampaignRole.MEMBER
+    assert session.members["user-1"].active_character_name == "Alice"
+    assert session.members["user-1"].selected_profile_id == "prof-1"
+
+    assert session.member_ids == {"user-1", "user-2"}
+    assert session.active_characters["user-1"] == "Alice"
+    assert session.selected_profiles["user-1"] == "prof-1"
+
+
+def test_persistence_legacy_format_reconstructs_members(tmp_path: Path) -> None:
+    store = PersistenceStore(tmp_path / "campaign.sqlite3")
+    sessions = SessionStore()
+    sessions.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
+    sessions.join_campaign(channel_id="chan-1", user_id="user-2")
+
+    payload = sessions.dump_sessions()
+    del payload["chan-1"]["members"]
+    del payload["chan-1"]["character_instances"]
+
+    restored = SessionStore()
+    restored.load_sessions(payload)
+
+    session = restored.get_by_channel("chan-1")
+    assert session is not None
+    assert "user-1" in session.members
+    assert "user-2" in session.members
+    assert session.members["user-1"].role == CampaignRole.OWNER
+    assert session.members["user-2"].role == CampaignRole.MEMBER
