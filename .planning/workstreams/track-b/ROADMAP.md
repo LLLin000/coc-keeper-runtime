@@ -233,15 +233,70 @@
 ---
 ---
 
-## vB.1.4 Next (Planned)
+## vB.1.4 Phases
 
-**Goal:** Make Discord user identity, archive profile ownership, campaign membership, and campaign character instances explicit enough that multiplayer play cannot silently pick the wrong character or owner/admin identity.
+- [ ] **Phase 52: Foundational Identity Models** - Explicit CampaignMember and CampaignCharacterInstance models
+- [ ] **Phase 53: Join Flow and Membership Gates** - Enforce channel binding and prevent duplicate joins
+- [ ] **Phase 54: Character Selection and Ready Validation** - Verify profile ownership and membership before ready
 
-**Planned focus:**
-- stronger `discord_user -> archive_profile -> campaign_member -> campaign_character_instance` contracts
-- no ready without an explicit selected character instance
-- one active instance per player per campaign
-- owner/admin separation and auditability
+### Phase 52: Foundational Identity Models
+
+**Goal:** Replace primitive sets with structured data models for members and character instances.
+
+**Depends on:** vB.1.3 completion
+
+**Requirements:** REQ-001, REQ-004, REQ-006, REQ-010
+
+**Success Criteria** (what must be TRUE):
+  1. `CampaignMember` exists tracking Discord ID and role (owner, admin, member)
+  2. `CampaignCharacterInstance` exists representing the active investigator projection
+  3. `CampaignSession` stores these structured models instead of string sets
+  4. System successfully serializes and deserializes the new objects to/from the JSON store
+
+**What This Does NOT Include:**
+  - Enforcing these models in Discord commands (focus is purely on internal data structures)
+
+**Plans:** `52-01` — 3 tasks, TDD-oriented, sequential wave structure
+
+### Phase 53: Join Flow and Membership Gates
+
+**Goal:** Secure the entry and exit points of a campaign using the new membership models.
+
+**Depends on:** Phase 52
+
+**Requirements:** REQ-005, REQ-007, REQ-009
+
+**Success Criteria** (what must be TRUE):
+  1. A user attempting to `/join` twice receives a clear error message
+  2. Running the join command in an unbound channel fails gracefully
+  3. A user cannot create a second active character instance in the same campaign
+
+**What This Does NOT Include:**
+  - Character selection logic and readiness state
+
+### Phase 54: Character Selection and Ready Validation
+
+**Goal:** Enforce ownership and membership rules before a player can ready up for gameplay.
+
+**Depends on:** Phase 53
+
+**Requirements:** REQ-002, REQ-003, REQ-008
+
+**Success Criteria** (what must be TRUE):
+  1. A non-member attempting to select a profile gets rejected
+  2. A user attempting to select someone else's archive profile gets rejected
+  3. Running `/ready` fails if the user has not selected a profile or is not a member
+
+**What This Does NOT Include:**
+  - Modifying gameplay loops, combat resolution, or dice rolling mechanics
+
+## Progress Table (vB.1.4)
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 52. Foundational Identity Models | 1/1 | Planned | - |
+| 53. Join Flow and Membership Gates | 1/1 | Planned | - |
+| 54. Character Selection and Ready Validation | 0/1 | Planned | - |
 
 ---
 
