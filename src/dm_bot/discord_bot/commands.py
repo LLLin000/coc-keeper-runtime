@@ -9,6 +9,7 @@ from dm_bot.discord_bot.streaming import StreamingMessageTransport
 from dm_bot.discord_bot.onboarding_views import OnboardingView
 from dm_bot.discord_bot.feedback import DiscordFeedbackService
 from dm_bot.orchestrator.message_filters import MessageDisposition, classify_message
+from dm_bot.orchestrator.session_store import DuplicateMemberError, UnboundChannelError
 from dm_bot.router.intent import (
     MessageIntent,
     IntentClassificationResult,
@@ -338,15 +339,36 @@ class BotCommands:
         return build_visibility_snapshot(session, panels)
 
     async def join_campaign(self, interaction) -> None:
-        session = self._session_store.join_campaign(
-            channel_id=str(interaction.channel_id),
-            user_id=str(interaction.user.id),
-        )
-        self._persist_sessions()
-        await interaction.response.send_message(
-            f"joined campaign `{session.campaign_id}`",
-            ephemeral=True,
-        )
+        allowed, msg = self.check_channel("join_campaign", interaction)
+        if not allowed:
+            await interaction.response.send_message(msg, ephemeral=True)
+            return
+
+        try:
+            session = self._session_store.join_campaign(
+                channel_id=str(interaction.channel_id),
+                user_id=str(interaction.user.id),
+            )
+            self._persist_sessions()
+            await interaction.response.send_message(
+                f"已加入战役 `{session.campaign_id}`",
+                ephemeral=True,
+            )
+        except UnboundChannelError:
+            await interaction.response.send_message(
+                "请先使用 /bind_campaign 绑定战役频道",
+                ephemeral=True,
+            )
+        except DuplicateMemberError:
+            await interaction.response.send_message(
+                "你已经在战役中了，无需重复加入",
+                ephemeral=True,
+            )
+        except KeyError:
+            await interaction.response.send_message(
+                "请先使用 /bind_campaign 绑定战役频道",
+                ephemeral=True,
+            )
 
     async def leave_campaign(self, interaction) -> None:
         session = self._session_store.leave_campaign(

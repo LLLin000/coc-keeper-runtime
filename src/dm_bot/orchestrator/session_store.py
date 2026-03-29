@@ -11,6 +11,18 @@ class CampaignRole(str, Enum):
     MEMBER = "member"
 
 
+class DuplicateMemberError(Exception):
+    """Raised when a user attempts to join a campaign they are already a member of."""
+
+    pass
+
+
+class UnboundChannelError(Exception):
+    """Raised when attempting to join a channel that has no bound campaign."""
+
+    pass
+
+
 class CampaignMember(BaseModel):
     """Structured campaign membership replacing primitive set-of-strings."""
 
@@ -196,9 +208,27 @@ class SessionStore:
         return session
 
     def join_campaign(self, *, channel_id: str, user_id: str) -> CampaignSession:
+        if channel_id not in self._sessions:
+            raise UnboundChannelError(
+                f"No campaign is bound to channel {channel_id}. "
+                "Use /bind_campaign first."
+            )
         session = self._sessions[channel_id]
+
+        if user_id in session.members:
+            raise DuplicateMemberError(
+                f"User {user_id} is already a member of campaign {session.campaign_id}."
+            )
+
         session.member_ids.add(user_id)
-        session._get_or_create_member(user_id)
+        member = session._get_or_create_member(user_id)
+
+        session.character_instances[user_id] = CampaignCharacterInstance(
+            campaign_id=session.campaign_id,
+            user_id=user_id,
+            character_name="",
+        )
+
         return session
 
     def leave_campaign(self, *, channel_id: str, user_id: str) -> CampaignSession:

@@ -60,6 +60,7 @@ class ChannelEnforcer:
                 "combat",
                 "attack",
                 "defend",
+                "join_campaign",
             ],
             allowed_types={ChannelType.GAME},
             redirect_message="此命令仅可在 #游戏大厅 频道使用",
