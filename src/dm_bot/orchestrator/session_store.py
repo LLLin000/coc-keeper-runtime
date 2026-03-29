@@ -57,6 +57,11 @@ class CampaignSession(BaseModel):
     active_characters: dict[str, str] = Field(default_factory=dict)
     active_roles: dict[str, str] = Field(default_factory=dict)
     selected_profiles: dict[str, str] = Field(default_factory=dict)
+    # Structured identity models (Phase 52)
+    members: dict[str, CampaignMember] = Field(default_factory=dict)
+    character_instances: dict[str, CampaignCharacterInstance] = Field(
+        default_factory=dict
+    )
     # Session phase tracking (vC.1.2)
     session_phase: SessionPhase = SessionPhase.LOBBY
     player_ready: dict[str, bool] = Field(default_factory=dict)
@@ -66,12 +71,18 @@ class CampaignSession(BaseModel):
     onboarding_completed: dict[str, bool] = Field(default_factory=dict)
     onboarding_content: dict[str, object] = Field(default_factory=dict)
     # Round collection tracking (vC.1.2 - Phase 49)
-    pending_actions: dict[str, str] = Field(
-        default_factory=dict
-    )  # user_id -> action text
-    action_submitters: set[str] = Field(default_factory=set)  # users who have submitted
+    pending_actions: dict[str, str] = Field(default_factory=dict)
+    action_submitters: set[str] = Field(default_factory=set)
     # Round tracking (Phase 54 - KP Ops Surfaces)
     round_number: int | None = None
+
+    def _get_or_create_member(self, user_id: str) -> CampaignMember:
+        if user_id not in self.members:
+            self.members[user_id] = CampaignMember(
+                user_id=user_id,
+                campaign_id=self.campaign_id,
+            )
+        return self.members[user_id]
 
     def transition_to(self, new_phase: SessionPhase) -> None:
         self.session_phase = new_phase
@@ -79,6 +90,8 @@ class CampaignSession(BaseModel):
 
     def set_player_ready(self, user_id: str, ready: bool) -> None:
         self.player_ready[user_id] = ready
+        if user_id in self.members:
+            self.members[user_id].ready = ready
 
     def can_start_session(self) -> bool:
         ready_players = sum(1 for r in self.player_ready.values() if r)
@@ -174,18 +187,26 @@ class SessionStore:
             owner_id=owner_id,
             member_ids={owner_id},
         )
+        session.members[owner_id] = CampaignMember(
+            user_id=owner_id,
+            campaign_id=campaign_id,
+            role=CampaignRole.OWNER,
+        )
         self._sessions[channel_id] = session
         return session
 
     def join_campaign(self, *, channel_id: str, user_id: str) -> CampaignSession:
         session = self._sessions[channel_id]
         session.member_ids.add(user_id)
+        session._get_or_create_member(user_id)
         return session
 
     def leave_campaign(self, *, channel_id: str, user_id: str) -> CampaignSession:
         session = self._sessions[channel_id]
         session.member_ids.discard(user_id)
         session.active_characters.pop(user_id, None)
+        session.members.pop(user_id, None)
+        session.character_instances.pop(user_id, None)
         session.clear_player_action(user_id)
         return session
 
@@ -194,11 +215,18 @@ class SessionStore:
     ) -> CampaignSession:
         session = self._sessions[channel_id]
         session.active_characters[user_id] = character_name
+        if user_id in session.members:
+            session.members[user_id].active_character_name = character_name
         return session
 
     def bind_role(self, *, channel_id: str, user_id: str, role: str) -> CampaignSession:
         session = self._sessions[channel_id]
         session.active_roles[user_id] = role
+        if user_id in session.members:
+            try:
+                session.members[user_id].role = CampaignRole(role)
+            except ValueError:
+                pass
         return session
 
     def select_archive_profile(
@@ -206,6 +234,8 @@ class SessionStore:
     ) -> CampaignSession:
         session = self._sessions[channel_id]
         session.selected_profiles[user_id] = profile_id
+        if user_id in session.members:
+            session.members[user_id].selected_profile_id = profile_id
         return session
 
     def selected_profile_for(self, *, channel_id: str, user_id: str) -> str | None:
@@ -271,6 +301,26 @@ class SessionStore:
                 return session
         return None
 
+    def get_member(self, channel_id: str, user_id: str) -> CampaignMember | None:
+        session = self._sessions.get(channel_id)
+        if session is None:
+            return None
+        return session.members.get(user_id)
+
+    def get_character_instance(
+        self, channel_id: str, user_id: str
+    ) -> CampaignCharacterInstance | None:
+        session = self._sessions.get(channel_id)
+        if session is None:
+            return None
+        return session.character_instances.get(user_id)
+
+    def list_members(self, channel_id: str) -> list[CampaignMember]:
+        session = self._sessions.get(channel_id)
+        if session is None:
+            return []
+        return list(session.members.values())
+
     def channels_selecting_profile(self, *, user_id: str, profile_id: str) -> list[str]:
         return [
             session.channel_id
@@ -289,6 +339,13 @@ class SessionStore:
                 "active_characters": dict(session.active_characters),
                 "active_roles": dict(session.active_roles),
                 "selected_profiles": dict(session.selected_profiles),
+                "members": {
+                    uid: m.model_dump(mode="json") for uid, m in session.members.items()
+                },
+                "character_instances": {
+                    uid: ci.model_dump(mode="json")
+                    for uid, ci in session.character_instances.items()
+                },
                 "session_phase": session.session_phase.value,
                 "player_ready": dict(session.player_ready),
                 "admin_started": session.admin_started,
@@ -323,6 +380,41 @@ class SessionStore:
         for channel_id, raw in payload.items():
             if channel_id == "_meta":
                 continue
+
+            raw_members = raw.get("members", {})
+            raw_instances = raw.get("character_instances", {})
+
+            members: dict[str, CampaignMember] = {
+                uid: CampaignMember.model_validate(m) for uid, m in raw_members.items()
+            }
+            character_instances: dict[str, CampaignCharacterInstance] = {
+                uid: CampaignCharacterInstance.model_validate(ci)
+                for uid, ci in raw_instances.items()
+            }
+
+            # Backward-compat: reconstruct members from legacy fields if missing
+            if not members and raw.get("member_ids"):
+                owner_id = str(raw.get("owner_id", ""))
+                for uid in raw["member_ids"]:
+                    uid_str = str(uid)
+                    role = (
+                        CampaignRole.OWNER
+                        if uid_str == owner_id
+                        else CampaignRole.MEMBER
+                    )
+                    members[uid_str] = CampaignMember(
+                        user_id=uid_str,
+                        campaign_id=str(raw["campaign_id"]),
+                        role=role,
+                        ready=bool(raw.get("player_ready", {}).get(uid_str, False)),
+                        selected_profile_id=raw.get("selected_profiles", {}).get(
+                            uid_str
+                        ),
+                        active_character_name=raw.get("active_characters", {}).get(
+                            uid_str
+                        ),
+                    )
+
             session = CampaignSession(
                 campaign_id=str(raw["campaign_id"]),
                 channel_id=str(raw.get("channel_id", channel_id)),
@@ -332,6 +424,8 @@ class SessionStore:
                 active_characters=dict(raw.get("active_characters", {})),
                 active_roles=dict(raw.get("active_roles", {})),
                 selected_profiles=dict(raw.get("selected_profiles", {})),
+                members=members,
+                character_instances=character_instances,
                 session_phase=SessionPhase(raw.get("session_phase", "lobby")),
                 player_ready=dict(raw.get("player_ready", {})),
                 admin_started=raw.get("admin_started", False),
