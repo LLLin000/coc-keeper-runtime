@@ -21,10 +21,11 @@ Owns the runtime surface:
 
 ## Active Milestone
 
-- Most recently completed milestone: `vC.1.1`
-- Active milestone: `vC.1.2`
+- Most recently completed milestone: `vC.1.2`
+- Active milestone: `vC.1.3`
 - Primary track: `Track C - Discord 交互层`
-- Goal: Govern multiplayer session flow, message intake, and campaign/adventure visibility so Discord behavior is explicit instead of implicit
+- Goal: Make campaign/adventure/session state legible in Discord and make message handling reasons explicit to players and operators through logic-first visibility contracts and reusable surfaces
+
 
 ## Milestone vC.1.1: C1 Channel Governance And Command Discipline Hardening
 
@@ -82,27 +83,34 @@ Owns the runtime surface:
 **Goal:** Make campaign/adventure/session state easy to understand from Discord and make message handling explainable enough that players know why a message was ignored, buffered, treated as action, or treated as rules input.
 
 **Target features:**
-- campaign and adventure listing surfaces
-- current campaign/adventure/member/ready/scene visibility
-- clearer intake explanations for natural messages
-- more explicit user-facing feedback around why the bot did or did not react
+- logic-first canonical visibility state for campaign, adventure, session, waiting reasons, routing outcomes, and existing player state snapshots
+- player-facing shared status surfaces in play contexts
+- short player-facing handling reasons when messages are ignored, buffered, or handled differently
+- separate KP/operator operational visibility surface with session ops, adventure state, player status, and routing diagnostics
+- activity-ready core contracts so future Discord Activity UI can reuse the same visibility model
+- current-only campaign/adventure identity visibility rather than broad cross-campaign browsing
 
 **Primary Track**
 - Track C - Discord 交互层
 
 **Secondary Impact**
-- Track A - 模组与规则运行层: current scene/location and state summaries
-- Track D - 游戏呈现层: player-facing wording and summary clarity
+- Track A - 模组与规则运行层: current scene/location, waiting state, and canonical runtime summaries exposed for visibility surfaces
+- Track B - 人物构建与管理层: existing canonical player sheet state surfaced in Discord without redefining character semantics
+- Track D - 游戏呈现层: player-facing wording, explanation brevity, and presentation clarity
 
 **Contracts Changed**
-- campaign/adventure status surface
-- message-intent explanation surface
-- operator/player feedback contracts
+- campaign/adventure/session visibility contract
+- waiting/blocker reason contract
+- message routing outcome + short explanation contract
+- player snapshot visibility contract
+- operator/player feedback surface contract
 
 **Migration Notes**
-- queue this after vC.1.2 so state visibility is built on top of real multiplayer session phases
-- preserve wrong-channel and admin guidance from vC.1.1
-- do not let UX explanations redefine canonical runtime state
+- build canonical visibility state first, then attach chat surfaces as one renderer
+- keep the design compatible with future Discord Activity UI, but do not build Activity UI in this milestone
+- surface existing HP/SAN/attribute truth only; do not turn this milestone into a character-system redesign
+- keep broader listing/browsing and deep debug-only internals out of scope for this milestone
+
 
 ---
-*Last updated: 2026-03-28 for milestone vC.1.2 C2 Multiplayer Session Governance*
+*Last updated: 2026-03-29 for milestone vC.1.3 C3 Campaign Surfaces And Intent Clarity*
