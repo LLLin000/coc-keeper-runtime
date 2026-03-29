@@ -235,7 +235,7 @@
 
 ## vB.1.4 Phases
 
-- [ ] **Phase 52: Foundational Identity Models** - Explicit CampaignMember and CampaignCharacterInstance models
+- [x] **Phase 52: Foundational Identity Models** - Explicit CampaignMember and CampaignCharacterInstance models (completed 2026-03-29)
 - [ ] **Phase 53: Join Flow and Membership Gates** - Enforce channel binding and prevent duplicate joins
 - [ ] **Phase 54: Character Selection and Ready Validation** - Verify profile ownership and membership before ready
 
@@ -256,7 +256,7 @@
 **What This Does NOT Include:**
   - Enforcing these models in Discord commands (focus is purely on internal data structures)
 
-**Plans:** `52-01` — 3 tasks, TDD-oriented, sequential wave structure
+**Plans:** 1/1 plans complete
 
 ### Phase 53: Join Flow and Membership Gates
 
@@ -294,7 +294,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 52. Foundational Identity Models | 1/1 | Planned | - |
+| 52. Foundational Identity Models | 1/1 | Complete   | 2026-03-29 |
 | 53. Join Flow and Membership Gates | 1/1 | Planned | - |
 | 54. Character Selection and Ready Validation | 0/1 | Planned | - |
 
