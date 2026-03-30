@@ -813,6 +813,84 @@ class BotCommands:
                 ephemeral=True,
             )
 
+    async def resolve_round(self, interaction) -> None:
+        from dm_bot.orchestrator.session_store import SessionPhase
+
+        allowed, msg = self.check_channel("resolve_round", interaction)
+        if not allowed:
+            await interaction.response.send_message(msg, ephemeral=True)
+            return
+        if self._session_store is None or self._turn_coordinator is None:
+            await interaction.response.send_message(
+                "session store is not configured", ephemeral=True
+            )
+            return
+        session = self._session_store.get_by_channel(str(interaction.channel_id))
+        if session is None:
+            await interaction.response.send_message(
+                "no campaign bound to this channel", ephemeral=True
+            )
+            return
+        if session.session_phase != SessionPhase.SCENE_ROUND_OPEN:
+            await interaction.response.send_message(
+                f"当前不在行动收集阶段：{session.session_phase.value}",
+                ephemeral=True,
+            )
+            return
+        if not session.action_submitters:
+            await interaction.response.send_message(
+                "还没有玩家提交行动。请先等待玩家提交行动。",
+                ephemeral=True,
+            )
+            return
+        session.transition_to(SessionPhase.SCENE_ROUND_RESOLVING)
+        self._persist_sessions()
+        await interaction.response.defer(thinking=True)
+        self._load_campaign_state(session.campaign_id)
+        pending_actions_list = [
+            f"**{session.active_characters.get(uid, uid)}**: {action}"
+            for uid, action in session.pending_actions.items()
+        ]
+        actions_summary = (
+            "\n".join(pending_actions_list) if pending_actions_list else "无"
+        )
+        await interaction.followup.send(
+            "⚙️ **开始结算回合**\n\n请在行动描述后输入 `/next-round` 进入下一轮。"
+        )
+        await interaction.channel.send(f"📋 **本轮行动汇总**\n{actions_summary}")
+
+    async def next_round(self, interaction) -> None:
+        from dm_bot.orchestrator.session_store import SessionPhase
+
+        allowed, msg = self.check_channel("next_round", interaction)
+        if not allowed:
+            await interaction.response.send_message(msg, ephemeral=True)
+            return
+        if self._session_store is None:
+            await interaction.response.send_message(
+                "session store is not configured", ephemeral=True
+            )
+            return
+        session = self._session_store.get_by_channel(str(interaction.channel_id))
+        if session is None:
+            await interaction.response.send_message(
+                "no campaign bound to this channel", ephemeral=True
+            )
+            return
+        if session.session_phase != SessionPhase.SCENE_ROUND_RESOLVING:
+            await interaction.response.send_message(
+                f"当前不在回合结算阶段：{session.session_phase.value}",
+                ephemeral=True,
+            )
+            return
+        session.clear_all_actions()
+        session.transition_to(SessionPhase.SCENE_ROUND_OPEN)
+        self._persist_sessions()
+        self._save_campaign_state(session.campaign_id)
+        await interaction.response.send_message(
+            "🔄 **新回合开始**\n\n请各位玩家提交本轮行动！"
+        )
+
     async def roll_expression(self, interaction, *, expression: str) -> None:
         result = self._safe_roll_for_channel(
             channel_id=str(interaction.channel_id),

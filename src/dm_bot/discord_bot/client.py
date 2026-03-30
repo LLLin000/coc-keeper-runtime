@@ -296,6 +296,20 @@ class DiscordDmBot(commands.Bot):
         async def complete_onboarding(interaction: discord.Interaction) -> None:
             await self.handlers.complete_onboarding(interaction)
 
+        @self.tree.command(
+            name="resolve-round",
+            description="KP: resolve the current round after all players submit actions",
+        )
+        async def resolve_round(interaction: discord.Interaction) -> None:
+            await self.handlers.resolve_round(interaction)
+
+        @self.tree.command(
+            name="next-round",
+            description="KP: start a new round after resolving the current one",
+        )
+        async def next_round(interaction: discord.Interaction) -> None:
+            await self.handlers.next_round(interaction)
+
         @self.tree.command(name="roll", description="Roll a dice expression")
         @app_commands.describe(expression="Dice expression, e.g. 1d20+3")
         async def roll(interaction: discord.Interaction, expression: str) -> None:
