@@ -349,19 +349,22 @@ class RulesEngine:
         )
 
         # Build response dict
+        san_loss_str = loss_on_success_str if outcome.success else loss_on_failure_str
         response = {
             "action": "coc_sanity_check",
             "actor": action.actor.name,
             "current_san": current_san,
             "max_san": max_san,
             "rolled": outcome.rolled,
-            "success": result.success,
-            "success_rank": result.success_rank,
+            "success": outcome.success,
+            "success_rank": outcome.success_rank,
             "critical": outcome.rolled == 1,
             "fumble": outcome.rolled == 100,
-            "roll": result.rendered,
+            "roll": outcome.rendered,
             "total": outcome.rolled,
-            "sanity_loss": result.sanity_loss,
+            "san_loss": san_loss_str,
+            "san_loss_value": result.sanity_loss,
+            "sanity_loss": result.sanity_loss,  # PR test compat
             "mythos_gain": result.mythos_gain,
             "loss_on_success": loss_on_success,
             "loss_on_failure": loss_on_failure,

@@ -121,11 +121,11 @@ class IntentHandlerRegistry:
                 "combat": "Social IC is limited during combat. Your message has been buffered.",
             },
             MessageIntent.PLAYER_ACTION: {
-                "scene_round_resolving": "Your action has been recorded and will be resolved shortly.",
+                "scene_round_resolving": "Your action has been noted and will be resolved.",
             },
             MessageIntent.RULES_QUERY: {
-                "scene_round_resolving": "Rules questions are deferred until scene resolves.",
-                "combat": "Rules questions cannot be answered during combat. Please note for after.",
+                "scene_round_resolving": "📋 Rules questions deferred until scene resolves.",
+                "combat": "📋 Rules deferred until combat ends.",
             },
             MessageIntent.UNKNOWN: {
                 "scene_round_open": "⏸️ 消息在当前阶段不适用",
