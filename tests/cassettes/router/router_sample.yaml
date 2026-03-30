@@ -1,0 +1,6 @@
+- request:
+    system_prompt: You are a router. Return JSON with mode field.
+    user_prompt: 'Player says: hello'
+  response:
+    content: '{"mode": "access"}'
+    model: qwen3:1.7b

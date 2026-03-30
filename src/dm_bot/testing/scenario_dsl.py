@@ -35,25 +35,28 @@ class DbMode(str, Enum):
 class ModelMode(str, Enum):
     """Model interaction mode for scenario runs.
 
-    Three modes:
+    Four modes:
 
     | Mode          | What it does                              | When to use                        |
     |---------------|-------------------------------------------|------------------------------------|
     | fake_contract | Uses StubModelClient (mock)              | Default for CI, fast, deterministic |
     | recorded       | Replays VCR cassettes                   | Contract tests needing real model output |
     | live          | Calls real Ollama API                   | Quality evaluation, not for CI   |
+    | api           | Calls arbitrary API endpoint             | Users without local Ollama        |
 
     **fake_contract**: Uses `StubModelClient` — fast, deterministic, no network.
 
     **recorded**: Looks for cassette in `tests/cassettes/<scenario_id>/<step_name>.yaml`.
-    Cassettes don't exist yet — E71 records them.
 
-    **live**: Uses real `OllamaModelClient`. Requires Ollama running.
+    **live**: Uses real `OllamaClient`. Requires Ollama running.
+
+    **api**: Uses `ApiModelClient` — calls arbitrary API via `DM_BOT_API_BASE_URL` / `DM_BOT_API_KEY`.
     """
 
     FAKE_CONTRACT = "fake_contract"
     RECORDED = "recorded"
     LIVE = "live"
+    API = "api"
 
 
 @dataclass

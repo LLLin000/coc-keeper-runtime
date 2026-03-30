@@ -26,7 +26,7 @@ from tests.fakes.discord import (
     FakeStreamingTransport,
     fake_interaction,
 )
-from tests.fakes.models import StubModelClient
+from tests.fakes.models import ApiModelClient, StubModelClient
 
 
 _GUILD_ID = "guild-test"
@@ -83,6 +83,8 @@ class RuntimeTestDriver:
                     f"live mode requires Ollama to be running. "
                     f"Start Ollama and try again. Error: {e}"
                 )
+        elif self._model_mode == "api":
+            return ApiModelClient()
         else:
             raise ModelModeError(f"Unknown model_mode: {self._model_mode}")
 
