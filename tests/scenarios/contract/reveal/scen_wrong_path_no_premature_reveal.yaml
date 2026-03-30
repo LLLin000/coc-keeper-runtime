@@ -1,0 +1,68 @@
+id: scen_wrong_path_no_premature_reveal
+title: Wrong Path Does Not Prematurely Reveal Clues
+tags:
+  - contract
+  - reveal
+  - fuzhe_mini
+mode: contract
+
+actors:
+  kp:
+    kind: admin
+    user_id: u_kp
+  p1:
+    kind: player
+    user_id: u_p1
+
+fixtures:
+  adventure: fuzhe_mini
+  dice_seed: 42
+  model_mode: fake_contract
+  db_mode: temp_sqlite
+
+steps:
+  - actor: kp
+    action: command
+    name: bind_campaign
+    args:
+      campaign_id: camp_reveal_wrong_path
+
+  - actor: kp
+    action: command
+    name: get_phase
+    args: {}
+
+  - actor: p1
+    action: command
+    name: join_campaign
+    args:
+      campaign_id: camp_reveal_wrong_path
+
+  - actor: p1
+    action: command
+    name: advance_story
+    args:
+      scene_id: car_crash_scene
+
+  # Player takes WRONG path - goes to convenience_store instead of wetland
+  - actor: p1
+    action: command
+    name: move_to_location
+    args:
+      location_id: convenience_store
+
+  - actor: p1
+    action: command
+    name: interact
+    args:
+      interactable_id: buy_items
+
+assertions:
+  visible:
+    player_forbidden:
+      - spring_shock
+      - magical_girl_truth
+      - spring_shock_defeated
+
+  state:
+    spring_shock_defeated: false
