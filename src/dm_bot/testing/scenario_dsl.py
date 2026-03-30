@@ -135,9 +135,12 @@ class ScenarioValidator:
     def validate(self, data: dict[str, Any]) -> None:
         for field_name in self.REQUIRED_FIELDS:
             if field_name not in data:
-                raise ScenarioValidationError(
-                    f"Missing required field: {field_name}", field_name=field_name
-                )
+                if field_name == "title":
+                    pass
+                else:
+                    raise ScenarioValidationError(
+                        f"Missing required field: {field_name}", field_name=field_name
+                    )
 
         steps = data.get("steps", [])
         if not steps:
@@ -147,45 +150,37 @@ class ScenarioValidator:
 
         actors = data.get("actors", {})
         for idx, step in enumerate(steps):
-            if "actor" not in step:
-                raise ScenarioValidationError(
-                    f"Step {idx} missing 'actor' field",
-                    field_name=f"steps[{idx}].actor",
-                )
-            actor_id = step["actor"]
-            if actor_id not in actors and actor_id not in ["kp", "p1", "p2"]:
+            has_command = "command" in step
+            has_message = "message" in step
+            has_assert = "assert" in step
+
+            if not (has_command or has_message or has_assert):
+                if "actor" not in step:
+                    raise ScenarioValidationError(
+                        f"Step {idx} missing 'actor' field",
+                        field_name=f"steps[{idx}].actor",
+                    )
+            actor_id = step.get("actor", "")
+            if (
+                actor_id
+                and actor_id not in actors
+                and actor_id not in ["kp", "p1", "p2"]
+            ):
                 pass
 
             action = step.get("action", "")
             if action not in self.VALID_ACTIONS:
-                raise ScenarioValidationError(
-                    f"Step {idx} action must be one of: {self.VALID_ACTIONS}, got '{action}'",
-                    field_name=f"steps[{idx}].action",
-                )
-
-        steps = data.get("steps", [])
-        if not steps:
-            raise ScenarioValidationError(
-                "Scenario must have at least one step", field_name="steps"
-            )
-
-        actors = data.get("actors", {})
-        for idx, step in enumerate(steps):
-            if "actor" not in step:
-                raise ScenarioValidationError(
-                    f"Step {idx} missing 'actor' field",
-                    field_name=f"steps[{idx}].actor",
-                )
-            actor_id = step["actor"]
-            if actor_id not in actors and actor_id not in ["kp", "p1", "p2"]:
-                pass
-
-            action = step.get("action", "")
-            if action not in self.VALID_ACTIONS:
-                raise ScenarioValidationError(
-                    f"Step {idx} action must be one of: {self.VALID_ACTIONS}, got '{action}'",
-                    field_name=f"steps[{idx}].action",
-                )
+                if has_command:
+                    pass
+                elif has_message:
+                    pass
+                elif has_assert:
+                    pass
+                else:
+                    raise ScenarioValidationError(
+                        f"Step {idx} action must be one of: {self.VALID_ACTIONS}, got '{action}'",
+                        field_name=f"steps[{idx}].action",
+                    )
 
 
 class ScenarioParser:
@@ -220,20 +215,48 @@ class ScenarioParser:
         self._validator.validate(data)
 
         actors: dict[str, Actor] = {}
-        for actor_id, actor_data in data.get("actors", {}).items():
-            actors[actor_id] = Actor(
-                id=actor_id,
-                kind=str(actor_data.get("kind", "player")),
-                user_id=str(actor_data.get("user_id", actor_id)),
-            )
+
+        actors_raw = data.get("actors", {})
+        if isinstance(actors_raw, dict):
+            for actor_id, actor_data in actors_raw.items():
+                actors[actor_id] = Actor(
+                    id=actor_id,
+                    kind=str(actor_data.get("kind", "player")),
+                    user_id=str(actor_data.get("user_id", actor_id)),
+                )
+        elif isinstance(actors_raw, list):
+            for actor_data in actors_raw:
+                actor_id = str(actor_data.get("id", ""))
+                if actor_id:
+                    actors[actor_id] = Actor(
+                        id=actor_id,
+                        kind=str(
+                            actor_data.get("kind", actor_data.get("role", "player"))
+                        ),
+                        user_id=str(actor_data.get("user_id", actor_id)),
+                    )
 
         steps: list[Step] = []
         for step_data in data.get("steps", []):
             step_dict = dict(step_data)
+
+            action = str(step_dict.get("action", ""))
+            name = str(step_dict.get("name", ""))
+
+            if "command" in step_dict:
+                action = "command"
+                name = str(step_dict["command"])
+            elif "message" in step_dict:
+                action = "message"
+                name = ""
+            elif "assert" in step_dict:
+                action = "assert"
+                name = ""
+
             step = Step(
                 actor=str(step_dict.get("actor", "")),
-                action=str(step_dict.get("action", "")),
-                name=str(step_dict.get("name", "")),
+                action=action,
+                name=name,
                 args=dict(step_dict.get("args", {})),
                 message=str(step_dict.get("message", "")),
                 channel=step_dict.get("channel"),
