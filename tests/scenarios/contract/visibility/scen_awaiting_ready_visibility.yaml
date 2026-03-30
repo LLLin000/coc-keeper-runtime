@@ -1,0 +1,71 @@
+id: scen_awaiting_ready_visibility
+title: WAITING_FOR_READY Phase Player Visibility
+tags:
+  - contract
+  - visibility
+  - awaiting_ready
+mode: contract
+
+actors:
+  kp:
+    kind: admin
+    user_id: u_kp
+  p1:
+    kind: player
+    user_id: u_p1
+
+fixtures:
+  adventure: fuzhe
+  dice_seed: 42
+  model_mode: fake_contract
+  db_mode: temp_sqlite
+
+steps:
+  - actor: kp
+    action: command
+    name: bind_campaign
+    args:
+      campaign_id: camp_awaiting_ready_test
+
+  - actor: kp
+    action: command
+    name: load_adventure
+    args:
+      adventure_slug: fuzhe
+
+  - actor: p1
+    action: command
+    name: join_campaign
+    args:
+      campaign_id: camp_awaiting_ready_test
+
+  - actor: kp
+    action: command
+    name: start_session
+    args: {}
+
+  - actor: kp
+    action: command
+    name: get_phase
+    args: {}
+
+  - actor: p1
+    action: command
+    name: get_phase
+    args: {}
+
+assertions:
+  phase_timeline:
+    - lobby
+    - awaiting_ready
+
+  final_phase: awaiting_ready
+
+  visible:
+    player_forbidden:
+      - "ready_count"
+      - "player_ready"
+
+  state:
+    campaign_members: 2
+    no_duplicate_members: true
