@@ -22,3 +22,4 @@ manualbot.*.log
 .planning/config.json
 tmp_*.md
 run-bot-bg.cmd
+artifacts/

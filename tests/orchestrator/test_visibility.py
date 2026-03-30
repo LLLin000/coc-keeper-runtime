@@ -1,3 +1,11 @@
+"""
+Visibility contract audit (E71-01 Task 2):
+- Already covered: ONBOARDING + WaitingReasonCode.ONBOARDING_IN_PROGRESS + RoutingOutcome.BUFFERED;
+                    SCENE_ROUND_OPEN + WaitingReasonCode.WAITING_FOR_PLAYER_ACTIONS + RoutingOutcome.PROCESSED
+- Gap 1: AWAITING_READY phase + WaitingReasonCode.WAITING_FOR_READY + ready_count tracking
+- Gap 2: RoutingOutcome.DEFERRED and IGNORED never exercised (only BUFFERED/PROCESSED tested)
+- Gap 3: routing_history field in VisibilitySnapshot never populated or asserted
+"""
 import pytest
 from dm_bot.orchestrator.session_store import CampaignSession, SessionPhase
 from dm_bot.coc.panels import InvestigatorPanel

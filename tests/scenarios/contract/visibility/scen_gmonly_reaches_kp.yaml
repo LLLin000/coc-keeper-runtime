@@ -1,0 +1,67 @@
+id: scen_gmonly_reaches_kp
+title: GM-only Field Must Reach KP Output
+tags:
+  - contract
+  - visibility
+  - gm_only
+mode: contract
+
+actors:
+  kp:
+    kind: admin
+    user_id: u_kp
+  p1:
+    kind: player
+    user_id: u_p1
+
+fixtures:
+  adventure: fuzhe
+  dice_seed: 42
+  model_mode: fake_contract
+  db_mode: temp_sqlite
+
+steps:
+  - actor: kp
+    action: command
+    name: bind_campaign
+    args:
+      campaign_id: camp_kp_gmonly_test
+
+  - actor: kp
+    action: command
+    name: load_adventure
+    args:
+      adventure_slug: fuzhe
+
+  - actor: p1
+    action: command
+    name: join_campaign
+    args:
+      campaign_id: camp_kp_gmonly_test
+
+  - actor: kp
+    action: command
+    name: start_session
+    args: {}
+
+  - actor: kp
+    action: message
+    text: "KP checks module state"
+
+  - actor: p1
+    action: message
+    text: "I look around"
+
+assertions:
+  phase_timeline:
+    - lobby
+    - awaiting_ready
+    - scene_round_open
+
+  visible:
+    kp_must_include:
+      - "module_rule_mode"
+
+  state:
+    campaign_members: 2
+    no_duplicate_members: true

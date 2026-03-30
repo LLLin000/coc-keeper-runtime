@@ -1,0 +1,130 @@
+id: scen_chaos_lobby
+title: Chaos Lobby - 5 Concurrent Users
+tags:
+  - acceptance
+  - chaos
+  - concurrency
+mode: acceptance
+
+actors:
+  kp:
+    kind: admin
+    user_id: u_kp
+  p1:
+    kind: player
+    user_id: u_p1
+  p2:
+    kind: player
+    user_id: u_p2
+  p3:
+    kind: player
+    user_id: u_p3
+  p4:
+    kind: player
+    user_id: u_p4
+  p5:
+    kind: player
+    user_id: u_p5
+
+fixtures:
+  adventure: null
+  dice_seed: 99
+  model_mode: fake_contract
+  db_mode: temp_sqlite
+
+steps:
+  - actor: kp
+    action: command
+    name: bind_campaign
+    args:
+      campaign_id: camp_chaos
+
+  - actor: p1
+    action: command
+    name: join_campaign
+    args:
+      campaign_id: camp_chaos
+
+  - actor: p2
+    action: command
+    name: join_campaign
+    args:
+      campaign_id: camp_chaos
+
+  - actor: p3
+    action: command
+    name: join_campaign
+    args:
+      campaign_id: camp_chaos
+
+  - actor: p4
+    action: command
+    name: join_campaign
+    args:
+      campaign_id: camp_chaos
+
+  - actor: p5
+    action: command
+    name: join_campaign
+    args:
+      campaign_id: camp_chaos
+
+  - actor: p1
+    action: command
+    name: ready
+    args: {}
+
+  - actor: p2
+    action: command
+    name: ready
+    args: {}
+
+  - actor: p3
+    action: command
+    name: ready
+    args: {}
+
+  - actor: p4
+    action: command
+    name: ready
+    args: {}
+
+  - actor: p5
+    action: command
+    name: ready
+    args: {}
+
+  - actor: kp
+    action: command
+    name: start_session
+    args: {}
+
+  - actor: p1
+    action: message
+    text: "动作1"
+
+  - actor: p2
+    action: message
+    text: "动作2"
+
+  - actor: p3
+    action: message
+    text: "动作3"
+
+  - actor: p4
+    action: message
+    text: "动作4"
+
+  - actor: p5
+    action: message
+    text: "动作5"
+
+  - actor: kp
+    action: command
+    name: resolve_round
+    args: {}
+
+assertions:
+  state:
+    campaign_members: 5
+    no_duplicate_members: true

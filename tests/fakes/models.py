@@ -1,8 +1,11 @@
-"""Shared model mock fixtures for tests — FastMock, SlowMock, ErrorMock."""
+"""Shared model mock fixtures for tests — FastMock, SlowMock, ErrorMock, ApiMock."""
 
 from __future__ import annotations
 import asyncio
-from dm_bot.models.schemas import ModelResponse
+import os
+from collections.abc import AsyncIterator
+from openai import AsyncOpenAI
+from dm_bot.models.schemas import ModelRequest, ModelResponse
 
 
 class StubModelClient:
@@ -80,3 +83,65 @@ class ErrorMock(StubModelClient):
             narrator_error=narrator_error or RuntimeError("stub narrator error"),
             **kwargs,
         )
+
+
+class ApiModelClient:
+    def __init__(
+        self,
+        *,
+        base_url: str | None = None,
+        api_key: str | None = None,
+        router_model: str = "router",
+        narrator_model: str = "narrator",
+    ) -> None:
+        self.router_model = router_model
+        self.narrator_model = narrator_model
+        self.router_requests: list = []
+        self.narrator_requests: list = []
+        self._base_url = base_url or os.environ.get(
+            "DM_BOT_API_BASE_URL", "http://localhost:11434/v1"
+        )
+        self._api_key = api_key or os.environ.get("DM_BOT_API_KEY", "ollama")
+        self._client = AsyncOpenAI(base_url=self._base_url, api_key=self._api_key)
+
+    async def call_router(self, request: ModelRequest) -> ModelResponse:
+        self.router_requests.append(request)
+        response = await self._client.chat.completions.create(
+            model=self.router_model,
+            messages=[
+                {"role": "system", "content": request.system_prompt},
+                {"role": "user", "content": request.user_prompt},
+            ],
+        )
+        content = response.choices[0].message.content or ""
+        return ModelResponse(model=self.router_model, content=content)
+
+    async def call_narrator(self, request: ModelRequest) -> ModelResponse:
+        self.narrator_requests.append(request)
+        response = await self._client.chat.completions.create(
+            model=self.narrator_model,
+            messages=[
+                {"role": "system", "content": request.system_prompt},
+                {"role": "user", "content": request.user_prompt},
+            ],
+        )
+        content = response.choices[0].message.content or ""
+        return ModelResponse(model=self.narrator_model, content=content)
+
+    async def stream_narrator(self, request: ModelRequest) -> AsyncIterator[str]:
+        self.narrator_requests.append(request)
+        stream = await self._client.chat.completions.create(
+            model=self.narrator_model,
+            messages=[
+                {"role": "system", "content": request.system_prompt},
+                {"role": "user", "content": request.user_prompt},
+            ],
+            stream=True,
+        )
+        async for chunk in stream:
+            if not chunk.choices:
+                continue
+            delta = chunk.choices[0].delta
+            content = getattr(delta, "content", None)
+            if content:
+                yield content

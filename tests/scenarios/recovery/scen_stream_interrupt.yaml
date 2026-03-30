@@ -1,0 +1,74 @@
+id: scen_stream_interrupt
+title: Stream Interrupt - Resume Contract
+tags:
+  - acceptance
+  - recovery
+  - streaming
+mode: acceptance
+
+actors:
+  kp:
+    kind: admin
+    user_id: u_kp
+  p1:
+    kind: player
+    user_id: u_p1
+
+fixtures:
+  adventure: null
+  dice_seed: 42
+  model_mode: fake_contract
+  db_mode: temp_sqlite
+
+steps:
+  - actor: kp
+    action: command
+    name: bind_campaign
+    args:
+      campaign_id: camp_stream
+
+  - actor: p1
+    action: command
+    name: join_campaign
+    args:
+      campaign_id: camp_stream
+
+  - actor: p1
+    action: command
+    name: ready
+    args: {}
+
+  - actor: kp
+    action: command
+    name: start_session
+    args: {}
+
+  - actor: kp
+    action: command
+    name: complete_onboarding
+    args: {}
+
+  - actor: p1
+    action: message
+    text: "描述一下周围的环境"
+
+  - actor: kp
+    action: command
+    name: driver.simulate_stream_interrupt
+    args: {}
+
+  - actor: p1
+    action: message
+    text: "继续描述"
+
+assertions:
+  phase_timeline:
+    - lobby
+    - awaiting_ready
+    - awaiting_admin_start
+    - onboarding
+    - scene_round_open
+
+  state:
+    no_partial_state: true
+    narration_complete: false

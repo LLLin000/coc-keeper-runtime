@@ -28,6 +28,12 @@ class RuleAction(BaseModel):
         "raw_roll",
         "coc_skill_check",
         "coc_sanity_check",
+        "coc_fighting_attack",
+        "coc_shooting_attack",
+        "coc_brawl_attack",
+        "coc_dodge",
+        "coc_grapple_attack",
+        "coc_cast_spell",
     ]
     actor: StatBlock
     target: StatBlock | None = None

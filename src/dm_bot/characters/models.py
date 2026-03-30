@@ -69,7 +69,9 @@ class COCInvestigatorProfile(BaseModel):
     damage_bonus: str = "0"
     move_rate: int = 0
     attributes: COCAttributes = Field(
-        default_factory=lambda: COCAttributes(str=0, con=0, dex=0, app=0, pow=0, siz=0, int=0, edu=0)
+        default_factory=lambda: COCAttributes(
+            str=0, con=0, dex=0, app=0, pow=0, siz=0, int=0, edu=0
+        )
     )
     skills: dict[str, int] = Field(default_factory=dict)
 
@@ -83,7 +85,9 @@ class CharacterRecord(BaseModel):
     proficiency_bonus: int = 0
     armor_class: int = 0
     speed: int = 0
-    hp: HitPoints = Field(default_factory=lambda: HitPoints(current=0, maximum=0, temporary=0))
+    hp: HitPoints = Field(
+        default_factory=lambda: HitPoints(current=0, maximum=0, temporary=0)
+    )
     abilities: AbilityScores = Field(
         default_factory=lambda: AbilityScores(
             strength=0,

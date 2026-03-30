@@ -1,0 +1,9 @@
+- request:
+    system_prompt: You are a narrator. Keep responses short.
+    user_prompt: Describe the room.
+  response:
+    content: A soft glow lingers, casting long shadows. Dust motes drift in the air.
+      The walls are old, weathered wood, lined with shelves holding books that seem
+      to whisper. A single chair sits in the corner, facing a window that reveals
+      nothing but dark, endless night. The air is still—too still.
+    model: qwen3:4b-instruct-2507-q4_K_M

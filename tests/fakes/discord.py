@@ -30,6 +30,29 @@ class FakeFollowup:
         self.send = AsyncMock(side_effect=track_send)
 
 
+class FakeMessage:
+    def __init__(self, content: str = "") -> None:
+        self.content = content
+        self.edit_called = False
+
+    async def edit(self, *, content: str) -> None:
+        self.content = content
+        self.edit_called = True
+
+
+class FakeStreamingTransport:
+    def __init__(self) -> None:
+        self.sent_messages: list[FakeMessage] = []
+
+    async def send_initial(self, content: str) -> FakeMessage:
+        msg = FakeMessage(content=content)
+        self.sent_messages.append(msg)
+        return msg
+
+    async def edit_message(self, message: FakeMessage, content: str) -> None:
+        await message.edit(content=content)
+
+
 class FakeChannel:
     def __init__(self, channel_id: str = "chan-1") -> None:
         self.id = channel_id

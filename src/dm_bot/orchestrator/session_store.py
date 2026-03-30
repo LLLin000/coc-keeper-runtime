@@ -1,3 +1,4 @@
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pydantic import BaseModel, Field
@@ -65,6 +66,27 @@ class CampaignCharacterInstance(BaseModel):
     panel_id: str | None = None
     created_at: datetime = Field(default_factory=datetime.now)
     source: str = "archive"
+
+
+class Visibility(str, Enum):
+    """Visibility levels for batch action results."""
+
+    PUBLIC = "public"
+    PRIVATE = "private"
+    GROUP = "group"
+    KEEPER = "keeper"
+
+
+@dataclass
+class ActionBatchEntry:
+    """A single action entry in a scene round batch."""
+
+    user_id: str
+    character_id: str
+    action_text: str
+    submitted_at: datetime = field(default_factory=datetime.now)
+    dex_value: int | None = None
+    visibility: Visibility = Visibility.PUBLIC
 
 
 class SessionPhase(str, Enum):

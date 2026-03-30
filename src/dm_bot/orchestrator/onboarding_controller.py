@@ -6,6 +6,7 @@ from dm_bot.orchestrator.onboarding import (
     get_default_coc7e_onboarding,
     merge_with_adventure_onboarding,
 )
+from dm_bot.discord_bot.onboarding_views import OnboardingView
 
 
 class OnboardingController:
@@ -49,6 +50,9 @@ class OnboardingController:
     def get_onboarding_content(self) -> OnboardingContent:
         """Return onboarding content data for use by Discord layer to create views."""
         return self.content
+
+    def create_view(self, user_id: str) -> OnboardingView:
+        return OnboardingView.create_persistent(user_id=user_id, content=self.content)
 
     def transition_to_scene_if_ready(self) -> bool:
         if self.can_transition_to_scene():

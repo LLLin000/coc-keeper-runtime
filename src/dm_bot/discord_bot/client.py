@@ -113,44 +113,6 @@ class DiscordDmBot(commands.Bot):
             await self.handlers.bind_admin_channel(interaction)
 
         @self.tree.command(
-            name="bind_player_status_channel",
-            description="Bind this channel as the player status/info channel",
-        )
-        async def bind_player_status_channel(interaction: discord.Interaction) -> None:
-            await self.handlers.bind_player_status_channel(interaction)
-
-        @self.tree.command(
-            name="bind_ops_channel",
-            description="Bind this channel as the KP ops channel",
-        )
-        async def bind_ops_channel(interaction: discord.Interaction) -> None:
-            await self.handlers.bind_ops_channel(interaction)
-
-        @self.tree.command(
-            name="ops_status",
-            description="Show KP ops status (overview, detailed, or routing)",
-        )
-        @app_commands.describe(mode="Display mode: overview, detailed, or routing")
-        async def ops_status(
-            interaction: discord.Interaction, mode: str = "overview"
-        ) -> None:
-            await self.handlers.ops_status(interaction, mode=mode)
-
-        @self.tree.command(
-            name="status_overview",
-            description="Show player status overview in the status channel",
-        )
-        async def status_overview(interaction: discord.Interaction) -> None:
-            await self.handlers.status_overview(interaction)
-
-        @self.tree.command(
-            name="status_me",
-            description="Show your personal character status (private)",
-        )
-        async def status_me(interaction: discord.Interaction) -> None:
-            await self.handlers.status_me(interaction)
-
-        @self.tree.command(
             name="join_campaign",
             description="Join the campaign bound to this channel or thread",
         )
@@ -308,11 +270,8 @@ class DiscordDmBot(commands.Bot):
             await self.handlers.load_adventure(interaction, adventure_id=adventure_id)
 
         @self.tree.command(
-            name="ready", description="Mark yourself as ready for the campaign"
+            name="ready", description="Mark yourself ready for the loaded adventure"
         )
-        async def ready(interaction: discord.Interaction) -> None:
-            await self.handlers.ready(interaction)
-
         @app_commands.describe(
             character_name="Optional character or role name for this run"
         )
