@@ -11,7 +11,15 @@ class StubTurnRunner:
         self.active = 0
         self.max_active = 0
 
-    async def run_turn(self, envelope: TurnEnvelope):
+    async def run_turn(
+        self,
+        envelope: TurnEnvelope,
+        *,
+        session_phase="lobby",
+        intent=None,
+        intent_reasoning="",
+        **kwargs,
+    ):
         self.active += 1
         self.max_active = max(self.max_active, self.active)
         self.calls.append(envelope)
@@ -23,7 +31,9 @@ class StubTurnRunner:
 def test_session_store_binds_and_tracks_members() -> None:
     store = SessionStore()
 
-    session = store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    session = store.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
     joined = store.join_campaign(channel_id="chan-1", user_id="user-2")
 
     assert session.campaign_id == "camp-1"
@@ -34,7 +44,9 @@ def test_session_store_binds_and_tracks_members() -> None:
 
 def test_session_store_can_leave_and_bind_active_character() -> None:
     store = SessionStore()
-    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    store.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
     store.join_campaign(channel_id="chan-1", user_id="user-2")
 
     store.bind_character(channel_id="chan-1", user_id="user-2", character_name="Lia")
@@ -51,10 +63,20 @@ def test_turn_coordinator_serializes_turns_per_campaign() -> None:
     async def exercise() -> list[str]:
         results = await asyncio.gather(
             coordinator.handle_turn(
-                TurnRequest(campaign_id="camp-1", channel_id="chan-1", user_id="user-1", content="先攻"),
+                TurnRequest(
+                    campaign_id="camp-1",
+                    channel_id="chan-1",
+                    user_id="user-1",
+                    content="先攻",
+                ),
             ),
             coordinator.handle_turn(
-                TurnRequest(campaign_id="camp-1", channel_id="chan-1", user_id="user-2", content="攻击"),
+                TurnRequest(
+                    campaign_id="camp-1",
+                    channel_id="chan-1",
+                    user_id="user-2",
+                    content="攻击",
+                ),
             ),
         )
         return [result.reply for result in results]

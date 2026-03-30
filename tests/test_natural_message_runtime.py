@@ -14,7 +14,18 @@ class StubTurnCoordinator:
         self.reply = reply
         self.calls: list[tuple[str, str, str, str]] = []
 
-    async def handle_turn(self, *, campaign_id: str, channel_id: str, user_id: str, content: str):
+    async def handle_turn(
+        self,
+        *,
+        campaign_id: str,
+        channel_id: str,
+        user_id: str,
+        content: str,
+        session_phase: str = "lobby",
+        intent=None,
+        intent_reasoning: str = "",
+        **kwargs,
+    ):
         self.calls.append((campaign_id, channel_id, user_id, content))
         return type("Result", (), {"reply": self.reply})()
 
@@ -23,15 +34,24 @@ def build_gameplay() -> GameplayOrchestrator:
     return GameplayOrchestrator(
         importer=None,
         registry=CharacterRegistry(),
-        rules_engine=RulesEngine(compendium=FixtureCompendium(baseline="2014", fixtures={})),
+        rules_engine=RulesEngine(
+            compendium=FixtureCompendium(baseline="2014", fixtures={})
+        ),
     )
 
 
 def test_natural_message_is_forwarded_for_joined_member() -> None:
     store = SessionStore()
-    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    store.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
     coordinator = StubTurnCoordinator()
-    commands = BotCommands(settings=None, session_store=store, turn_coordinator=coordinator, gameplay=build_gameplay())
+    commands = BotCommands(
+        settings=None,
+        session_store=store,
+        turn_coordinator=coordinator,
+        gameplay=build_gameplay(),
+    )
 
     reply = asyncio.run(
         commands.handle_channel_message(
@@ -44,14 +64,23 @@ def test_natural_message_is_forwarded_for_joined_member() -> None:
     )
 
     assert reply == "DM reply"
-    assert coordinator.calls == [("camp-1", "chan-1", "user-1", "我推开门看看里面有什么。")]
+    assert coordinator.calls == [
+        ("camp-1", "chan-1", "user-1", "我推开门看看里面有什么。")
+    ]
 
 
 def test_natural_message_ignored_for_ooc_text() -> None:
     store = SessionStore()
-    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    store.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
     coordinator = StubTurnCoordinator()
-    commands = BotCommands(settings=None, session_store=store, turn_coordinator=coordinator, gameplay=build_gameplay())
+    commands = BotCommands(
+        settings=None,
+        session_store=store,
+        turn_coordinator=coordinator,
+        gameplay=build_gameplay(),
+    )
 
     reply = asyncio.run(
         commands.handle_channel_message(
@@ -69,7 +98,9 @@ def test_natural_message_ignored_for_ooc_text() -> None:
 
 def test_natural_message_rejects_non_active_combatant() -> None:
     store = SessionStore()
-    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    store.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
     store.join_campaign(channel_id="chan-1", user_id="user-2")
     store.bind_character(channel_id="chan-1", user_id="user-1", character_name="Hero")
     store.bind_character(channel_id="chan-1", user_id="user-2", character_name="Rogue")
@@ -81,7 +112,12 @@ def test_natural_message_rejects_non_active_combatant() -> None:
         ]
     )
     coordinator = StubTurnCoordinator()
-    commands = BotCommands(settings=None, session_store=store, turn_coordinator=coordinator, gameplay=gameplay)
+    commands = BotCommands(
+        settings=None,
+        session_store=store,
+        turn_coordinator=coordinator,
+        gameplay=gameplay,
+    )
 
     reply = asyncio.run(
         commands.handle_channel_message(
@@ -101,7 +137,9 @@ def test_natural_message_rejects_non_active_combatant() -> None:
 def test_natural_message_works_after_session_restore(tmp_path) -> None:
     persistence = PersistenceStore(tmp_path / "runtime.sqlite3")
     original_store = SessionStore()
-    original_store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    original_store.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
     persistence.save_sessions(original_store.dump_sessions())
 
     restored_store = SessionStore()
@@ -133,11 +171,18 @@ def test_natural_message_is_blocked_until_adventure_ready() -> None:
     from dm_bot.adventures.loader import load_adventure
 
     store = SessionStore()
-    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    store.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
     coordinator = StubTurnCoordinator()
     gameplay = build_gameplay()
     gameplay.load_adventure(load_adventure("mad_mansion"))
-    commands = BotCommands(settings=None, session_store=store, turn_coordinator=coordinator, gameplay=gameplay)
+    commands = BotCommands(
+        settings=None,
+        session_store=store,
+        turn_coordinator=coordinator,
+        gameplay=gameplay,
+    )
 
     reply = asyncio.run(
         commands.handle_channel_message(
@@ -157,12 +202,19 @@ def test_natural_message_surfaces_scene_guidance_before_generic_dm_reply() -> No
     from dm_bot.adventures.loader import load_adventure
 
     store = SessionStore()
-    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    store.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
     coordinator = StubTurnCoordinator()
     gameplay = build_gameplay()
     gameplay.load_adventure(load_adventure("mad_mansion"))
     gameplay.begin_adventure()
-    commands = BotCommands(settings=None, session_store=store, turn_coordinator=coordinator, gameplay=gameplay)
+    commands = BotCommands(
+        settings=None,
+        session_store=store,
+        turn_coordinator=coordinator,
+        gameplay=gameplay,
+    )
 
     reply = asyncio.run(
         commands.handle_channel_message(
@@ -182,13 +234,20 @@ def test_natural_message_can_prompt_roll_requirement_from_scene_data() -> None:
     from dm_bot.adventures.loader import load_adventure
 
     store = SessionStore()
-    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    store.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
     coordinator = StubTurnCoordinator()
     gameplay = build_gameplay()
     gameplay.load_adventure(load_adventure("mad_mansion"))
     gameplay.begin_adventure()
     gameplay.set_adventure_scene("life_hall")
-    commands = BotCommands(settings=None, session_store=store, turn_coordinator=coordinator, gameplay=gameplay)
+    commands = BotCommands(
+        settings=None,
+        session_store=store,
+        turn_coordinator=coordinator,
+        gameplay=gameplay,
+    )
 
     reply = asyncio.run(
         commands.handle_channel_message(
@@ -209,12 +268,19 @@ def test_natural_message_scene_transition_adds_scene_framing() -> None:
     from dm_bot.adventures.loader import load_adventure
 
     store = SessionStore()
-    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    store.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
     coordinator = StubTurnCoordinator()
     gameplay = build_gameplay()
     gameplay.load_adventure(load_adventure("mad_mansion"))
     gameplay.begin_adventure()
-    commands = BotCommands(settings=None, session_store=store, turn_coordinator=coordinator, gameplay=gameplay)
+    commands = BotCommands(
+        settings=None,
+        session_store=store,
+        turn_coordinator=coordinator,
+        gameplay=gameplay,
+    )
 
     reply = asyncio.run(
         commands.handle_channel_message(
@@ -235,12 +301,19 @@ def test_natural_message_can_observe_portal_without_forced_entry() -> None:
     from dm_bot.adventures.loader import load_adventure
 
     store = SessionStore()
-    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    store.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
     coordinator = StubTurnCoordinator()
     gameplay = build_gameplay()
     gameplay.load_adventure(load_adventure("mad_mansion"))
     gameplay.begin_adventure()
-    commands = BotCommands(settings=None, session_store=store, turn_coordinator=coordinator, gameplay=gameplay)
+    commands = BotCommands(
+        settings=None,
+        session_store=store,
+        turn_coordinator=coordinator,
+        gameplay=gameplay,
+    )
 
     reply = asyncio.run(
         commands.handle_channel_message(
@@ -262,13 +335,20 @@ def test_inline_roll_command_beats_adventure_guidance() -> None:
     from dm_bot.adventures.loader import load_adventure
 
     store = SessionStore()
-    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    store.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
     coordinator = StubTurnCoordinator()
     gameplay = build_gameplay()
     gameplay.load_adventure(load_adventure("mad_mansion"))
     gameplay.begin_adventure()
     gameplay.set_adventure_scene("life_hall")
-    commands = BotCommands(settings=None, session_store=store, turn_coordinator=coordinator, gameplay=gameplay)
+    commands = BotCommands(
+        settings=None,
+        session_store=store,
+        turn_coordinator=coordinator,
+        gameplay=gameplay,
+    )
 
     reply = asyncio.run(
         commands.handle_channel_message(
@@ -289,13 +369,20 @@ def test_inline_roll_can_surface_trigger_consequence_summary() -> None:
     from dm_bot.adventures.loader import load_adventure
 
     store = SessionStore()
-    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    store.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
     coordinator = StubTurnCoordinator()
     gameplay = build_gameplay()
     gameplay.load_adventure(load_adventure("mad_mansion"))
     gameplay.begin_adventure()
     gameplay.set_adventure_location("life_hall")
-    commands = BotCommands(settings=None, session_store=store, turn_coordinator=coordinator, gameplay=gameplay)
+    commands = BotCommands(
+        settings=None,
+        session_store=store,
+        turn_coordinator=coordinator,
+        gameplay=gameplay,
+    )
 
     asyncio.run(
         commands.handle_channel_message(
@@ -326,13 +413,20 @@ def test_natural_message_can_return_to_central_hall() -> None:
     from dm_bot.adventures.loader import load_adventure
 
     store = SessionStore()
-    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    store.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
     coordinator = StubTurnCoordinator()
     gameplay = build_gameplay()
     gameplay.load_adventure(load_adventure("mad_mansion"))
     gameplay.begin_adventure()
     gameplay.set_adventure_scene("life_hall")
-    commands = BotCommands(settings=None, session_store=store, turn_coordinator=coordinator, gameplay=gameplay)
+    commands = BotCommands(
+        settings=None,
+        session_store=store,
+        turn_coordinator=coordinator,
+        gameplay=gameplay,
+    )
 
     reply = asyncio.run(
         commands.handle_channel_message(

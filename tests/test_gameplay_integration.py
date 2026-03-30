@@ -20,7 +20,13 @@ class FakeResponse:
 
 
 class FakeInteraction:
-    def __init__(self, *, channel_id: str = "chan-1", guild_id: str = "guild-1", user_id: str = "user-1") -> None:
+    def __init__(
+        self,
+        *,
+        channel_id: str = "chan-1",
+        guild_id: str = "guild-1",
+        user_id: str = "user-1",
+    ) -> None:
         self.channel_id = channel_id
         self.guild_id = guild_id
         self.user = type("User", (), {"id": user_id})()
@@ -31,7 +37,15 @@ class StubRouter:
     def __init__(self, plan: dict[str, object]) -> None:
         self._plan = plan
 
-    async def route(self, envelope):
+    async def route(
+        self,
+        envelope,
+        *,
+        session_phase="lobby",
+        intent=None,
+        intent_reasoning="",
+        **kwargs,
+    ):
         return TurnPlan.model_validate(self._plan)
 
 
@@ -46,7 +60,9 @@ def build_gameplay() -> GameplayOrchestrator:
     return GameplayOrchestrator(
         importer=None,
         registry=CharacterRegistry(),
-        rules_engine=RulesEngine(compendium=FixtureCompendium(baseline="2014", fixtures={})),
+        rules_engine=RulesEngine(
+            compendium=FixtureCompendium(baseline="2014", fixtures={})
+        ),
     )
 
 
@@ -85,13 +101,17 @@ def test_scene_turn_is_formatted_with_speaker_labels() -> None:
 
 def test_commands_can_switch_scene_mode_and_start_combat() -> None:
     gameplay = build_gameplay()
-    commands = BotCommands(settings=None, session_store=None, turn_coordinator=None, gameplay=gameplay)
+    commands = BotCommands(
+        settings=None, session_store=None, turn_coordinator=None, gameplay=gameplay
+    )
     interaction = FakeInteraction()
 
     asyncio.run(commands.enter_scene(interaction, speakers="守卫,酒馆老板"))
     assert gameplay.mode_state.mode == "scene"
 
-    asyncio.run(commands.start_combat(interaction, combatants="Hero:15:20:15,Goblin:12:7:13"))
+    asyncio.run(
+        commands.start_combat(interaction, combatants="Hero:15:20:15,Goblin:12:7:13")
+    )
     assert gameplay.combat is not None
     assert gameplay.combat.active_combatant.name == "Hero"
 
@@ -107,7 +127,11 @@ def test_gameplay_loads_formal_adventure_and_exports_public_and_gm_state() -> No
             "state_fields": [
                 {"key": "time_remaining", "default": 180, "visibility": "public"},
                 {"key": "saint_candidate", "default": "", "visibility": "secret"},
-                {"key": "administrator_truth", "default": "奈亚化身", "visibility": "gm_only"},
+                {
+                    "key": "administrator_truth",
+                    "default": "奈亚化身",
+                    "visibility": "gm_only",
+                },
             ],
             "scenes": [
                 {
@@ -140,7 +164,9 @@ def test_gameplay_can_progress_mad_mansion_module_state() -> None:
 
     gameplay.set_adventure_scene("blood_hall")
     gameplay.record_adventure_clue("blood_exit_rule")
-    gameplay.update_adventure_state(time_remaining=120, blood_required=25, blood_collected=11)
+    gameplay.update_adventure_state(
+        time_remaining=120, blood_required=25, blood_collected=11
+    )
     gameplay.set_adventure_ending("survive")
 
     snapshot = gameplay.adventure_snapshot()
@@ -168,7 +194,7 @@ def test_gameplay_evaluates_scene_actions_with_guidance_and_roll_prompts() -> No
                         "guidance": {
                             "ambient_focus": ["石钟", "四道门"],
                             "light_hint": "你们可以先观察石钟或靠近任一道门。",
-                            "rescue_hint": "最稳妥的推进方向是先调查石钟，再决定进哪道门。"
+                            "rescue_hint": "最稳妥的推进方向是先调查石钟，再决定进哪道门。",
                         },
                         "interactables": [
                             {
@@ -177,7 +203,7 @@ def test_gameplay_evaluates_scene_actions_with_guidance_and_roll_prompts() -> No
                                 "keywords": ["钟", "clock"],
                                 "judgement": "auto",
                                 "result_text": "钟针在倒退。",
-                                "discover_clue": "clock_countdown"
+                                "discover_clue": "clock_countdown",
                             },
                             {
                                 "id": "bookshelf",
@@ -186,11 +212,11 @@ def test_gameplay_evaluates_scene_actions_with_guidance_and_roll_prompts() -> No
                                 "judgement": "roll",
                                 "roll_type": "ability_check",
                                 "roll_label": "LibraryUse",
-                                "prompt_text": "这里需要一次图书馆检定，看看你能不能从散乱的手记里拼出有用信息。"
-                            }
-                        ]
+                                "prompt_text": "这里需要一次图书馆检定，看看你能不能从散乱的手记里拼出有用信息。",
+                            },
+                        ],
                     }
-                ]
+                ],
             }
         )
     )
@@ -218,7 +244,9 @@ def test_gameplay_tracks_locations_and_distinguishes_observe_vs_enter() -> None:
 
     snapshot = gameplay.adventure_snapshot()
     assert snapshot["public"]["current_location"]["id"] == "central_hall"
-    assert "greed_hall" in {item["to_location_id"] for item in snapshot["public"]["reachable_locations"]}
+    assert "greed_hall" in {
+        item["to_location_id"] for item in snapshot["public"]["reachable_locations"]
+    }
 
     observe = gameplay.evaluate_scene_action("我打量一下贪欲之馆的光幕，不进去。")
     assert gameplay.adventure_state["location_id"] == "central_hall"

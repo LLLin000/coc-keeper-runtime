@@ -75,7 +75,16 @@ class StubTurnService:
         self.calls = []
 
     async def handle_turn(
-        self, *, campaign_id: str, channel_id: str, user_id: str, content: str
+        self,
+        *,
+        campaign_id: str,
+        channel_id: str,
+        user_id: str,
+        content: str,
+        session_phase: str = "lobby",
+        intent=None,
+        intent_reasoning: str = "",
+        **kwargs,
     ):
         self.calls.append((campaign_id, channel_id, user_id, content))
         return type(
@@ -83,7 +92,16 @@ class StubTurnService:
         )()
 
     async def stream_turn(
-        self, *, campaign_id: str, channel_id: str, user_id: str, content: str
+        self,
+        *,
+        campaign_id: str,
+        channel_id: str,
+        user_id: str,
+        content: str,
+        session_phase: str = "lobby",
+        intent=None,
+        intent_reasoning: str = "",
+        **kwargs,
     ):
         self.calls.append((campaign_id, channel_id, user_id, content))
         yield "地牢里"

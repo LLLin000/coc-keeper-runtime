@@ -30,7 +30,13 @@ class FakeFollowup:
 
 
 class FakeInteraction:
-    def __init__(self, *, channel_id: str = "chan-1", guild_id: str = "guild-1", user_id: str = "user-1") -> None:
+    def __init__(
+        self,
+        *,
+        channel_id: str = "chan-1",
+        guild_id: str = "guild-1",
+        user_id: str = "user-1",
+    ) -> None:
         self.channel_id = channel_id
         self.guild_id = guild_id
         self.user = type("User", (), {"id": user_id})()
@@ -39,7 +45,15 @@ class FakeInteraction:
 
 
 class StubRouter:
-    async def route(self, envelope):
+    async def route(
+        self,
+        envelope,
+        *,
+        session_phase="lobby",
+        intent=None,
+        intent_reasoning="",
+        **kwargs,
+    ):
         return TurnPlan.model_validate(
             {
                 "mode": "combat",
@@ -48,8 +62,16 @@ class StubRouter:
                         "name": "rules.attack_roll",
                         "arguments": {
                             "action": "attack_roll",
-                            "actor": {"name": "Hero", "armor_class": 15, "hit_points": 20},
-                            "target": {"name": "Goblin", "armor_class": 13, "hit_points": 7},
+                            "actor": {
+                                "name": "Hero",
+                                "armor_class": 15,
+                                "hit_points": 20,
+                            },
+                            "target": {
+                                "name": "Goblin",
+                                "armor_class": 13,
+                                "hit_points": 7,
+                            },
                             "parameters": {"attack_bonus": 5, "weapon": "longsword"},
                         },
                     }
@@ -92,24 +114,45 @@ def build_gameplay() -> GameplayOrchestrator:
                             "charisma": 8,
                         },
                         "skills": {"stealth": 5},
-                        "attacks": [{"name": "Longbow", "attack_bonus": 5, "damage": "1d8+3 piercing"}],
-                        "spellcasting": {"ability": "wisdom", "save_dc": 12, "attack_bonus": 4},
+                        "attacks": [
+                            {
+                                "name": "Longbow",
+                                "attack_bonus": 5,
+                                "damage": "1d8+3 piercing",
+                            }
+                        ],
+                        "spellcasting": {
+                            "ability": "wisdom",
+                            "save_dc": 12,
+                            "attack_bonus": 4,
+                        },
                         "resources": {"spell_slots_1": 3},
                     }
                 }
             )
         }
     )
-    rules = RulesEngine(compendium=FixtureCompendium(baseline="2014", fixtures={}), roll_resolver=lambda expr: 17)
-    return GameplayOrchestrator(importer=importer, registry=CharacterRegistry(), rules_engine=rules)
+    rules = RulesEngine(
+        compendium=FixtureCompendium(baseline="2014", fixtures={}),
+        roll_resolver=lambda expr: 17,
+    )
+    return GameplayOrchestrator(
+        importer=importer, registry=CharacterRegistry(), rules_engine=rules
+    )
 
 
 def test_import_character_command_registers_snapshot_character() -> None:
     gameplay = build_gameplay()
-    commands = BotCommands(settings=None, session_store=None, turn_coordinator=None, gameplay=gameplay)
+    commands = BotCommands(
+        settings=None, session_store=None, turn_coordinator=None, gameplay=gameplay
+    )
     interaction = FakeInteraction(user_id="user-7")
 
-    asyncio.run(commands.import_character(interaction, provider="dicecloud_snapshot", external_id="char-1"))
+    asyncio.run(
+        commands.import_character(
+            interaction, provider="dicecloud_snapshot", external_id="char-1"
+        )
+    )
 
     stored = gameplay.registry.get("user-7")
     assert stored is not None
