@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from dm_bot.models.schemas import TurnEnvelope
 from dm_bot.narration.service import NarrationRequest
 from dm_bot.router.contracts import TurnPlan
+from dm_bot.router.intent import MessageIntent
 
 
 class TurnResult(BaseModel):
@@ -25,11 +26,17 @@ class TurnRunner:
         *,
         tool_results: list[dict[str, object]] | None = None,
         state_snapshot: dict[str, object] | None = None,
+        session_phase: str = "lobby",
+        intent: MessageIntent = MessageIntent.UNKNOWN,
+        intent_reasoning: str = "",
     ) -> TurnResult:
         plan, narration_request = await self._prepare_turn(
             envelope,
             tool_results=tool_results,
             state_snapshot=state_snapshot,
+            session_phase=session_phase,
+            intent=intent,
+            intent_reasoning=intent_reasoning,
         )
         reply = await self._narrator.narrate(narration_request)
         reply = format_scene_output(plan=plan, raw_output=reply)
@@ -41,11 +48,17 @@ class TurnRunner:
         *,
         tool_results: list[dict[str, object]] | None = None,
         state_snapshot: dict[str, object] | None = None,
+        session_phase: str = "lobby",
+        intent: MessageIntent = MessageIntent.UNKNOWN,
+        intent_reasoning: str = "",
     ) -> AsyncIterator[str]:
         plan, narration_request = await self._prepare_turn(
             envelope,
             tool_results=tool_results,
             state_snapshot=state_snapshot,
+            session_phase=session_phase,
+            intent=intent,
+            intent_reasoning=intent_reasoning,
         )
         collected = ""
         try:
@@ -65,15 +78,32 @@ class TurnRunner:
         *,
         tool_results: list[dict[str, object]] | None = None,
         state_snapshot: dict[str, object] | None = None,
+        session_phase: str = "lobby",
+        intent: MessageIntent = MessageIntent.UNKNOWN,
+        intent_reasoning: str = "",
     ) -> tuple[TurnPlan, NarrationRequest]:
-        plan = await self._router.route(envelope)
+        plan = await self._router.route(
+            envelope,
+            session_phase=session_phase,
+            intent=intent,
+            intent_reasoning=intent_reasoning,
+        )
         computed_tool_results = tool_results or []
         computed_state_snapshot = dict(state_snapshot or {})
         if self._gameplay is not None:
-            computed_tool_results = [*computed_tool_results, *self._gameplay.resolve_plan(plan)]
-            guidance = self._gameplay.evaluate_scene_action(envelope.content) if self._gameplay.adventure is not None else None
+            computed_tool_results = [
+                *computed_tool_results,
+                *self._gameplay.resolve_plan(plan),
+            ]
+            guidance = (
+                self._gameplay.evaluate_scene_action(envelope.content)
+                if self._gameplay.adventure is not None
+                else None
+            )
             if self._gameplay.adventure is not None:
-                computed_state_snapshot["adventure"] = self._gameplay.adventure_snapshot(user_id=envelope.user_id)
+                computed_state_snapshot["adventure"] = (
+                    self._gameplay.adventure_snapshot(user_id=envelope.user_id)
+                )
             if guidance and guidance.get("kind") != "none":
                 computed_state_snapshot["guidance"] = guidance
         request = NarrationRequest(
