@@ -80,6 +80,17 @@ class Step:
 
 @dataclass
 class Fixtures:
+    """Scenario fixtures for initial state setup.
+
+    Each scenario run gets:
+    - Fresh in-memory SQLite (default) or persistent DB
+    - Optional seeded dice for deterministic runs
+    - Model mode configuration
+
+    Use db_mode: persistent for debugging - keeps DB at artifacts/scenarios/<id>/db/
+    Use dice_seed for reproducible test runs.
+    """
+
     adventure: str | None = None
     dice_seed: int | None = None
     model_mode: ModelMode = ModelMode.FAKE_CONTRACT
