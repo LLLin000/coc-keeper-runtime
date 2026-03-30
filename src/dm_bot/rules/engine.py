@@ -1,7 +1,31 @@
 from collections.abc import Callable
+from dataclasses import dataclass, field
 
 from dm_bot.rules.actions import LookupAction, RuleAction
 from dm_bot.rules.dice import D20DiceRoller, DiceOutcome, PercentileOutcome
+
+
+@dataclass
+class ActionResult:
+    """Result of a single action in a batch execution."""
+
+    user_id: str
+    character_id: str
+    action_text: str
+    parsed_intent: str = ""
+    rule_outcomes: list[dict] = field(default_factory=list)
+    state_changes: dict[str, object] = field(default_factory=dict)
+    trigger_effects: list[object] = field(default_factory=list)
+    visibility: str = "public"  # Matches Visibility enum from session_store
+
+
+@dataclass
+class BatchResolutionResult:
+    """Result of batch action resolution."""
+
+    action_results: list[ActionResult] = field(default_factory=list)
+    final_scene: dict[str, object] = field(default_factory=dict)
+    audit_log: list[dict] = field(default_factory=list)
 
 
 class RulesEngineError(RuntimeError):
@@ -47,6 +71,88 @@ class RulesEngine:
             return self._execute_coc_sanity_check(action)
         raise RulesEngineError(f"unsupported action: {action.action}")
 
+    def execute_batch(
+        self,
+        actions: list,
+        scene_snapshot: dict[str, object],
+        *,
+        dex_order: bool = False,
+    ) -> BatchResolutionResult:
+        """Execute a batch of actions in order.
+
+        Args:
+            actions: List of ActionBatchEntry objects to execute
+            scene_snapshot: Current scene state snapshot
+            dex_order: If True, sort actions by dex_value descending
+
+        Returns:
+            BatchResolutionResult with all action results and final scene
+        """
+        import copy
+
+        # 1. Sort by submission time (default) or DEX order if enabled
+        sorted_actions = list(actions)
+        if dex_order:
+            sorted_actions = sorted(
+                sorted_actions,
+                key=lambda a: getattr(a, "dex_value", 0) or 0,
+                reverse=True,
+            )
+
+        # 2. Execute each action in order
+        results: list[ActionResult] = []
+        current_scene = copy.deepcopy(scene_snapshot)
+        audit_log: list[dict] = []
+
+        for entry in sorted_actions:
+            # Parse action text into intent and outcomes
+            result = ActionResult(
+                user_id=entry.user_id,
+                character_id=entry.character_id,
+                action_text=entry.action_text,
+                visibility=getattr(entry, "visibility", "public"),
+            )
+
+            # Simple intent parsing - classify action type from text
+            action_lower = entry.action_text.lower()
+            if "roll" in action_lower or "检定" in action_lower:
+                result.parsed_intent = "action"
+            elif "attack" in action_lower or "攻击" in action_lower:
+                result.parsed_intent = "attack"
+            elif "cast" in action_lower or "施法" in action_lower:
+                result.parsed_intent = "cast"
+            elif "move" in action_lower or "移动" in action_lower:
+                result.parsed_intent = "movement"
+            elif (
+                "speak" in action_lower
+                or "说话" in action_lower
+                or "说" in action_lower
+            ):
+                result.parsed_intent = "dialogue"
+            else:
+                result.parsed_intent = "misc"
+
+            # Apply state changes to current scene
+            if result.state_changes:
+                current_scene.update(result.state_changes)
+
+            # Build audit log entry
+            audit_entry = {
+                "user_id": entry.user_id,
+                "character_id": entry.character_id,
+                "action_text": entry.action_text,
+                "parsed_intent": result.parsed_intent,
+                "rule_outcomes": result.rule_outcomes,
+            }
+            audit_log.append(audit_entry)
+            results.append(result)
+
+        return BatchResolutionResult(
+            action_results=results,
+            final_scene=current_scene,
+            audit_log=audit_log,
+        )
+
     def _execute_attack_roll(self, action: RuleAction) -> dict[str, object]:
         if action.target is None:
             raise RulesEngineError("attack_roll requires a target")
@@ -58,7 +164,11 @@ class RulesEngine:
         advantage = str(action.parameters.get("advantage", "none"))
         attack_roll = self._roll(f"1d20+{attack_bonus}", advantage=advantage)
         damage_expression = str(action.parameters.get("damage_expression", "0"))
-        damage_roll = self._roll(damage_expression) if attack_roll.total >= action.target.armor_class else None
+        damage_roll = (
+            self._roll(damage_expression)
+            if attack_roll.total >= action.target.armor_class
+            else None
+        )
         return {
             "action": "attack_roll",
             "actor": action.actor.name,
@@ -73,7 +183,9 @@ class RulesEngine:
             "hit": attack_roll.total >= action.target.armor_class,
         }
 
-    def _execute_check_like(self, action: RuleAction, *, kind: str) -> dict[str, object]:
+    def _execute_check_like(
+        self, action: RuleAction, *, kind: str
+    ) -> dict[str, object]:
         modifier = int(action.parameters.get("modifier", 0))
         advantage = str(action.parameters.get("advantage", "none"))
         label = str(action.parameters.get("label", kind))
