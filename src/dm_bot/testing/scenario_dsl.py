@@ -10,6 +10,11 @@ import yaml
 
 
 class ScenarioMode(str, Enum):
+    """Scenario execution mode.
+
+    mode affects: assertion strictness, artifact naming.
+    """
+
     ACCEPTANCE = "acceptance"
     CONTRACT = "contract"
     CHAOS = "chaos"
@@ -17,11 +22,35 @@ class ScenarioMode(str, Enum):
 
 
 class DbMode(str, Enum):
+    """Database mode for scenario runs.
+
+    - temp_sqlite: in-memory SQLite, fresh for each run (default)
+    - persistent: keeps DB at artifacts/scenarios/<id>/db/ for debugging
+    """
+
     TEMP_SQLITE = "temp_sqlite"
     PERSISTENT = "persistent"
 
 
 class ModelMode(str, Enum):
+    """Model interaction mode for scenario runs.
+
+    Three modes:
+
+    | Mode          | What it does                              | When to use                        |
+    |---------------|-------------------------------------------|------------------------------------|
+    | fake_contract | Uses StubModelClient (mock)              | Default for CI, fast, deterministic |
+    | recorded       | Replays VCR cassettes                   | Contract tests needing real model output |
+    | live          | Calls real Ollama API                   | Quality evaluation, not for CI   |
+
+    **fake_contract**: Uses `StubModelClient` — fast, deterministic, no network.
+
+    **recorded**: Looks for cassette in `tests/cassettes/<scenario_id>/<step_name>.yaml`.
+    Cassettes don't exist yet — E71 records them.
+
+    **live**: Uses real `OllamaModelClient`. Requires Ollama running.
+    """
+
     FAKE_CONTRACT = "fake_contract"
     RECORDED = "recorded"
     LIVE = "live"

@@ -3,7 +3,9 @@ from typing import Any, Callable, Coroutine, cast
 
 from dm_bot.characters.importer import CharacterImporter
 from dm_bot.characters.sources import DicecloudSnapshotSource
+from dm_bot.config import Settings
 from dm_bot.diagnostics.service import DiagnosticsService
+from dm_bot.models.ollama_client import OllamaClient
 from dm_bot.narration.service import NarrationService
 from dm_bot.orchestrator.gameplay import CharacterRegistry, GameplayOrchestrator
 from dm_bot.orchestrator.session_store import SessionStore
@@ -31,17 +33,22 @@ _GUILD_ID = "guild-test"
 _DEFAULT_CHANNEL_ID = "chan-test"
 
 
+class ModelModeError(Exception):
+    pass
+
+
 class RuntimeTestDriver:
     def __init__(
         self,
         *,
         dice_seed: int | None = None,
         model_client: StubModelClient | None = None,
+        model_mode: str = "fake_contract",
         db_path: str | None = None,
         clock: FakeClock | None = None,
     ) -> None:
         self._dice_seed = dice_seed
-        self._model_client = model_client or StubModelClient()
+        self._model_mode = model_mode
         self._db_path = db_path
         self._clock = clock
         self._commands: Any = None
@@ -52,6 +59,32 @@ class RuntimeTestDriver:
         self._started = False
         self._output_records: list[OutputRecord] = []
         self._snapshot_state: dict[str, Any] = {}
+
+        self._model_client = self._create_model_client(model_client)
+
+    def _create_model_client(
+        self, explicit_client: StubModelClient | None
+    ) -> StubModelClient | OllamaClient:
+        if explicit_client is not None:
+            return explicit_client
+
+        if self._model_mode == "fake_contract":
+            return StubModelClient()
+        elif self._model_mode == "recorded":
+            raise ModelModeError(
+                "recorded mode requires VCR cassettes in tests/cassettes/<scenario_id>/"
+            )
+        elif self._model_mode == "live":
+            try:
+                settings = Settings()
+                return OllamaClient(settings)
+            except Exception as e:
+                raise ModelModeError(
+                    f"live mode requires Ollama to be running. "
+                    f"Start Ollama and try again. Error: {e}"
+                )
+        else:
+            raise ModelModeError(f"Unknown model_mode: {self._model_mode}")
 
     async def start(self) -> None:
         rules_engine = RulesEngine(
