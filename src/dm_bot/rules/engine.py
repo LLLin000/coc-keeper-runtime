@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from dataclasses import dataclass, field
+import d20
 
 from dm_bot.rules.actions import LookupAction, RuleAction
 from dm_bot.rules.dice import D20DiceRoller, DiceOutcome, PercentileOutcome
@@ -308,8 +309,6 @@ class RulesEngine:
         luck_available = int(action.parameters.get("luck_available", 0))
 
         # Roll dice expressions for sanity loss
-        import d20
-
         loss_on_success = (
             d20.roll(loss_on_success_str).total
             if isinstance(loss_on_success_str, str)

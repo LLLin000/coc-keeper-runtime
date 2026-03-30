@@ -13,6 +13,7 @@ Reference: Call of Cthulhu 7th Edition Keeper's Rulebook, Chapter 7
 
 from enum import StrEnum
 from typing import Literal
+import d20
 
 from pydantic import BaseModel, Field
 
@@ -239,15 +240,12 @@ def resolve_fighting_attack(
 
         # Roll weapon damage if specified
         if attacker.weapon_damage:
-            import d20
-
             weapon_result = d20.roll(
                 attacker.weapon_damage.replace("DB", str(db_value))
             )
             damage = weapon_result.total
         else:
             # Default unarmed: 1d3 + DB
-            import d20
 
             unarmed_result = d20.roll(f"1d3+{db_value}")
             damage = unarmed_result.total
@@ -258,7 +256,6 @@ def resolve_fighting_attack(
         if rank in ("extreme", "critical") and attacker.weapon_type == WeaponType.MELEE:
             impale = True
             # Impale: max damage + roll again
-            import d20
 
             extra_damage = d20.roll(f"1d6+{db_value}")
             damage += extra_damage.total
@@ -379,8 +376,6 @@ def resolve_shooting_attack(
     if success:
         # Roll weapon damage
         if attacker.weapon_damage:
-            import d20
-
             db_value = attacker.damage_bonus
             damage_expr = attacker.weapon_damage.replace("DB", str(db_value))
             damage_result = d20.roll(damage_expr)
@@ -472,8 +467,6 @@ def resolve_brawl_attack(
 
     # Override damage - Brawl is always 1d3 + DB
     if result.success:
-        import d20
-
         db_value = attacker.damage_bonus
         damage_result = d20.roll(f"1d3+{db_value}")
         result.damage = damage_result.total
@@ -530,7 +523,6 @@ def resolve_grapple_attack(
         success = False
         rank = "fumble"
         # Fumble on grapple - attacker hurts themselves
-        import d20
 
         self_damage = d20.roll("1d6").total
         attacker_hp_after = attacker.hp - self_damage

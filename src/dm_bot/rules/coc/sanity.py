@@ -14,6 +14,7 @@ Reference: Call of Cthulhu 7th Edition Keeper's Rulebook, Chapter 9
 
 from enum import StrEnum
 from typing import Literal
+import d20
 
 from pydantic import BaseModel, Field
 
@@ -557,8 +558,6 @@ def calculate_sanity_recovery(
     Returns:
         Total sanity recovered
     """
-    import d20
-
     recovered = 0
 
     # Rest: 1 SAN per full night's rest (once per adventure)
