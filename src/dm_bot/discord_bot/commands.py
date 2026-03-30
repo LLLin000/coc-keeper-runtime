@@ -5,6 +5,7 @@ from collections.abc import Awaitable, Callable
 from dm_bot.config import Settings, get_settings
 from dm_bot.discord_bot.channel_enforcer import ChannelEnforcer
 from dm_bot.discord_bot.streaming import StreamingMessageTransport
+from dm_bot.discord_bot.onboarding_views import OnboardingView
 from dm_bot.orchestrator.message_filters import MessageDisposition, classify_message
 from dm_bot.runtime.health import build_health_snapshot
 
@@ -408,6 +409,17 @@ class BotCommands:
         if blocked:
             await interaction.followup.send(blocked, ephemeral=True)
             return
+        from dm_bot.orchestrator.session_store import SessionPhase
+
+        if session.session_phase == SessionPhase.ONBOARDING:
+            user_id_str = str(interaction.user.id)
+            if not session.is_onboarding_complete(user_id_str):
+                await interaction.followup.send(
+                    "📋 当前处于规则介绍阶段。请先完成 onboarding 后再行动。\n"
+                    "使用 `/complete_onboarding` 确认已了解规则。",
+                    ephemeral=True,
+                )
+                return
         onboarding_block = (
             self._gameplay.onboarding_block_message()
             if self._gameplay is not None
@@ -639,12 +651,14 @@ class BotCommands:
         seeded = self._gameplay.seed_role_knowledge(
             user_id=str(interaction.user.id), role=role
         )
-        onboarding = self._gameplay.mark_adventure_ready(
-            user_id=str(interaction.user.id)
-        )
-        ready_ids = set(onboarding.get("ready_user_ids", []))
+        from dm_bot.orchestrator.session_store import SessionPhase
+
+        user_id_str = str(interaction.user.id)
+        session.set_player_ready(user_id_str, True)
+        ready_count = sum(1 for r in session.player_ready.values() if r)
+        total_members = len(session.member_ids) if session.member_ids else 1
         await interaction.response.send_message(
-            f"已就位 ({len(ready_ids)}/{len(session.member_ids)})",
+            f"已就位 ({ready_count}/{total_members})。等待管理员用 /start-session 启动游戏。",
             ephemeral=True,
         )
         track = self._gameplay.onboarding_track_for_role(role)
@@ -658,16 +672,146 @@ class BotCommands:
                     )
                 )
             await interaction.followup.send("\n".join(private_lines), ephemeral=True)
-        if session.member_ids and ready_ids.issuperset(session.member_ids):
-            self._gameplay.begin_adventure()
-            self._save_state_for_channel(str(interaction.channel_id))
+        if session.member_ids and ready_count >= len(session.member_ids):
+            session.transition_to(SessionPhase.AWAITING_ADMIN_START)
             await interaction.channel.send(
-                self._gameplay.adventure_opening_text(
-                    active_characters=session.active_characters
-                )
+                f"所有玩家已就位！管理员可以使用 `/start-session` 开始游戏。"
             )
+        self._save_campaign_state(session.campaign_id)
+        self._persist_sessions()
+
+    async def start_session(self, interaction) -> None:
+        from dm_bot.orchestrator.session_store import SessionPhase
+        from dm_bot.orchestrator.onboarding import get_default_coc7e_onboarding
+        from dm_bot.orchestrator.onboarding_controller import OnboardingController
+        from dm_bot.discord_bot.onboarding_views import OnboardingView
+
+        allowed, msg = self.check_channel("start_session", interaction)
+        if not allowed:
+            await interaction.response.send_message(msg, ephemeral=True)
+            return
+        if self._gameplay is None or self._session_store is None:
+            await interaction.response.send_message(
+                "gameplay is not configured", ephemeral=True
+            )
+            return
+        session = self._session_store.get_by_channel(str(interaction.channel_id))
+        if session is None:
+            await interaction.response.send_message(
+                "no campaign bound to this channel", ephemeral=True
+            )
+            return
+        if session.session_phase not in (
+            SessionPhase.LOBBY,
+            SessionPhase.AWAITING_ADMIN_START,
+        ):
+            await interaction.response.send_message(
+                f"无法从当前阶段启动：{session.session_phase.value}。需要玩家先 /ready。",
+                ephemeral=True,
+            )
+            return
+        ready_count = sum(1 for r in session.player_ready.values() if r)
+        if ready_count < len(session.member_ids):
+            await interaction.response.send_message(
+                f"无法启动：还有玩家未就位 ({ready_count}/{len(session.member_ids)})。",
+                ephemeral=True,
+            )
+            return
+        session.admin_started = True
+
+        session.transition_to(SessionPhase.ONBOARDING)
+        for member_id in session.member_ids:
+            session.set_onboarding_complete(member_id, False)
+
+        if self._gameplay:
+            self._gameplay.begin_adventure()
+
+        controller = OnboardingController(session=session, gameplay=self._gameplay)
+        welcome_content = controller.get_welcome_embed_content()
+
+        self._save_campaign_state(session.campaign_id)
+        self._persist_sessions()
+
+        await interaction.response.defer(thinking=True)
+
+        await interaction.channel.send(
+            "📋 **游戏准备开始！**\n\n"
+            "在正式进入模组之前，我们需要完成规则概览。\n"
+            "点击下方按钮查看 COC 7E 核心规则。",
+        )
+
+        view = OnboardingView(
+            user_id="all",
+            content=get_default_coc7e_onboarding(),
+            timeout=None,
+        )
+        await interaction.followup.send(
+            welcome_content,
+            view=view,
+            ephemeral=False,
+        )
+
+    async def complete_onboarding(self, interaction) -> None:
+        from dm_bot.orchestrator.session_store import SessionPhase
+        from dm_bot.orchestrator.onboarding_controller import OnboardingController
+
+        allowed, msg = self.check_channel("start_session", interaction)
+        if not allowed:
+            await interaction.response.send_message(msg, ephemeral=True)
+            return
+        if self._session_store is None:
+            await interaction.response.send_message(
+                "session store is not configured", ephemeral=True
+            )
+            return
+
+        session = self._session_store.get_by_channel(str(interaction.channel_id))
+        if session is None:
+            await interaction.response.send_message(
+                "no campaign bound to this channel", ephemeral=True
+            )
+            return
+
+        if session.session_phase != SessionPhase.ONBOARDING:
+            await interaction.response.send_message(
+                f"当前不在 onboarding 阶段：{session.session_phase.value}",
+                ephemeral=True,
+            )
+            return
+
+        user_id_str = str(interaction.user.id)
+        if user_id_str not in session.member_ids:
+            await interaction.response.send_message(
+                "你不在这个 campaign 中", ephemeral=True
+            )
+            return
+
+        session.set_onboarding_complete(user_id_str, True)
+        self._persist_sessions()
+
+        pending = []
+        for member_id in session.member_ids:
+            if not session.is_onboarding_complete(member_id):
+                pending.append(member_id)
+
+        if not pending:
+            session.transition_to(SessionPhase.SCENE_ROUND_OPEN)
+            self._persist_sessions()
+            await interaction.response.send_message(
+                "✅ 你已完成规则确认！\n\n🎮 **所有玩家已准备完毕，游戏开始！**",
+                ephemeral=False,
+            )
+            if self._gameplay and session.active_characters:
+                await interaction.channel.send(
+                    self._gameplay.adventure_opening_text(
+                        active_characters=session.active_characters
+                    )
+                )
         else:
-            self._save_state_for_channel(str(interaction.channel_id))
+            await interaction.response.send_message(
+                f"✅ 你已完成规则确认！\n\n等待其他玩家完成确认：{len(pending)} 人",
+                ephemeral=True,
+            )
 
     async def roll_expression(self, interaction, *, expression: str) -> None:
         result = self._safe_roll_for_channel(
@@ -884,6 +1028,16 @@ class BotCommands:
             return None
 
         self._load_campaign_state(session.campaign_id)
+
+        from dm_bot.orchestrator.session_store import SessionPhase
+
+        if session.session_phase == SessionPhase.ONBOARDING:
+            if not session.is_onboarding_complete(user_id):
+                return (
+                    "📋 当前处于规则介绍阶段。请先完成 onboarding 后再行动。\n"
+                    "使用 `/complete_onboarding` 确认已了解规则。"
+                )
+
         onboarding_block = (
             self._gameplay.onboarding_block_message()
             if self._gameplay is not None
@@ -959,6 +1113,17 @@ class BotCommands:
             return
 
         self._load_campaign_state(session.campaign_id)
+
+        from dm_bot.orchestrator.session_store import SessionPhase
+
+        if session.session_phase == SessionPhase.ONBOARDING:
+            if not session.is_onboarding_complete(user_id):
+                await message.channel.send(
+                    "📋 当前处于规则介绍阶段。请先完成 onboarding 后再行动。\n"
+                    "使用 `/complete_onboarding` 确认已了解规则。"
+                )
+                return
+
         onboarding_block = (
             self._gameplay.onboarding_block_message()
             if self._gameplay is not None
