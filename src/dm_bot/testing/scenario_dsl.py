@@ -156,11 +156,35 @@ class ScenarioValidator:
             if actor_id not in actors and actor_id not in ["kp", "p1", "p2"]:
                 pass
 
-            has_action = any(a in step for a in self.VALID_ACTIONS)
-            if not has_action:
+            action = step.get("action", "")
+            if action not in self.VALID_ACTIONS:
                 raise ScenarioValidationError(
-                    f"Step {idx} must have one of: {self.VALID_ACTIONS}",
-                    field_name=f"steps[{idx}]",
+                    f"Step {idx} action must be one of: {self.VALID_ACTIONS}, got '{action}'",
+                    field_name=f"steps[{idx}].action",
+                )
+
+        steps = data.get("steps", [])
+        if not steps:
+            raise ScenarioValidationError(
+                "Scenario must have at least one step", field_name="steps"
+            )
+
+        actors = data.get("actors", {})
+        for idx, step in enumerate(steps):
+            if "actor" not in step:
+                raise ScenarioValidationError(
+                    f"Step {idx} missing 'actor' field",
+                    field_name=f"steps[{idx}].actor",
+                )
+            actor_id = step["actor"]
+            if actor_id not in actors and actor_id not in ["kp", "p1", "p2"]:
+                pass
+
+            action = step.get("action", "")
+            if action not in self.VALID_ACTIONS:
+                raise ScenarioValidationError(
+                    f"Step {idx} action must be one of: {self.VALID_ACTIONS}, got '{action}'",
+                    field_name=f"steps[{idx}].action",
                 )
 
 
