@@ -42,6 +42,89 @@ class DiceRoller(Protocol):
     ) -> PercentileOutcome: ...
 
 
+class SeededDiceRoller:
+    _ADVANTAGE_MAP = {
+        "none": d20.AdvType.NONE,
+        "advantage": d20.AdvType.ADV,
+        "disadvantage": d20.AdvType.DIS,
+    }
+
+    def __init__(self, seed: int) -> None:
+        self._rng = random.Random(seed)
+
+    def roll(
+        self, expression: str, *, advantage: AdvantageMode = "none"
+    ) -> DiceOutcome:
+        orig_state = random.getstate()
+        try:
+            random.seed(self._rng.randint(0, 2**31 - 1))
+            result = d20.roll(expression, advantage=self._ADVANTAGE_MAP[advantage])
+        finally:
+            random.setstate(orig_state)
+        return DiceOutcome(
+            expression=expression, total=int(result.total), rendered=str(result)
+        )
+
+    def roll_percentile(
+        self,
+        *,
+        value: int,
+        difficulty: COCDifficulty = "regular",
+        bonus_dice: int = 0,
+        penalty_dice: int = 0,
+        pushed: bool = False,
+    ) -> PercentileOutcome:
+        ones = self._rng.randint(0, 9)
+        tens_pool = [
+            self._rng.randint(0, 9)
+            for _ in range(max(1, 1 + bonus_dice + penalty_dice))
+        ]
+        if bonus_dice and not penalty_dice:
+            tens = min(tens_pool)
+        elif penalty_dice and not bonus_dice:
+            tens = max(tens_pool)
+        else:
+            tens = tens_pool[0]
+        rolled = 100 if tens == 0 and ones == 0 else tens * 10 + ones
+        thresholds = {
+            "regular": value,
+            "hard": value // 2,
+            "extreme": value // 5,
+        }
+        success = rolled <= thresholds[difficulty]
+        success_rank = "failure"
+        if rolled == 1:
+            success = True
+            success_rank = "critical"
+        elif success:
+            if rolled <= thresholds["extreme"]:
+                success_rank = "extreme"
+            elif rolled <= thresholds["hard"]:
+                success_rank = "hard"
+            else:
+                success_rank = "regular"
+        critical = rolled == 1
+        fumble = rolled >= 96
+        rendered = f"{rolled:02d} / {value} ({'成功' if success else '失败'})"
+        return PercentileOutcome(
+            value=value,
+            difficulty=difficulty,
+            rolled=rolled,
+            success=success,
+            success_rank=success_rank,
+            critical=critical,
+            fumble=fumble,
+            bonus_dice=bonus_dice,
+            penalty_dice=penalty_dice,
+            pushed=pushed,
+            rendered=rendered,
+        )
+
+
+def seeded_dice_roller(seed: int) -> SeededDiceRoller:
+    return SeededDiceRoller(seed)
+
+
 class D20DiceRoller:
     _ADVANTAGE_MAP = {
         "none": d20.AdvType.NONE,
