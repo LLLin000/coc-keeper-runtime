@@ -4,7 +4,7 @@
 
 - ✅ **vE.1.1** — Runtime Control Panel Foundations (completed)
 - ✅ **vE.2.1** — 全流程交互验证框架 (completed)
-- 🔄 **vE.2.2** — 统一 Scenario-Driven E2E 验证框架 (in progress)
+- ✅ **vE.2.2** — 统一 Scenario-Driven E2E 验证框架 (complete)
 
 ---
 
@@ -172,10 +172,10 @@
 | 67. Narration Pipeline Flow | 1/1 | ✓ Complete | — |
 | 68. Persistence + End-to-End Integration | 1/1 | ✓ Complete | — |
 | **vE.2.2** | | | |
-| 69. Scenario Runner + RuntimeTestDriver | 1/1 | ✓ Complete | — |
-| 70. Scenario DSL + Artifact Writer | 1/1 | ✓ Complete | 2026-03-30 |
-| 71. Failure Taxonomy + Contract Scenarios | 0/1 | Planned | — |
-| 72. Acceptance Scenarios (Happy Path + Chaos) | 0/1 | Planned | — |
+| 69. Scenario Runner + RuntimeTestDriver | 1/1 | Complete    | 2026-03-30 |
+| 70. Scenario DSL + Artifact Writer | 1/1 | Complete    | 2026-03-30 |
+| 71. Failure Taxonomy + Contract Scenarios | 1/1 | Complete    | 2026-03-30 |
+| 72. Acceptance Scenarios (Happy Path + Chaos) | 1/1 | Complete    | 2026-03-30 |
 
 ---
 
@@ -229,10 +229,12 @@
 
 ## vE.2.2 Phases
 
-- [ ] **Phase 69: Scenario Runner + RuntimeTestDriver** — Unified driver interface, SeededDiceRoller (source), fake_clock, fuzhe_mini.json creation, StepResult contracts
-- [ ] **Phase 70: Scenario DSL + Artifact Writer** — YAML DSL, run-scenario CLI, model_mode strategy, artifact writer (json/md), scenario registry
-- [ ] **Phase 71: Failure Taxonomy + Contract Scenarios** — FailureCode enum, visibility/reveal/AI contract scenarios, VCR cassettes
-- [ ] **Phase 72: Acceptance Scenarios** — Happy path session, fuzhe_15turn, crash recovery, chaos lobby, CI execution
+- [x] **Phase 69: Scenario Runner + RuntimeTestDriver** — Unified driver interface, SeededDiceRoller (source), fake_clock, fuzhe_mini.json creation, StepResult contracts (completed 2026-03-30)
+- [x] **Phase 70: Scenario DSL + Artifact Writer** — YAML DSL, run-scenario CLI, model_mode strategy, artifact writer (json/md), scenario registry (completed 2026-03-30)
+- [x] **Phase 71: Failure Taxonomy + Contract Scenarios** — FailureCode enum, visibility/reveal/AI contract scenarios, VCR cassettes, api model mode
+  (completed 2026-03-30)
+- [x] **Phase 72: Acceptance Scenarios** — Happy path session, fuzhe_15turn, crash recovery, chaos lobby, CI execution
+  (completed 2026-03-30)
 
 ### Phase 69: Scenario Runner + RuntimeTestDriver
 
@@ -240,7 +242,7 @@
 
 **Depends on:** Nothing (first phase of vE.2.2)
 
-**Plans:** `69-01`
+**Plans:** 1/1 plans complete
 
 **Critical deliverables (explicit — not implied):**
 - `RuntimeTestDriver` with methods: `run_command`, `send_message`, `snapshot_state`, `snapshot_db`, `get_outputs`, `restart_runtime`, `simulate_crash`, `simulate_stream_interrupt`
@@ -258,7 +260,7 @@
 
 **Depends on:** E69
 
-**Plans:** `70-01`
+**Plans:** 1/1 plans complete
 
 **Critical deliverables (explicit):**
 - Scenario DSL — YAML format for actors, steps, assertions, phase_timeline, visibility, dice_mode, model_mode, db_mode
