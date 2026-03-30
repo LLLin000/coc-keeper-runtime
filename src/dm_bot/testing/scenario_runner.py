@@ -6,26 +6,12 @@ from pathlib import Path
 from typing import Any
 
 from dm_bot.testing.artifact_writer import ArtifactWriter
+from dm_bot.testing.failure_taxonomy import Failure, FailureCode
 from dm_bot.testing.runtime_driver import RuntimeTestDriver
 from dm_bot.testing.scenario_dsl import ModelMode, ScenarioParser
 from dm_bot.testing.step_result import OutputRecord, StepResult
 
 
-class FailureCode(str, Enum):
-    PHASE_TRANSITION_MISMATCH = "phase_transition_mismatch"
-    ASSERTION_FAILED = "assertion_failed"
-    COMMAND_ERROR = "command_error"
-    UNKNOWN_STEP_TYPE = "unknown_step_type"
-    MISSING_ACTOR = "missing_actor"
-    MISSING_STEP_FIELD = "missing_step_field"
-
-
-@dataclass
-class Failure:
-    code: FailureCode
-    message: str
-    step_index: int
-    details: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass
