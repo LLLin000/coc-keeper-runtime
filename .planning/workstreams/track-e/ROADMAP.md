@@ -172,8 +172,8 @@
 | 67. Narration Pipeline Flow | 1/1 | ✓ Complete | — |
 | 68. Persistence + End-to-End Integration | 1/1 | ✓ Complete | — |
 | **vE.2.2** | | | |
-| 69. Scenario Runner + RuntimeTestDriver | 0/1 | Planned | — |
-| 70. Scenario DSL + Artifact Writer | 0/1 | Planned | — |
+| 69. Scenario Runner + RuntimeTestDriver | 1/1 | ✓ Complete | — |
+| 70. Scenario DSL + Artifact Writer | 1/1 | ✓ Complete | 2026-03-30 |
 | 71. Failure Taxonomy + Contract Scenarios | 0/1 | Planned | — |
 | 72. Acceptance Scenarios (Happy Path + Chaos) | 0/1 | Planned | — |
 
