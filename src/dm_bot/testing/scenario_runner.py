@@ -1,14 +1,14 @@
 from __future__ import annotations
-import json
+
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
-import yaml
-
+from dm_bot.testing.artifact_writer import ArtifactWriter
 from dm_bot.testing.runtime_driver import RuntimeTestDriver
-from dm_bot.testing.step_result import StepResult
+from dm_bot.testing.scenario_dsl import ModelMode, ScenarioParser
+from dm_bot.testing.step_result import OutputRecord, StepResult
 
 
 class FailureCode(str, Enum):
@@ -31,17 +31,20 @@ class Failure:
 @dataclass
 class ScenarioResult:
     scenario_id: str
-    passed: bool
-    steps: list[StepResult]
-    phase_timeline: list[str]
-    final_state: dict[str, object]
-    failure: Failure | None
-    artifact_dir: Path | None
+    title: str = ""
+    mode: str = "acceptance"
+    passed: bool = False
+    steps: list[StepResult] = field(default_factory=list)
+    phase_timeline: list[str] = field(default_factory=list)
+    final_state: dict[str, object] = field(default_factory=dict)
+    failure: Failure | None = None
+    artifact_dir: Path | None = None
 
 
 class ScenarioRunner:
     def __init__(self, driver: RuntimeTestDriver) -> None:
         self._driver = driver
+        self._parser = ScenarioParser()
 
     async def run(
         self,
@@ -51,27 +54,16 @@ class ScenarioRunner:
         artifact_dir: str | Path = "artifacts/scenarios",
         fail_fast: bool = False,
     ) -> ScenarioResult:
-        path = Path(scenario_path)
-        with open(path, encoding="utf-8") as f:
-            raw = yaml.safe_load(f)
+        scenario = self._parser.parse(scenario_path)
 
-        scenario: dict[str, Any] = (
-            cast(dict[str, Any], raw) if isinstance(raw, dict) else {}
-        )
-        scenario_id = str(scenario.get("id", path.stem))
+        scenario_id = scenario.id
+        steps_def = scenario.steps
+        actors = scenario.actors
 
-        steps_def: list[dict[str, Any]] = cast(
-            list[dict[str, Any]], scenario.get("steps", [])
-        )
-        actors: dict[str, dict[str, Any]] = {
-            str(a["id"]): a
-            for a in cast(list[dict[str, Any]], scenario.get("actors", []))
-        }
-        fixtures: dict[str, Any] = cast(dict[str, Any], scenario.get("fixtures", {}))
-
-        self._configure_driver(fixtures)
+        self._configure_driver(scenario.fixtures)
 
         await self._driver.start()
+        state_before = self._driver.snapshot_state()
 
         step_results: list[StepResult] = []
         phase_timeline: list[str] = []
@@ -81,15 +73,15 @@ class ScenarioRunner:
         for idx, step_def in enumerate(steps_def):
             phase_before = self._driver.get_phase()
 
-            if "command" in step_def:
+            if step_def.action == "command":
                 result = await self._run_command_step(step_def, actors)
                 step_results.append(result)
                 last_result = result
-            elif "message" in step_def:
+            elif step_def.action == "message":
                 result = await self._run_message_step(step_def, actors)
                 step_results.append(result)
                 last_result = result
-            elif "assert" in step_def:
+            elif step_def.action == "assert":
                 if last_result is None:
                     failure = Failure(
                         code=FailureCode.MISSING_STEP_FIELD,
@@ -97,7 +89,7 @@ class ScenarioRunner:
                         step_index=idx,
                     )
                     break
-                ok, msg = _check_assertion(last_result, step_def["assert"])
+                ok, msg = _check_assertion(last_result, step_def.assert_)
                 if not ok:
                     failure = Failure(
                         code=FailureCode.ASSERTION_FAILED,
@@ -116,15 +108,18 @@ class ScenarioRunner:
             else:
                 failure = Failure(
                     code=FailureCode.UNKNOWN_STEP_TYPE,
-                    message=f"Step {idx} has no 'command', 'message', or 'assert' key",
+                    message=f"Step {idx} has unknown action: {step_def.action}",
                     step_index=idx,
                 )
                 break
 
+            phase_after = self._driver.get_phase()
+            if phase_after and phase_after not in phase_timeline:
+                phase_timeline.append(phase_after)
+
             if fail_fast and last_result.error is None and failure is None:
-                assert_def = step_def.get("assert")
-                if assert_def:
-                    ok, msg = _check_assertion(last_result, assert_def)
+                if step_def.assert_:
+                    ok, msg = _check_assertion(last_result, step_def.assert_)
                     if not ok:
                         failure = Failure(
                             code=FailureCode.ASSERTION_FAILED,
@@ -137,19 +132,30 @@ class ScenarioRunner:
         artifact_path: Path | None = None
 
         if write_artifacts:
-            artifact_path = Path(artifact_dir) / scenario_id
-            _write_artifacts(
-                artifact_path, scenario_id, step_results, phase_timeline, final_state
+            artifact_writer = ArtifactWriter(artifact_dir)
+            result_for_artifact = ScenarioResult(
+                scenario_id=scenario_id,
+                title=scenario.title,
+                mode=scenario.mode.value,
+                passed=failure is None,
+                steps=step_results,
+                phase_timeline=phase_timeline,
+                final_state=final_state,
+                failure=failure,
+            )
+            artifact_path = artifact_writer.write_run(
+                scenario_id, result_for_artifact, state_before, final_state
             )
 
         if failure is None:
             assertion_idx = 0
             for idx, step_def in enumerate(steps_def):
-                assert_def = step_def.get("assert")
-                if assert_def:
+                if step_def.action == "assert":
                     cmd_idx = idx - assertion_idx - 1
                     if cmd_idx < len(step_results):
-                        ok, msg = _check_assertion(step_results[cmd_idx], assert_def)
+                        ok, msg = _check_assertion(
+                            step_results[cmd_idx], step_def.assert_
+                        )
                         if not ok:
                             failure = Failure(
                                 code=FailureCode.ASSERTION_FAILED,
@@ -163,6 +169,8 @@ class ScenarioRunner:
 
         return ScenarioResult(
             scenario_id=scenario_id,
+            title=scenario.title,
+            mode=scenario.mode.value,
             passed=failure is None,
             steps=step_results,
             phase_timeline=phase_timeline,
@@ -171,25 +179,26 @@ class ScenarioRunner:
             artifact_dir=artifact_path,
         )
 
-    def _configure_driver(self, _fixtures: dict[str, Any]) -> None:
-        pass
+    def _configure_driver(self, fixtures: Any) -> None:
+        if hasattr(fixtures, "model_mode") and hasattr(self._driver, "_model_mode"):
+            model_mode_value = (
+                fixtures.model_mode.value
+                if hasattr(fixtures.model_mode, "value")
+                else str(fixtures.model_mode)
+            )
+            if model_mode_value != self._driver._model_mode:
+                pass
 
-    async def _run_command_step(
-        self, step_def: dict[str, Any], _actors: dict[str, dict[str, Any]]
-    ) -> StepResult:
-        actor_id = str(step_def.get("actor", "u_kp"))
-        command = str(step_def["command"])
-        args: dict[str, Any] = dict(step_def.get("args", {}))
+    async def _run_command_step(self, step_def: Any, _actors: Any) -> StepResult:
+        actor_id = str(step_def.actor) if step_def.actor else "u_kp"
+        command = str(step_def.name)
+        args: dict[str, Any] = dict(step_def.args) if step_def.args else {}
         return await self._driver.run_command(actor_id, command, args)
 
-    async def _run_message_step(
-        self, step_def: dict[str, Any], _actors: dict[str, dict[str, Any]]
-    ) -> StepResult:
-        actor_id = str(step_def.get("actor", "u_p1"))
-        content = str(step_def["message"])
-        channel: str | None = (
-            str(step_def["channel"]) if step_def.get("channel") else None
-        )
+    async def _run_message_step(self, step_def: Any, _actors: Any) -> StepResult:
+        actor_id = str(step_def.actor) if step_def.actor else "u_p1"
+        content = str(step_def.message)
+        channel: str | None = step_def.channel
         return await self._driver.send_message(actor_id, content, channel)
 
     def _run_assertion_step(
@@ -234,55 +243,3 @@ def _check_assertion(
             return False, f"Expected no error, got '{result.error}'"
 
     return True, ""
-
-
-def _write_artifacts(
-    artifact_dir: Path,
-    scenario_id: str,
-    step_results: list[StepResult],
-    phase_timeline: list[str],
-    final_state: dict[str, object],
-) -> None:
-    artifact_dir.mkdir(parents=True, exist_ok=True)
-
-    timeline_path = artifact_dir / "timeline.json"
-    with open(timeline_path, "w", encoding="utf-8") as f:
-        json.dump(
-            {"scenario_id": scenario_id, "timeline": phase_timeline},
-            f,
-            ensure_ascii=False,
-            indent=2,
-        )
-
-    outputs_path = artifact_dir / "outputs.json"
-    outputs_data: list[dict[str, Any]] = []
-    for idx, sr in enumerate(step_results):
-        for o in sr.emitted_outputs:
-            outputs_data.append(
-                {
-                    "step": idx,
-                    "audience": o.audience,
-                    "content": o.content,
-                    "timestamp": o.timestamp,
-                    "message_type": o.message_type,
-                }
-            )
-    with open(outputs_path, "w", encoding="utf-8") as f:
-        json.dump(outputs_data, f, ensure_ascii=False, indent=2)
-
-    state_path = artifact_dir / "final_state.json"
-    with open(state_path, "w", encoding="utf-8") as f:
-        json.dump(final_state, f, ensure_ascii=False, indent=2, default=str)
-
-    steps_path = artifact_dir / "steps.json"
-    steps_data: list[dict[str, Any]] = [
-        {
-            "phase_before": sr.phase_before,
-            "phase_after": sr.phase_after,
-            "error": sr.error,
-            "output_count": len(sr.emitted_outputs),
-        }
-        for sr in step_results
-    ]
-    with open(steps_path, "w", encoding="utf-8") as f:
-        json.dump(steps_data, f, ensure_ascii=False, indent=2)
