@@ -3,6 +3,15 @@ from dataclasses import dataclass, field
 
 from dm_bot.rules.actions import LookupAction, RuleAction
 from dm_bot.rules.dice import D20DiceRoller, DiceOutcome, PercentileOutcome
+from dm_bot.rules.coc.combat import (
+    CombatantStats,
+    CombatAction,
+    resolve_fighting_attack,
+    resolve_shooting_attack,
+    resolve_brawl_attack,
+    resolve_grapple_attack,
+    get_initiative_order,
+)
 
 
 @dataclass
@@ -69,6 +78,16 @@ class RulesEngine:
             return self._execute_coc_skill_check(action)
         if action.action == "coc_sanity_check":
             return self._execute_coc_sanity_check(action)
+        if action.action == "coc_fighting_attack":
+            return self._execute_coc_fighting_attack(action)
+        if action.action == "coc_shooting_attack":
+            return self._execute_coc_shooting_attack(action)
+        if action.action == "coc_brawl_attack":
+            return self._execute_coc_brawl_attack(action)
+        if action.action == "coc_dodge":
+            return self._execute_coc_dodge(action)
+        if action.action == "coc_grapple_attack":
+            return self._execute_coc_grapple_attack(action)
         raise RulesEngineError(f"unsupported action: {action.action}")
 
     def execute_batch(
@@ -288,6 +307,142 @@ class RulesEngine:
             "loss_on_success": loss_on_success,
             "loss_on_failure": loss_on_failure,
         }
+
+    def _build_combatant_stats(self, actor, params: dict) -> CombatantStats:
+        """Build CombatantStats from actor and parameters dict."""
+        return CombatantStats(
+            name=actor.name,
+            dex=int(params.get("dex", 0)),
+            fighting=int(params.get("fighting", 0)),
+            shooting=int(params.get("shooting", 0)),
+            brawl=int(params.get("brawl", 0)),
+            dodge=int(params.get("dodge", 0)),
+            grapple=int(params.get("grapple", 0)),
+            hp=int(params.get("hp", 0)),
+            hp_max=int(params.get("hp_max", 0)),
+            armor=int(params.get("armor", 0)),
+            armor_piercing=bool(params.get("armor_piercing", False)),
+            build=int(params.get("build", 0)),
+            damage_bonus=int(params.get("damage_bonus", 0)),
+            weapon_name=str(params.get("weapon_name", "")),
+            weapon_type=params.get("weapon_type", "melee"),
+            weapon_damage=str(params.get("weapon_damage", "")),
+        )
+
+    def _build_target_stats(self, params: dict) -> CombatantStats:
+        """Build CombatantStats for target from parameters with target_ prefix."""
+        target_name = params.get("target_name", "target")
+        return CombatantStats(
+            name=target_name,
+            dex=int(params.get("target_dex", 0)),
+            fighting=int(params.get("target_fighting", 0)),
+            shooting=int(params.get("target_shooting", 0)),
+            brawl=int(params.get("target_brawl", 0)),
+            dodge=int(params.get("target_dodge", 0)),
+            grapple=int(params.get("target_grapple", 0)),
+            hp=int(params.get("target_hp", 0)),
+            hp_max=int(params.get("target_hp_max", 0)),
+            armor=int(params.get("target_armor", 0)),
+            armor_piercing=bool(params.get("target_armor_piercing", False)),
+            build=int(params.get("target_build", 0)),
+            damage_bonus=int(params.get("target_damage_bonus", 0)),
+            weapon_name=str(params.get("target_weapon_name", "")),
+            weapon_type=params.get("target_weapon_type", "melee"),
+            weapon_damage=str(params.get("target_weapon_damage", "")),
+        )
+
+    def _roll_raw_percentile(self) -> int:
+        """Roll 1d100 for combat checks."""
+        outcome = self._dice_roller.roll_percentile(
+            value=0, difficulty="regular", bonus_dice=0, penalty_dice=0
+        )
+        if isinstance(outcome, dict):
+            return outcome["rolled"]
+        return outcome.rolled
+
+    def _execute_coc_fighting_attack(self, action: RuleAction) -> dict[str, object]:
+        """Execute a Fighting attack (opposed check vs Dodge)."""
+        actor_stats = self._build_combatant_stats(action.actor, action.parameters)
+        target_stats = self._build_target_stats(action.parameters)
+        attacker_roll = self._roll_raw_percentile()
+        defender_roll = self._roll_raw_percentile()
+        result = resolve_fighting_attack(
+            actor_stats, target_stats, attacker_roll, defender_roll
+        )
+        return result.model_dump()
+
+    def _execute_coc_shooting_attack(self, action: RuleAction) -> dict[str, object]:
+        """Execute a Shooting attack."""
+        actor_stats = self._build_combatant_stats(action.actor, action.parameters)
+        target_stats = self._build_target_stats(action.parameters)
+        attacker_roll = self._roll_raw_percentile()
+        range_modifier = int(action.parameters.get("range_modifier", 0))
+        recoil_modifier = int(action.parameters.get("recoil_modifier", 0))
+        result = resolve_shooting_attack(
+            actor_stats, target_stats, attacker_roll, range_modifier, recoil_modifier
+        )
+        return result.model_dump()
+
+    def _execute_coc_brawl_attack(self, action: RuleAction) -> dict[str, object]:
+        """Execute a Brawl (unarmed) attack."""
+        actor_stats = self._build_combatant_stats(action.actor, action.parameters)
+        target_stats = self._build_target_stats(action.parameters)
+        attacker_roll = self._roll_raw_percentile()
+        defender_roll = self._roll_raw_percentile()
+        result = resolve_brawl_attack(
+            actor_stats, target_stats, attacker_roll, defender_roll
+        )
+        return result.model_dump()
+
+    def _execute_coc_dodge(self, action: RuleAction) -> dict[str, object]:
+        """Execute a Dodge (defensive action)."""
+        actor_stats = self._build_combatant_stats(action.actor, action.parameters)
+        target_stats = self._build_target_stats(action.parameters)
+        attacker_roll = self._roll_raw_percentile()
+        defender_roll = self._roll_raw_percentile()
+        # Dodge is defensive - swap roles
+        result = resolve_fighting_attack(
+            target_stats, actor_stats, defender_roll, attacker_roll
+        )
+        result.action = CombatAction.DODGE
+        return result.model_dump()
+
+    def _execute_coc_grapple_attack(self, action: RuleAction) -> dict[str, object]:
+        """Execute a Grapple attack."""
+        actor_stats = self._build_combatant_stats(action.actor, action.parameters)
+        target_stats = self._build_target_stats(action.parameters)
+        attacker_roll = self._roll_raw_percentile()
+        defender_roll = self._roll_raw_percentile()
+        result = resolve_grapple_attack(
+            actor_stats, target_stats, attacker_roll, defender_roll
+        )
+        return result.model_dump()
+
+    def roll_initiative(self, combatants: list[tuple[str, int]]) -> list[dict]:
+        """Roll initiative for combatants using COC7 DEX×2 + 1d100.
+
+        Args:
+            combatants: List of (character_name, dex_value) tuples
+
+        Returns:
+            List of dicts with name, dex, initiative_roll, initiative_total
+        """
+        results = []
+        for name, dex in combatants:
+            initiative_base = dex * 2  # COC7: DEX × 2
+            roll = self._roll_raw_percentile()
+            total = initiative_base + roll
+            results.append(
+                {
+                    "name": name,
+                    "dex": dex,
+                    "initiative_roll": roll,
+                    "initiative_total": total,
+                }
+            )
+        # Sort descending by total
+        results.sort(key=lambda x: x["initiative_total"], reverse=True)
+        return results
 
     def _roll(self, expression: str, *, advantage: str = "none") -> DiceOutcome:
         try:
