@@ -123,6 +123,7 @@ class Scenario:
     fixtures: Fixtures = field(default_factory=Fixtures)
     steps: list[Step] = field(default_factory=list)
     assertions: Assertions = field(default_factory=Assertions)
+    path: Path | None = None
 
 
 class ScenarioValidationError(Exception):
@@ -199,7 +200,7 @@ class ScenarioParser:
             raise ScenarioValidationError("Empty scenario file", field_name=None)
 
         if isinstance(raw, dict):
-            return self._parse_dict(raw, path.stem)
+            return self._parse_dict(raw, path.stem, path)
         raise ScenarioValidationError("Invalid scenario format", field_name=None)
 
     def parse_json(self, path: str | Path) -> Scenario:
@@ -211,10 +212,12 @@ class ScenarioParser:
             raise ScenarioValidationError("Empty scenario file", field_name=None)
 
         if isinstance(raw, dict):
-            return self._parse_dict(raw, path.stem)
+            return self._parse_dict(raw, path.stem, path)
         raise ScenarioValidationError("Invalid scenario format", field_name=None)
 
-    def _parse_dict(self, data: dict[str, Any], default_id: str) -> Scenario:
+    def _parse_dict(
+        self, data: dict[str, Any], default_id: str, path: Path | None = None
+    ) -> Scenario:
         self._validator.validate(data)
 
         actors: dict[str, Actor] = {}
@@ -312,6 +315,7 @@ class ScenarioParser:
             fixtures=fixtures,
             steps=steps,
             assertions=assertions,
+            path=path,
         )
 
 

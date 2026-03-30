@@ -12,8 +12,6 @@ from dm_bot.testing.scenario_dsl import ModelMode, ScenarioParser
 from dm_bot.testing.step_result import OutputRecord, StepResult
 
 
-
-
 @dataclass
 class ScenarioResult:
     scenario_id: str
@@ -179,6 +177,29 @@ class ScenarioRunner:
         actor_id = str(step_def.actor) if step_def.actor else "u_kp"
         command = str(step_def.name)
         args: dict[str, Any] = dict(step_def.args) if step_def.args else {}
+
+        if command.startswith("driver."):
+            method_name = command[len("driver.") :]
+            method = getattr(self._driver, method_name, None)
+            if method is not None and callable(method):
+                import inspect
+
+                sig = inspect.signature(method)
+                if "interaction" in sig.parameters:
+                    await method(self._driver._interaction_for(actor_id), **args)
+                else:
+                    await method(**args)
+                return StepResult(
+                    phase_before=self._driver.get_phase(),
+                    phase_after=self._driver.get_phase(),
+                    emitted_outputs=list(self._driver._output_records),
+                )
+            return StepResult(
+                phase_before=self._driver.get_phase(),
+                phase_after=self._driver.get_phase(),
+                error=f"unknown driver method: {method_name}",
+            )
+
         return await self._driver.run_command(actor_id, command, args)
 
     async def _run_message_step(self, step_def: Any, _actors: Any) -> StepResult:

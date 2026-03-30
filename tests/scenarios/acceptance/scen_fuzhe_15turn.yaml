@@ -1,0 +1,119 @@
+id: scen_fuzhe_15turn
+title: Fuzhe Mini - 15 Turn Full Run
+tags:
+  - acceptance
+  - fuzhe
+  - full_session
+mode: acceptance
+
+actors:
+  kp:
+    kind: admin
+    user_id: u_kp
+  p1:
+    kind: player
+    user_id: u_p1
+
+fixtures:
+  adventure: fuzhe_mini
+  dice_seed: 42
+  model_mode: fake_contract
+  db_mode: temp_sqlite
+
+steps:
+  - actor: kp
+    action: command
+    name: bind_campaign
+    args:
+      campaign_id: camp_fuzhe
+
+  - actor: p1
+    action: command
+    name: join_campaign
+    args:
+      campaign_id: camp_fuzhe
+
+  - actor: p1
+    action: command
+    name: ready
+    args: {}
+
+  - actor: kp
+    action: command
+    name: load_adventure
+    args:
+      adventure_id: fuzhe_mini
+
+  - actor: kp
+    action: command
+    name: start_session
+    args: {}
+
+  - actor: kp
+    action: command
+    name: complete_onboarding
+    args: {}
+
+  - actor: p1
+    action: message
+    text: "我检查周围的环境"
+
+  - actor: p1
+    action: message
+    text: "我看到车祸现场"
+
+  - actor: p1
+    action: message
+    text: "我查看论坛"
+
+  - actor: kp
+    action: command
+    name: resolve_round
+    args: {}
+
+  - actor: p1
+    action: message
+    text: "去湿地公园"
+
+  - actor: p1
+    action: message
+    text: "我聆听周围的声音"
+
+  - actor: kp
+    action: command
+    name: resolve_round
+    args: {}
+
+  - actor: p1
+    action: message
+    text: "我进入战斗"
+
+  - actor: kp
+    action: command
+    name: resolve_round
+    args: {}
+
+  - actor: kp
+    action: command
+    name: next_round
+    args: {}
+
+assertions:
+  phase_timeline:
+    - lobby
+    - awaiting_ready
+    - awaiting_admin_start
+    - onboarding
+    - scene_round_open
+    - scene_round_resolving
+    - scene_round_open
+    - scene_round_resolving
+    - scene_round_open
+
+  state:
+    campaign_members: 1
+    no_duplicate_members: true
+
+  visible:
+    public_must_include:
+      - "公园"

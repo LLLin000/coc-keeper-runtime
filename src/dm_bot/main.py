@@ -236,8 +236,7 @@ def run_scenario_cli(
 
             try:
                 result = await runner.run(
-                    scenario_path=scenario_path
-                    or f"tests/scenarios/{scenario_id}.yaml",
+                    scenario_path=scenario_path or str(scenario.path),
                     write_artifacts=write_artifacts,
                     fail_fast=fail_fast,
                 )
