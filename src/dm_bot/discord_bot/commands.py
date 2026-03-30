@@ -1,12 +1,19 @@
 import json
 import asyncio
 from collections.abc import Awaitable, Callable
+from uuid import uuid4
 
 from dm_bot.config import Settings, get_settings
 from dm_bot.discord_bot.channel_enforcer import ChannelEnforcer
 from dm_bot.discord_bot.streaming import StreamingMessageTransport
 from dm_bot.discord_bot.onboarding_views import OnboardingView
 from dm_bot.orchestrator.message_filters import MessageDisposition, classify_message
+from dm_bot.router.intent import (
+    MessageIntent,
+    IntentClassificationResult,
+    should_buffer_intent,
+    get_handling_decision,
+)
 from dm_bot.runtime.health import build_health_snapshot
 
 
@@ -23,6 +30,8 @@ class BotCommands:
         coc_assets=None,
         archive_repository=None,
         character_builder=None,
+        intent_classifier=None,
+        message_buffer=None,
     ) -> None:
         self._settings = settings or get_settings()
         self._session_store = session_store
@@ -34,6 +43,8 @@ class BotCommands:
         self._archive_repository = archive_repository
         self._character_builder = character_builder
         self._enforcer = ChannelEnforcer(session_store) if session_store else None
+        self._intent_classifier = intent_classifier
+        self._message_buffer = message_buffer
 
     def check_channel(self, command_name: str, interaction) -> tuple[bool, str | None]:
         if self._enforcer is None:
@@ -887,9 +898,17 @@ class BotCommands:
         session.transition_to(SessionPhase.SCENE_ROUND_OPEN)
         self._persist_sessions()
         self._save_campaign_state(session.campaign_id)
-        await interaction.response.send_message(
-            "🔄 **新回合开始**\n\n请各位玩家提交本轮行动！"
-        )
+
+        buffered_summary = self._format_buffered_summary(str(interaction.channel_id))
+        released_messages = self._release_buffered_messages(str(interaction.channel_id))
+
+        response = "🔄 **新回合开始**\n\n请各位玩家提交本轮行动！"
+        if released_messages:
+            response += f"\n\n📬 **{len(released_messages)} 条缓冲消息已释放**"
+        await interaction.response.send_message(response)
+
+        if buffered_summary:
+            await interaction.channel.send(buffered_summary)
 
     async def roll_expression(self, interaction, *, expression: str) -> None:
         result = self._safe_roll_for_channel(
@@ -1109,12 +1128,41 @@ class BotCommands:
 
         from dm_bot.orchestrator.session_store import SessionPhase
 
+        session_phase = session.session_phase.value
+
         if session.session_phase == SessionPhase.ONBOARDING:
             if not session.is_onboarding_complete(user_id):
                 return (
                     "📋 当前处于规则介绍阶段。请先完成 onboarding 后再行动。\n"
                     "使用 `/complete_onboarding` 确认已了解规则。"
                 )
+
+        classification = await self._classify_message_intent(
+            campaign_id=session.campaign_id,
+            channel_id=channel_id,
+            user_id=user_id,
+            content=content,
+            session_phase=session_phase,
+            is_admin=self._is_admin_user(user_id, session),
+        )
+
+        if classification and self._should_buffer_message(
+            classification.intent, session_phase
+        ):
+            self._buffer_message(
+                channel_id, user_id, content, classification.intent, session_phase
+            )
+            feedback = (
+                self._intent_classifier.get_feedback_message(
+                    classification.intent, session_phase
+                )
+                if self._intent_classifier
+                else None
+            )
+            return (
+                feedback
+                or f"_Your message has been buffered until the {session_phase} phase ends._"
+            )
 
         if session.session_phase == SessionPhase.SCENE_ROUND_OPEN:
             return await self._handle_round_action(
@@ -1156,11 +1204,19 @@ class BotCommands:
         if blocked:
             return blocked
 
+        intent_value = (
+            classification.intent if classification else MessageIntent.UNKNOWN
+        )
+        intent_reasoning = classification.reasoning if classification else ""
+
         result = await self._dispatch_turn(
             campaign_id=session.campaign_id,
             channel_id=channel_id,
             user_id=user_id,
             content=content,
+            session_phase=session_phase,
+            intent=intent_value,
+            intent_reasoning=intent_reasoning,
         )
         self._save_campaign_state(session.campaign_id)
         return result.reply
@@ -1202,6 +1258,8 @@ class BotCommands:
 
         from dm_bot.orchestrator.session_store import SessionPhase
 
+        session_phase = session.session_phase.value
+
         if session.session_phase == SessionPhase.ONBOARDING:
             if not session.is_onboarding_complete(user_id):
                 await message.channel.send(
@@ -1209,6 +1267,34 @@ class BotCommands:
                     "使用 `/complete_onboarding` 确认已了解规则。"
                 )
                 return
+
+        classification = await self._classify_message_intent(
+            campaign_id=session.campaign_id,
+            channel_id=channel_id,
+            user_id=user_id,
+            content=content,
+            session_phase=session_phase,
+            is_admin=self._is_admin_user(user_id, session),
+        )
+
+        if classification and self._should_buffer_message(
+            classification.intent, session_phase
+        ):
+            self._buffer_message(
+                channel_id, user_id, content, classification.intent, session_phase
+            )
+            feedback = (
+                self._intent_classifier.get_feedback_message(
+                    classification.intent, session_phase
+                )
+                if self._intent_classifier
+                else None
+            )
+            await message.channel.send(
+                feedback
+                or f"_Your message has been buffered until the {session_phase} phase ends._"
+            )
+            return
 
         if session.session_phase == SessionPhase.SCENE_ROUND_OPEN:
             await self._handle_round_action_stream(
@@ -1253,6 +1339,11 @@ class BotCommands:
             await message.channel.send(blocked)
             return
 
+        intent_value = (
+            classification.intent if classification else MessageIntent.UNKNOWN
+        )
+        intent_reasoning = classification.reasoning if classification else ""
+
         await self._stream_turn_to_transport(
             campaign_id=session.campaign_id,
             channel_id=channel_id,
@@ -1262,17 +1353,31 @@ class BotCommands:
             edit_message=lambda sent_message, updated: sent_message.edit(
                 content=updated
             ),
+            session_phase=session_phase,
+            intent=intent_value,
+            intent_reasoning=intent_reasoning,
         )
         self._save_campaign_state(session.campaign_id)
 
     async def _dispatch_turn(
-        self, *, campaign_id: str, channel_id: str, user_id: str, content: str
+        self,
+        *,
+        campaign_id: str,
+        channel_id: str,
+        user_id: str,
+        content: str,
+        session_phase: str = "lobby",
+        intent: MessageIntent = MessageIntent.UNKNOWN,
+        intent_reasoning: str = "",
     ):
         return await self._turn_coordinator.handle_turn(
             campaign_id=campaign_id,
             channel_id=channel_id,
             user_id=user_id,
             content=content,
+            session_phase=session_phase,
+            intent=intent,
+            intent_reasoning=intent_reasoning,
         )
 
     async def _stream_turn_to_transport(
@@ -1284,6 +1389,9 @@ class BotCommands:
         content: str,
         send_initial: Callable[[str], Awaitable[object]],
         edit_message: Callable[[object, str], Awaitable[None]],
+        session_phase: str = "lobby",
+        intent: MessageIntent = MessageIntent.UNKNOWN,
+        intent_reasoning: str = "",
     ) -> str:
         transport = StreamingMessageTransport(
             send_initial=send_initial, edit_message=edit_message
@@ -1294,6 +1402,9 @@ class BotCommands:
                 channel_id=channel_id,
                 user_id=user_id,
                 content=content,
+                session_phase=session_phase,
+                intent=intent,
+                intent_reasoning=intent_reasoning,
             )
         )
 
@@ -1357,6 +1468,75 @@ class BotCommands:
             return
         self._persistence_store.save_sessions(self._session_store.dump_sessions())
 
+    async def _classify_message_intent(
+        self,
+        *,
+        campaign_id: str,
+        channel_id: str,
+        user_id: str,
+        content: str,
+        session_phase: str,
+        is_admin: bool = False,
+    ) -> IntentClassificationResult | None:
+        if self._intent_classifier is None:
+            return None
+        try:
+            return await self._intent_classifier.classify_message(
+                trace_id=str(uuid4()),
+                campaign_id=campaign_id,
+                channel_id=channel_id,
+                user_id=user_id,
+                content=content,
+                session_phase=session_phase,
+                is_admin=is_admin,
+            )
+        except Exception:
+            return IntentClassificationResult(
+                intent=MessageIntent.UNKNOWN,
+                confidence=0.0,
+                reasoning="classification failed, defaulting to unknown",
+            )
+
+    def _should_buffer_message(self, intent: MessageIntent, session_phase: str) -> bool:
+        return should_buffer_intent(intent, session_phase)
+
+    def _buffer_message(
+        self,
+        channel_id: str,
+        user_id: str,
+        content: str,
+        intent: MessageIntent,
+        session_phase: str,
+    ) -> None:
+        if self._message_buffer is None:
+            return
+        from dm_bot.router.intent import MessageIntentMetadata
+
+        metadata = MessageIntentMetadata(
+            intent=intent,
+            classification_reasoning="auto-classified",
+            handling_decision=get_handling_decision(intent, session_phase),
+            was_buffered=True,
+            phase_at_classification=session_phase,
+        )
+        self._message_buffer.buffer_message(
+            channel_id=channel_id,
+            user_id=user_id,
+            content=content,
+            intent=intent,
+            metadata=metadata,
+        )
+
+    def _release_buffered_messages(self, channel_id: str) -> list:
+        if self._message_buffer is None:
+            return []
+        return self._message_buffer.release_buffered_messages(channel_id)
+
+    def _format_buffered_summary(self, channel_id: str) -> str | None:
+        if self._message_buffer is None:
+            return None
+        return self._message_buffer.format_buffered_message_summary(channel_id)
+
     def _persist_archives(self) -> None:
         if self._persistence_store is None or self._archive_repository is None:
             return
@@ -1410,6 +1590,11 @@ class BotCommands:
             else None
         )
         return session is not None and session.owner_id == str(interaction.user.id)
+
+    def _is_admin_user(self, user_id: str, session) -> bool:
+        if session is None:
+            return False
+        return session.owner_id == user_id
 
     def _admin_channel_guidance(self, interaction) -> str:
         if self._session_store is None:
