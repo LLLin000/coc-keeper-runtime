@@ -1,9 +1,13 @@
 <!-- GSD:project-start -->
-## Project
+## Project Overview
 
-**Discord AI Keeper**
+**Discord AI Keeper** — 本地模型驱动的 Call of Cthulhu 跑团系统
 
-本项目是一个运行在 Discord 里的、本地模型驱动的 **Call of Cthulhu Keeper 系统**。它不是单纯的聊天 bot，而是一个把 Discord、COC 规则、结构化模组运行时、长期角色档案和 AI 叙事层拼在一起的多人跑团框架。
+> **Note**: This project uses two distinct systems that are sometimes confused:
+> - **oh-my-opencode (omo)**: OpenCode plugin providing built-in agents (`sisyphus`, `oracle`, `metis`, `librarian`, etc.)
+> - **gsd-opencode (gsd)**: Workflow/project management system (`/gsd-plan-phase`, `/gsd-execute-phase`, `gsd-tools.cjs`, etc.)
+>
+> This file focuses on **GSD conventions**. For oh-my-opencode agents, refer to OpenCode's built-in documentation.
 
 核心目标：
 
@@ -14,6 +18,24 @@
 - 长期角色和模组内实例分离，方便跨模组持续使用
 
 **Core Value:** Run real multiplayer Call of Cthulhu sessions in Discord where a local AI Keeper can narrate, roleplay NPCs, and enforce COC rules without constant manual bookkeeping.
+
+### Project Structure
+
+This project uses **multi-track workstreams** for parallel development:
+
+| Workstream | Focus | Current Milestone |
+|------------|-------|------------------|
+| `track-b/` | Track B - 人物构建与管理层 | vB.1.5 (next) |
+| `track-e/` | Track E - 运行控制与运维面板层 | vE.2.2 (in progress) |
+
+**Current active workstream:** `track-b` (see `.planning/active-workstream`)
+
+To check current state:
+```bash
+cat .planning/active-workstream                    # Which track is active
+cat .planning/workstreams/<track>/ROADMAP.md       # Track roadmap
+cat .planning/workstreams/<track>/STATE.md          # Track state
+```
 
 ### Constraints
 
@@ -138,7 +160,18 @@ src/dm_bot/
 
 ### GSD Workflow Conventions
 
-- **Entry Points** (use these commands, not direct file edits):
+**⚠️ There are TWO types of GSD commands:**
+
+1. **Slash Commands** (for OpenCode conversation):
+   - `/gsd-quick`, `/gsd-debug`, `/gsd-plan-phase`, `/gsd-execute-phase`, etc.
+   - These are invoked WITH the slash prefix in OpenCode
+
+2. **CLI Commands** (for workflow scripts):
+   - `node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" init <subcommand>`
+   - These are used INSIDE workflow files and scripts
+   - **Must use `init` prefix** — see section below for details
+
+**Entry Points** (use these slash commands, not direct file edits):
   - `/gsd-quick` — small fixes, doc updates, ad-hoc tasks
   - `/gsd-debug` — investigation and bug fixing
   - `/gsd-plan-phase` — plan a new phase
@@ -155,7 +188,7 @@ src/dm_bot/
   - `/gsd-settings` — view current settings
 
 - **Subagent Invocation**: Use `task(subagent_type="general", ...)` NOT `subagent_type="task"`
-- **GSD Tools CLI**: `node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs"`
+- **GSD Tools CLI**: `node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs"` (see CLI section above)
 - **Do NOT** spawn `gsd-planner` via Task subagent — use `/gsd-plan-phase` CLI command directly. Nesting Task agents causes runtime hangs.
 
 ### Cross-Track Change Convention
@@ -180,7 +213,7 @@ Before claiming any work is complete:
 
 **Before using Edit, Write, or other file-changing tools, start work through a GSD command so planning artifacts and execution context stay in sync.**
 
-### Command Reference (gsd-opencode v1.22.4)
+### Command Reference (gsd-opencode v1.22.1)
 
 | Command | Purpose |
 |---------|---------|
@@ -226,20 +259,65 @@ Before claiming any work is complete:
 - `--auto` — Continue executing without prompting between waves
 - `--no-transition` — Skip transition animations (used in auto-chain)
 
-### Key gsd-tools Commands
+### gsd-tools CLI Usage
+
+**⚠️ IMPORTANT: The `init` prefix is required for workflow commands.**
+
+All workflow initialization commands MUST be prefixed with `init`:
 
 ```bash
-# Initialize plan phase
-node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" init plan-phase "$PHASE"
+node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" init <subcommand>
+```
 
-# Initialize execute phase  
-node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" init execute-phase
+**Common `init` subcommands:**
 
-# Get current phase plan index
-node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" phase-plan-index
+| Subcommand | Purpose | Example |
+|------------|---------|---------|
+| `init plan-phase <N>` | Initialize phase planning context | `init plan-phase 5` |
+| `init execute-phase <N>` | Initialize phase execution context | `init execute-phase 5` |
+| `init new-milestone` | Initialize new milestone workflow | `init new-milestone` |
+| `init new-project` | Initialize new project workflow | `init new-project` |
+| `init quick <desc>` | Initialize quick task workflow | `init quick "fix bug"` |
+| `init progress` | Initialize progress check | `init progress` |
+| `init resume` | Initialize resume workflow | `init resume` |
+| `init verify-work <N>` | Initialize verification workflow | `init verify-work 5` |
+| `init todos [area]` | Initialize todo workflow | `init todos api` |
 
-# Mark phase complete
-node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" phase complete "$PHASE_NUMBER"
+**Other useful commands:**
+
+```bash
+# Roadmap operations
+node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" roadmap analyze
+node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" roadmap get-phase <N>
+node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" phase-plan-index <N>
+
+# State operations
+node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" state load
+node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" state-snapshot
+
+# Phase operations
+node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" phase complete <N>
+node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" phase add "<description>"
+node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" phase remove <N>
+
+# Commit
+node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" commit "<message>" --files <files>
+```
+
+**Common mistakes to avoid:**
+
+```bash
+# ❌ WRONG - "new-milestone" is not a standalone command
+node gsd-tools.cjs new-milestone "v1.0"
+
+# ✅ CORRECT - must use "init" prefix
+node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" init new-milestone
+
+# ❌ WRONG - "plan-phase" alone is not valid
+node gsd-tools.cjs plan-phase 5
+
+# ✅ CORRECT - must use "init" prefix
+node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" init plan-phase 5
 ```
 
 ### Subagent Type
@@ -258,6 +336,87 @@ node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" phase complete "$P
 <!-- GSD:workflow-end -->
 
 <!-- GSD:profile-start -->
+
+## System Clarification
+
+| System | What It Is | When to Use |
+|--------|------------|-------------|
+| **oh-my-opencode (omo)** | OpenCode plugin providing built-in agents | Use when you need: `sisyphus`, `oracle`, `metis`, `momus`, `explore`, `librarian` agents |
+| **gsd-opencode (gsd)** | Workflow/project management system | Use for: `/gsd-plan-phase`, `/gsd-execute-phase`, `/gsd-quick`, milestone planning, roadmap management |
+
+### Key Differences
+
+**oh-my-opencode Agents:**
+- `sisyphus` — Main orchestrating agent (this project's primary agent)
+- `oracle` — Architecture and deep technical consultation
+- `metis` — Pre-planning analysis and requirements clarification
+- `momus` — Work plan review and evaluation
+- `explore` — Codebase search and pattern finding
+- `librarian` — External documentation and reference lookup
+
+**gsd Commands:**
+- `/gsd-plan-phase` — Create execution plans for a roadmap phase
+- `/gsd-execute-phase` — Execute plans in wave-based parallelization
+- `/gsd-quick` — Execute small, ad-hoc tasks with GSD guarantees
+- `/gsd-discuss-phase` — Clarify phase scope before planning
+- `/gsd-verify-work` — Validate built features through UAT
+
+### GSD Subagents
+
+GSD 系统定义了 17 个 subagents，它们通过 GSD 命令和工作流间接调用：
+
+#### Planning & Research
+| Agent | Purpose |
+|-------|---------|
+| `gsd-planner` | Creates executable phase plans with task breakdown, dependency analysis, goal-backward verification |
+| `gsd-plan-checker` | Verifies plans will achieve phase goal before execution (goal-backward analysis) |
+| `gsd-phase-researcher` | Researches how to implement a phase before planning (produces RESEARCH.md) |
+| `gsd-project-researcher` | Researches domain ecosystem before roadmap creation (4 dimensions: stack, features, architecture, pitfalls) |
+| `gsd-research-synthesizer` | Synthesizes outputs from 4 parallel researcher agents into SUMMARY.md |
+
+#### Execution & Verification
+| Agent | Purpose |
+|-------|---------|
+| `gsd-executor` | Executes GSD plans with atomic commits, deviation handling, checkpoint protocols |
+| `gsd-verifier` | Verifies phase goal achievement through goal-backward analysis (creates VERIFICATION.md) |
+| `gsd-integration-checker` | Verifies cross-phase integration and E2E flows |
+| `gsd-nyquist-auditor` | Fills Nyquist validation gaps by generating tests and verifying coverage |
+
+#### Roadmap & Discussion
+| Agent | Purpose |
+|-------|---------|
+| `gsd-roadmapper` | Creates project roadmaps with phase breakdown, requirement mapping, success criteria |
+| `gsd-assumptions-analyzer` | Deeply analyzes codebase for a phase, returns structured assumptions with evidence |
+| `gsd-advisor-researcher` | Researches a single gray area decision, returns comparison table with rationale |
+
+#### UI/Frontend (Frontend phases only)
+| Agent | Purpose |
+|-------|---------|
+| `gsd-ui-researcher` | Produces UI-SPEC.md design contract for frontend phases |
+| `gsd-ui-checker` | Validates UI-SPEC.md against 6 quality dimensions (BLOCK/FLAG/PASS verdicts) |
+| `gsd-ui-auditor` | Retroactive 6-pillar visual audit of implemented frontend code |
+
+#### Utilities
+| Agent | Purpose |
+|-------|---------|
+| `gsd-codebase-mapper` | Explores codebase and writes structured analysis documents (STACK, ARCHITECTURE, CONVENTIONS, CONCERNS) |
+| `gsd-debugger` | Investigates bugs using scientific method, manages debug sessions, handles checkpoints |
+| `gsd-user-profiler` | Analyzes session messages across 8 behavioral dimensions to produce developer profile |
+
+**Note:** 这些 agents 通过 GSD 命令（如 `/gsd-plan-phase`）和工作流间接调用，不是直接通过 `task(subagent_type="...")` 调用。
+
+### Common Mistakes
+
+```bash
+# ❌ WRONG - mixing up systems
+task(subagent_type="sisyphus", ...)  # sisyphus is not a category!
+task(subagent_type="gsd-planner", ...)  # Don't call GSD agents directly!
+
+# ✅ CORRECT - use GSD slash commands
+/gsd-plan-phase 5    # Plans phase through the full GSD workflow
+/gsd-execute-phase 5  # Executes through the GSD orchestrator
+```
+
 ## Developer Profile
 
 > Profile not yet configured. Run `/gsd-set-profile` to generate your developer profile.

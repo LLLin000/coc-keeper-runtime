@@ -2,6 +2,51 @@
 
 Historical milestones remain linear for GSD continuity. Each milestone now includes a primary track label so collaborators can understand where it belongs in the long-term product map.
 
+---
+
+## vE.2.2 [Track E] 统一 Scenario-Driven E2E 验证框架 (Planned)
+
+**Goal:** Build a unified scenario-driven E2E verification framework with replayable artifacts and standardized failure taxonomy — no live Discord or real AI required.
+
+**Planned phases:** 4 (E69-E72)
+
+**Key deliverables:**
+- `ScenarioRunner` + `RuntimeTestDriver` — Discord-free runtime interface
+- `SeededDiceRoller` — deterministic seeded dice in `rules/dice.py`
+- `fuzhe_mini.json` — 4-node deterministic vertical slice fixture
+- `fake_clock` — controllable time for trigger testing
+- Scenario DSL (YAML) + `ArtifactWriter` (json/md) + `run-scenario` CLI
+- `FailureCode` taxonomy — 13 standardized failure types
+- 4 scenario suites: acceptance, contract, chaos, recovery
+- VCR `recorded` mode cassettes for AI contract testing
+- CI execution: `uv run pytest tests/scenarios/` headless
+
+**Research:**
+- `.planning/research/vE-2-2-milestone-review.md` — milestone design completeness audit
+- `.planning/research/TESTING_GAP_ANALYSIS.md` — codebase gap analysis
+
+---
+
+## vE.2.1 [Track E] 全流程交互验证框架 (Shipped: 2026-03-30)
+
+**Goal:** Build a scenario-based process reliability test suite validating end-to-end workflows across all layers without requiring a live Discord connection.
+
+**Phases completed:** 9 (E60-E68)
+
+**Key accomplishments:**
+
+- FakeInteraction factory + model mock fixtures (FastMock/SlowMock/ErrorMock)
+- pytest-bdd scaffolding with Gherkin combat round scenarios
+- `fuzhe.json` adventure loader, trigger chains, room transitions, reveal gates
+- COC rules: skill checks, SAN rolls, combat resolution, pushed rolls
+- Character archive flow: creation, profile projection, persistence
+- Router flow: intent classification, buffering, turn plan generation
+- Narration pipeline: prompt construction, streaming, KP/player visibility
+- Persistence + E2E: 15-turn scenario, chaos lobby, crash recovery
+- **408 tests passing**, smoke-check passing
+
+---
+
 ## vC.1.3 [Track C] Campaign Surfaces And Intent Clarity (Shipped: 2026-03-29)
 
 **Goal:**

@@ -179,15 +179,34 @@
 
 ---
 
+## Research Findings
+
+**Confidence:** 5/10 (before fixes)
+
+**Critical gaps identified:**
+1. `fuzhe_mini.json` does not exist → fixed: create in E69
+2. `deterministic_dice` requires source change → fixed: add SeededDiceRoller to E69
+3. `fake_clock` not explicit → fixed: named in E69
+4. `run-scenario` CLI not explicit → fixed: named in E70
+5. `model_mode` strategy not defined → fixed: named in E70
+6. VCR cassettes never recorded → fixed: named in E71
+7. CI execution not planned → fixed: named in E72
+
+**Research files:**
+- `.planning/research/vE-2-2-milestone-review.md` — milestone design completeness audit
+- `.planning/research/TESTING_GAP_ANALYSIS.md` — codebase gap audit (gap analysis)
+
+---
+
 ## vE.2.2 Summary
 
 **Goal:** Build a unified scenario-driven E2E verification framework with replayable artifacts and standardized failure taxonomy.
 
 **Planned Phases:**
-- Phase E69: Scenario Runner + RuntimeTestDriver
-- Phase E70: Scenario DSL + Artifact Writer
-- Phase E71: Failure Taxonomy + Contract Scenarios
-- Phase E72: Acceptance Scenarios (Happy Path + Chaos)
+- Phase E69: Scenario Runner + RuntimeTestDriver (+ SeededDiceRoller, fake_clock, fuzhe_mini.json)
+- Phase E70: Scenario DSL + Artifact Writer (+ run-scenario CLI, model_mode strategy)
+- Phase E71: Failure Taxonomy + Contract Scenarios (+ VCR cassettes, visibility/reveal/AI contract scenarios)
+- Phase E72: Acceptance Scenarios (+ happy path, fuzhe_15turn, crash recovery, chaos lobby, CI)
 
 **Scenario Suites:**
 - `acceptance/` — full session lifecycle, crash recovery, chaos lobby
@@ -195,54 +214,96 @@
 - `chaos/` — concurrency stress, duplicate members, mid-session crash
 - `recovery/` — stream interrupt resume, restart recovery
 
+**Critical Cross-Phase Concerns (resolved):**
+- `SeededDiceRoller` → added to E69 (requires source change to `rules/dice.py`)
+- `fuzhe_mini.json` → created in E69 (4-node subset of `fuzhe.json`)
+- `fake_clock` → explicit in E69
+- `run-scenario` CLI → explicit in E70
+- `model_mode` (fake_contract/recorded/live) → explicit in E70
+- VCR cassettes → explicit in E71
+- CI execution → explicit in E72
+
 **Depends on:** vE.2.1 (E60-E68) complete
 
 ---
 
 ## vE.2.2 Phases
 
-- [ ] **Phase 69: Scenario Runner + RuntimeTestDriver** — Unified driver interface decoupled from Discord, deterministic dice, fake clock, step result contracts
-- [ ] **Phase 70: Scenario DSL + Artifact Writer** — YAML scenario format, artifact output (json/md), scenario registry
-- [ ] **Phase 71: Failure Taxonomy + Contract Scenarios** — FailureCode enum, visibility leak tests, reveal policy tests, AI contract tests
-- [ ] **Phase 72: Acceptance Scenarios** — Happy path session, crash recovery, chaos lobby, 15-turn fuzhe_mini
+- [ ] **Phase 69: Scenario Runner + RuntimeTestDriver** — Unified driver interface, SeededDiceRoller (source), fake_clock, fuzhe_mini.json creation, StepResult contracts
+- [ ] **Phase 70: Scenario DSL + Artifact Writer** — YAML DSL, run-scenario CLI, model_mode strategy, artifact writer (json/md), scenario registry
+- [ ] **Phase 71: Failure Taxonomy + Contract Scenarios** — FailureCode enum, visibility/reveal/AI contract scenarios, VCR cassettes
+- [ ] **Phase 72: Acceptance Scenarios** — Happy path session, fuzhe_15turn, crash recovery, chaos lobby, CI execution
 
 ### Phase 69: Scenario Runner + RuntimeTestDriver
 
-**Goal:** Create `RuntimeTestDriver` — a unified, Discord-free interface for driving runtime scenarios — and `ScenarioRunner` that executes YAML scenario scripts against it.
+**Goal:** Create `RuntimeTestDriver` — a unified, Discord-free interface for driving runtime scenarios — and `ScenarioRunner` that executes YAML scenario scripts against it. Also add `SeededDiceRoller` (seeded deterministic dice) to `rules/dice.py`, add `fake_clock`, and create `fuzhe_mini.json` as a 4-node deterministic vertical slice fixture.
 
 **Depends on:** Nothing (first phase of vE.2.2)
 
 **Plans:** `69-01`
 
+**Critical deliverables (explicit — not implied):**
+- `RuntimeTestDriver` with methods: `run_command`, `send_message`, `snapshot_state`, `snapshot_db`, `get_outputs`, `restart_runtime`, `simulate_crash`, `simulate_stream_interrupt`
+- `ScenarioRunner` — executes YAML scenario scripts
+- `SeededDiceRoller` in `src/dm_bot/rules/dice.py` — accepts seed, deterministic `random.Random` for reproducible rolls
+- `fake_clock` — controllable time for testing time-dependent triggers
+- `fuzhe_mini.json` — 4-node subset of `fuzhe.json` for deterministic 15-turn testing
+- `StepResult` contract — phase_before/after, emitted_outputs, state_diff, persistence_events
+
 ---
 
 ### Phase 70: Scenario DSL + Artifact Writer
 
-**Goal:** Define structured YAML scenario format and implement `ArtifactWriter` that produces human-readable + machine-parseable run records.
+**Goal:** Define structured YAML scenario format and implement `ArtifactWriter` that produces human-readable + machine-parseable run records. Define `run-scenario` CLI command. Define `model_mode` parameter (fake_contract | recorded | live) integration strategy.
 
 **Depends on:** E69
 
 **Plans:** `70-01`
 
+**Critical deliverables (explicit):**
+- Scenario DSL — YAML format for actors, steps, assertions, phase_timeline, visibility, dice_mode, model_mode, db_mode
+- `run-scenario` CLI command: `uv run python -m dm_bot.main run-scenario --scenario <path> --suite <name> --all`
+- `ArtifactWriter` — outputs: `run.json`, `summary.md`, `timeline.json`, `outputs_by_actor/`, `state_before.json`, `state_after.json`, `failure.json`
+- Scenario registry — auto-discovers scenarios in `tests/scenarios/`
+- `model_mode` strategy: `fake_contract` (FastMock), `recorded` (VCR cassettes — record first), `live` (Ollama)
+- Initial state setup mechanism: each scenario gets fresh in-memory SQLite + optional seeded dice
+
 ---
 
 ### Phase 71: Failure Taxonomy + Contract Scenarios
 
-**Goal:** Establish `FailureCode` taxonomy and write contract-level scenarios for visibility, reveal policy, and AI packet structure.
+**Goal:** Establish `FailureCode` taxonomy and write contract-level scenarios for visibility, reveal policy, and AI packet structure. Integrate VCR.py for `recorded` mode cassettes. Verify no redundancy with existing `tests/orchestrator/test_visibility.py`.
 
 **Depends on:** E70
 
 **Plans:** `71-01`
 
+**Critical deliverables (explicit):**
+- `FailureCode` enum: PHASE_TRANSITION_MISMATCH, COMMAND_GATE_FAILURE, REVEAL_POLICY_VIOLATION, VISIBILITY_LEAK, RULE_RESOLUTION_MISMATCH, SESSION_STATE_MISMATCH, PERSISTENCE_RECOVERY_FAILURE, STREAM_RECOVERY_FAILURE, INTENT_ROUTING_MISMATCH, NARRATION_CONTRACT_VIOLATION, CONCURRENCY_INVARIANT_FAILURE, SCENARIO_TIMEOUT, UNSUPPORTED_TEST_CONTRACT
+- Visibility leak scenarios — verify gm_only state never reaches player output
+- Reveal policy scenarios — verify clue reveal gates enforced correctly
+- AI contract scenarios (fake_contract mode): router input packet structure, narrator prompt isolation, audience split correctness
+- VCR cassette recording: record at least one real router + narrator response for `recorded` mode
+- `tests/orchestrator/test_visibility.py` coverage audit — avoid duplicate work
+
 ---
 
 ### Phase 72: Acceptance Scenarios
 
-**Goal:** Write and run acceptance scenarios that prove the system can complete a full session lifecycle, recover from crashes, and handle chaos load.
+**Goal:** Write and run acceptance scenarios that prove the system can complete a full session lifecycle, recover from crashes, and handle chaos load. Ensure scenarios run in CI (headless, no Discord, no live AI).
 
 **Depends on:** E71
 
 **Plans:** `72-01`
+
+**Critical deliverables (explicit):**
+- `acceptance/scen_session_happy_path.yaml` — full session lifecycle: bind→join→ready→start_session→onboarding→round→resolve→next_round
+- `acceptance/scen_fuzhe_15turn.yaml` — 15-turn run using `fuzhe_mini.json` with seeded dice
+- `recovery/scen_crash_recovery.yaml` — mid-scenario crash + restart, verify state recovered
+- `recovery/scen_stream_interrupt.yaml` — streaming interruption + resume contract
+- `chaos/scen_chaos_lobby.yaml` — 5 concurrent users, no duplicate members, correct phase transitions
+- CI execution: `uv run pytest tests/scenarios/` runs all suites; `run-scenario --all` for local dev
+- All artifacts written to `artifacts/scenarios/<scenario-id>/` (gitignored)
 
 ---
 
