@@ -1,4 +1,41 @@
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
 from pydantic import BaseModel, Field
+
+
+class Visibility(str, Enum):
+    """Visibility levels for batch action results."""
+
+    PUBLIC = "public"  # Visible to all channel members
+    PRIVATE = "private"  # Visible only to the acting player
+    GROUP = "group"  # Visible to group members
+    KEEPER = "keeper"  # Bot internal only, not sent to Discord
+
+
+@dataclass
+class ActionBatchEntry:
+    """A single action entry in a scene round batch."""
+
+    user_id: str
+    character_id: str
+    action_text: str
+    submitted_at: datetime = field(default_factory=datetime.now)
+    dex_value: int | None = None  # Optional DEX value for ordering
+    visibility: Visibility = Visibility.PUBLIC
+
+
+class SessionPhase(str, Enum):
+    """Explicit session phases for multiplayer campaigns."""
+
+    ONBOARDING = "onboarding"
+    LOBBY = "lobby"
+    AWAITING_READY = "awaiting_ready"
+    AWAITING_ADMIN_START = "awaiting_admin_start"
+    SCENE_ROUND_OPEN = "scene_round_open"
+    SCENE_ROUND_RESOLVING = "scene_round_resolving"
+    COMBAT = "combat"
+    PAUSED = "paused"
 
 
 class CampaignSession(BaseModel):
@@ -10,6 +47,117 @@ class CampaignSession(BaseModel):
     active_characters: dict[str, str] = Field(default_factory=dict)
     active_roles: dict[str, str] = Field(default_factory=dict)
     selected_profiles: dict[str, str] = Field(default_factory=dict)
+    # Session phase tracking (vC.1.2)
+    session_phase: SessionPhase = SessionPhase.LOBBY
+    player_ready: dict[str, bool] = Field(default_factory=dict)
+    admin_started: bool = False
+    phase_history: list[tuple[str, datetime]] = Field(default_factory=list)
+    # Onboarding tracking (vC.1.2 - Phase 48)
+    onboarding_completed: dict[str, bool] = Field(default_factory=dict)
+    onboarding_content: dict[str, object] = Field(default_factory=dict)
+    # Round collection tracking (vC.1.2 - Phase 49)
+    pending_actions: dict[str, str] = Field(
+        default_factory=dict
+    )  # user_id -> action text
+    action_submitters: set[str] = Field(default_factory=set)  # users who have submitted
+    # Group Action Resolution (vA.1.2 - Phase 4)
+    scene_snapshot: dict[str, object] = Field(
+        default_factory=dict
+    )  # scene state snapshot
+    pending_action_batch: list[ActionBatchEntry] = Field(
+        default_factory=list
+    )  # batch entries
+    dex_order_mode: bool = Field(default=False)  # DEX order mode flag
+
+    def transition_to(self, new_phase: SessionPhase) -> None:
+        self.session_phase = new_phase
+        self.phase_history.append((new_phase.value, datetime.now()))
+
+    def set_player_ready(self, user_id: str, ready: bool) -> None:
+        self.player_ready[user_id] = ready
+
+    def can_start_session(self) -> bool:
+        ready_players = sum(1 for r in self.player_ready.values() if r)
+        return ready_players >= len(self.member_ids) and self.admin_started
+
+    def get_phase_context(self) -> dict[str, object]:
+        return {
+            "phase": self.session_phase.value,
+            "player_ready_count": sum(1 for r in self.player_ready.values() if r),
+            "total_members": len(self.member_ids),
+            "admin_started": self.admin_started,
+            "onboarding_completed_count": sum(
+                1 for c in self.onboarding_completed.values() if c
+            ),
+            "onboarding_content": bool(self.onboarding_content),
+        }
+
+    def set_onboarding_complete(self, user_id: str, complete: bool = True) -> None:
+        self.onboarding_completed[user_id] = complete
+
+    def is_onboarding_complete(self, user_id: str) -> bool:
+        return self.onboarding_completed.get(user_id, False)
+
+    def all_onboarding_complete(self) -> bool:
+        if not self.member_ids:
+            return True
+        return all(self.onboarding_completed.get(uid, False) for uid in self.member_ids)
+
+    def set_onboarding_content(self, content: dict[str, object]) -> None:
+        self.onboarding_content = content
+
+    def get_onboarding_content(self) -> dict[str, object]:
+        return self.onboarding_content
+
+    def set_player_action(self, user_id: str, action: str) -> None:
+        if action and action.strip():
+            self.pending_actions[user_id] = action.strip()
+            self.action_submitters.add(user_id)
+            # Also add to batch for group action resolution
+            char_name = self.active_characters.get(user_id, "unknown")
+            entry = ActionBatchEntry(
+                user_id=user_id,
+                character_id=char_name,
+                action_text=action.strip(),
+                submitted_at=datetime.now(),
+            )
+            self.pending_action_batch.append(entry)
+
+    def clear_player_action(self, user_id: str) -> None:
+        self.pending_actions.pop(user_id, None)
+        self.action_submitters.discard(user_id)
+
+    def clear_all_actions(self) -> None:
+        self.pending_actions.clear()
+        self.action_submitters.clear()
+        self.pending_action_batch.clear()
+
+    def has_submitted(self, user_id: str) -> bool:
+        return user_id in self.action_submitters
+
+    def get_pending_members(self) -> list[str]:
+        return [mid for mid in self.member_ids if mid not in self.action_submitters]
+
+    def all_submitted(self) -> bool:
+        if not self.member_ids:
+            return True
+        return all(uid in self.action_submitters for uid in self.member_ids)
+
+    def get_submitter_names(self) -> list[str]:
+        names = []
+        for uid in self.action_submitters:
+            char_name = self.active_characters.get(uid)
+            if char_name:
+                names.append(char_name)
+        return names
+
+    def get_pending_member_names(self) -> list[str]:
+        names = []
+        for uid in self.get_pending_members():
+            char_name = self.active_characters.get(uid)
+            if char_name:
+                names.append(char_name)
+        return names
 
 
 class SessionStore:
@@ -42,6 +190,7 @@ class SessionStore:
         session = self._sessions[channel_id]
         session.member_ids.discard(user_id)
         session.active_characters.pop(user_id, None)
+        session.clear_player_action(user_id)
         return session
 
     def bind_character(
@@ -121,6 +270,89 @@ class SessionStore:
             if session.selected_profiles.get(user_id) == profile_id
         ]
 
+    async def resolve_scene_round(
+        self,
+        channel_id: str,
+        rules_engine,  # RulesEngine
+        aggregator,  # ConsequenceAggregator
+        dispatcher,  # VisibilityDispatcher
+        llm_summary: bool = False,
+    ):
+        """Execute scene round: collect -> resolve -> aggregate -> dispatch.
+
+        Args:
+            channel_id: Channel to resolve round for
+            rules_engine: RulesEngine instance for batch execution
+            aggregator: ConsequenceAggregator for grouping results
+            dispatcher: VisibilityDispatcher for sending to Discord
+            llm_summary: Whether to use LLM summarization
+
+        Returns:
+            BatchResolutionResult from the round execution
+        """
+        import copy
+
+        session = self._sessions.get(channel_id)
+        if session is None:
+            raise ValueError(f"No session found for channel {channel_id}")
+
+        # 1. Transition to resolving phase
+        session.transition_to(SessionPhase.SCENE_ROUND_RESOLVING)
+
+        # 2. Capture scene snapshot
+        snapshot = dict(session.scene_snapshot) if session.scene_snapshot else {}
+
+        # 3. Build action batch from pending actions
+        batch = list(session.pending_action_batch)
+
+        # 4. Execute batch resolution
+        batch_result = rules_engine.execute_batch(
+            actions=batch,
+            scene_snapshot=snapshot,
+            dex_order=session.dex_order_mode,
+        )
+
+        # 5. Aggregate consequences
+        aggregated = aggregator.aggregate(batch_result, llm_summary_enabled=llm_summary)
+
+        # 6. Dispatch to Discord
+        character_to_user = dict(session.active_characters)
+        await dispatcher.dispatch(aggregated, character_to_user)
+
+        # 7. Update scene state
+        session.scene_snapshot = batch_result.final_scene
+
+        # 8. Clear actions and return to open phase
+        session.clear_all_actions()
+        session.transition_to(SessionPhase.SCENE_ROUND_OPEN)
+
+        return batch_result
+
+    def _capture_scene_snapshot(self, channel_id: str) -> dict[str, object]:
+        """Capture current scene state as a snapshot."""
+        session = self._sessions.get(channel_id)
+        if session is None:
+            return {}
+        return {
+            "scene_snapshot": dict(session.scene_snapshot),
+            "pending_actions": dict(session.pending_actions),
+            "session_phase": session.session_phase.value,
+        }
+
+    def _build_action_batch(self, channel_id: str) -> list:
+        """Build action batch from current pending actions."""
+        session = self._sessions.get(channel_id)
+        if session is None:
+            return []
+        return list(session.pending_action_batch)
+
+    def _character_to_user_map(self, channel_id: str) -> dict[str, str]:
+        """Build character to user mapping for a channel."""
+        session = self._sessions.get(channel_id)
+        if session is None:
+            return {}
+        return dict(session.active_characters)
+
     def dump_sessions(self) -> dict[str, dict[str, object]]:
         payload = {
             channel_id: {
@@ -132,6 +364,14 @@ class SessionStore:
                 "active_characters": dict(session.active_characters),
                 "active_roles": dict(session.active_roles),
                 "selected_profiles": dict(session.selected_profiles),
+                "session_phase": session.session_phase.value,
+                "player_ready": dict(session.player_ready),
+                "admin_started": session.admin_started,
+                "phase_history": session.phase_history,
+                "onboarding_completed": dict(session.onboarding_completed),
+                "onboarding_content": dict(session.onboarding_content),
+                "pending_actions": dict(session.pending_actions),
+                "action_submitters": sorted(session.action_submitters),
             }
             for channel_id, session in self._sessions.items()
         }
@@ -162,5 +402,13 @@ class SessionStore:
                 active_characters=dict(raw.get("active_characters", {})),
                 active_roles=dict(raw.get("active_roles", {})),
                 selected_profiles=dict(raw.get("selected_profiles", {})),
+                session_phase=SessionPhase(raw.get("session_phase", "lobby")),
+                player_ready=dict(raw.get("player_ready", {})),
+                admin_started=raw.get("admin_started", False),
+                phase_history=list(raw.get("phase_history", [])),
+                onboarding_completed=dict(raw.get("onboarding_completed", {})),
+                onboarding_content=dict(raw.get("onboarding_content", {})),
+                pending_actions=dict(raw.get("pending_actions", {})),
+                action_submitters=set(raw.get("action_submitters", [])),
             )
             self._sessions[channel_id] = session

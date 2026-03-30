@@ -5,6 +5,7 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 from dm_bot.models.schemas import TurnEnvelope
+from dm_bot.router.intent import MessageIntent
 
 
 class TurnDispatchResult(BaseModel):
@@ -18,6 +19,9 @@ class TurnRequest(BaseModel):
     user_id: str
     content: str = Field(min_length=1)
     trace_id: str | None = None
+    session_phase: str = "lobby"
+    intent: MessageIntent = MessageIntent.UNKNOWN
+    intent_reasoning: str = ""
 
 
 class TurnCoordinator:
@@ -34,12 +38,18 @@ class TurnCoordinator:
         channel_id: str | None = None,
         user_id: str | None = None,
         content: str | None = None,
+        session_phase: str = "lobby",
+        intent: MessageIntent = MessageIntent.UNKNOWN,
+        intent_reasoning: str = "",
     ) -> TurnDispatchResult:
         request = request or TurnRequest(
             campaign_id=campaign_id or "",
             channel_id=channel_id or "",
             user_id=user_id or "",
             content=content or "",
+            session_phase=session_phase,
+            intent=intent,
+            intent_reasoning=intent_reasoning,
         )
         trace_id = request.trace_id or str(uuid4())
         lock = self._locks.setdefault(request.campaign_id, asyncio.Lock())
@@ -51,14 +61,21 @@ class TurnCoordinator:
                     user_id=request.user_id,
                     trace_id=trace_id,
                     content=request.content,
-                )
+                ),
+                session_phase=request.session_phase,
+                intent=request.intent,
+                intent_reasoning=request.intent_reasoning,
             )
         if self._persistence_store is not None:
             self._persistence_store.append_event(
                 campaign_id=request.campaign_id,
                 trace_id=trace_id,
                 event_type="turn.completed",
-                payload={"reply": result.reply, "channel_id": request.channel_id, "user_id": request.user_id},
+                payload={
+                    "reply": result.reply,
+                    "channel_id": request.channel_id,
+                    "user_id": request.user_id,
+                },
             )
         return TurnDispatchResult(trace_id=trace_id, reply=result.reply)
 
@@ -70,12 +87,18 @@ class TurnCoordinator:
         channel_id: str | None = None,
         user_id: str | None = None,
         content: str | None = None,
+        session_phase: str = "lobby",
+        intent: MessageIntent = MessageIntent.UNKNOWN,
+        intent_reasoning: str = "",
     ) -> AsyncIterator[str]:
         request = request or TurnRequest(
             campaign_id=campaign_id or "",
             channel_id=channel_id or "",
             user_id=user_id or "",
             content=content or "",
+            session_phase=session_phase,
+            intent=intent,
+            intent_reasoning=intent_reasoning,
         )
         trace_id = request.trace_id or str(uuid4())
         lock = self._locks.setdefault(request.campaign_id, asyncio.Lock())
@@ -88,7 +111,10 @@ class TurnCoordinator:
                     user_id=request.user_id,
                     trace_id=trace_id,
                     content=request.content,
-                )
+                ),
+                session_phase=request.session_phase,
+                intent=request.intent,
+                intent_reasoning=request.intent_reasoning,
             ):
                 last_reply = reply
                 yield reply
@@ -97,5 +123,9 @@ class TurnCoordinator:
                 campaign_id=request.campaign_id,
                 trace_id=trace_id,
                 event_type="turn.completed",
-                payload={"reply": last_reply, "channel_id": request.channel_id, "user_id": request.user_id},
+                payload={
+                    "reply": last_reply,
+                    "channel_id": request.channel_id,
+                    "user_id": request.user_id,
+                },
             )

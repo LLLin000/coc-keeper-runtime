@@ -2,6 +2,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
+from dm_bot.characters.skill_types import SkillCategory, SkillEntry
+
 
 class CharacterSourceLabel(StrEnum):
     SNAPSHOT = "snapshot"
@@ -69,9 +71,11 @@ class COCInvestigatorProfile(BaseModel):
     damage_bonus: str = "0"
     move_rate: int = 0
     attributes: COCAttributes = Field(
-        default_factory=lambda: COCAttributes(str=0, con=0, dex=0, app=0, pow=0, siz=0, int=0, edu=0)
+        default_factory=lambda: COCAttributes(
+            str=0, con=0, dex=0, app=0, pow=0, siz=0, int=0, edu=0
+        )
     )
-    skills: dict[str, int] = Field(default_factory=dict)
+    skills: list[SkillEntry] = Field(default_factory=list)
 
 
 class CharacterRecord(BaseModel):
@@ -83,7 +87,9 @@ class CharacterRecord(BaseModel):
     proficiency_bonus: int = 0
     armor_class: int = 0
     speed: int = 0
-    hp: HitPoints = Field(default_factory=lambda: HitPoints(current=0, maximum=0, temporary=0))
+    hp: HitPoints = Field(
+        default_factory=lambda: HitPoints(current=0, maximum=0, temporary=0)
+    )
     abilities: AbilityScores = Field(
         default_factory=lambda: AbilityScores(
             strength=0,
@@ -94,8 +100,52 @@ class CharacterRecord(BaseModel):
             charisma=0,
         )
     )
-    skills: dict[str, int] = Field(default_factory=dict)
+    skills: list[SkillEntry] = Field(default_factory=list)
     attacks: list[AttackProfile] = Field(default_factory=list)
     spellcasting: SpellcastingSummary | None = None
     resources: dict[str, int] = Field(default_factory=dict)
     coc: COCInvestigatorProfile | None = None
+
+    def migrate_skills_from_dict(
+        self, skills_dict: dict[str, int]
+    ) -> "CharacterRecord":
+        """Migrate from old dict[str, int] format to list[SkillEntry].
+
+        Args:
+            skills_dict: Old-style skill dictionary {skill_name: value}
+
+        Returns:
+            Updated CharacterRecord with skills migrated to list[SkillEntry]
+        """
+        from dm_bot.rules.skills import (
+            SkillCategory,
+            SkillEntry,
+            get_skill_by_name,
+            COC_SKILLS,
+        )
+
+        new_skills = []
+        for name, value in skills_dict.items():
+            existing = get_skill_by_name(COC_SKILLS, name)
+            if existing:
+                new_skills.append(
+                    SkillEntry(
+                        name=name,
+                        value=value,
+                        category=existing.category,
+                        specialization=existing.specialization,
+                        is_language=existing.is_language,
+                        is_derived=existing.is_derived,
+                        default_value=existing.value,
+                    )
+                )
+            else:
+                # Unknown skill - add as OTHER category
+                new_skills.append(
+                    SkillEntry(
+                        name=name,
+                        value=value,
+                        category=SkillCategory.OTHER,
+                    )
+                )
+        return self.model_copy(update={"skills": new_skills})

@@ -24,6 +24,9 @@ from dm_bot.orchestrator.session_store import SessionStore
 from dm_bot.orchestrator.turn_runner import TurnRunner
 from dm_bot.orchestrator.turns import TurnCoordinator
 from dm_bot.persistence.store import PersistenceStore
+from dm_bot.router.intent_classifier import IntentClassifier
+from dm_bot.router.intent_handler import IntentHandlerRegistry
+from dm_bot.router.message_buffer import MessageBuffer
 from dm_bot.router.service import RouterService
 from dm_bot.rules.compendium import FixtureCompendium
 from dm_bot.rules.engine import RulesEngine
@@ -64,13 +67,62 @@ def build_runtime(settings: Settings | None = None) -> RuntimeBundle:
     character_builder = ConversationalCharacterBuilder(
         archive_repository=archive_repository,
         interview_planner=ModelGuidedInterviewPlanner(model_client=model_client),
-        semantic_extractor=ModelGuidedArchiveSemanticExtractor(model_client=model_client),
+        semantic_extractor=ModelGuidedArchiveSemanticExtractor(
+            model_client=model_client
+        ),
         synthesizer=ModelGuidedCharacterSheetSynthesizer(model_client=model_client),
     )
     gameplay = GameplayOrchestrator(
-        importer=CharacterImporter(sources={"dicecloud_snapshot": DicecloudSnapshotSource(fixtures={})}),
+        importer=CharacterImporter(
+            sources={"dicecloud_snapshot": DicecloudSnapshotSource(fixtures={})}
+        ),
         registry=CharacterRegistry(),
-        rules_engine=RulesEngine(compendium=FixtureCompendium(baseline="2014", fixtures={})),
+        rules_engine=RulesEngine(
+            compendium=FixtureCompendium(baseline="2014", fixtures={})
+        ),
+    )
+    intent_classifier = IntentClassifier(model_client)
+    message_buffer = MessageBuffer()
+    turn_runner = TurnRunner(
+        router=RouterService(model_client),
+        narrator=NarrationService(model_client),
+        gameplay=gameplay,
+    )
+    session_store = SessionStore()
+    session_store.load_sessions(persistence_store.load_sessions())
+    turn_coordinator = TurnCoordinator(
+        turn_runner=turn_runner, persistence_store=persistence_store
+    )
+    handlers = BotCommands(
+        settings=settings,
+        session_store=session_store,
+        turn_coordinator=turn_coordinator,
+        gameplay=gameplay,
+        diagnostics=DiagnosticsService(
+            persistence_store,
+            session_store=session_store,
+            archive_repository=archive_repository,
+        ),
+        persistence_store=persistence_store,
+        coc_assets=coc_assets,
+        archive_repository=archive_repository,
+        character_builder=character_builder,
+        intent_classifier=intent_classifier,
+        message_buffer=message_buffer,
+    )
+    return RuntimeBundle(
+        settings=settings,
+        app=create_app(),
+        discord_bot=create_discord_bot(handlers=handlers, settings=settings),
+    )
+    gameplay = GameplayOrchestrator(
+        importer=CharacterImporter(
+            sources={"dicecloud_snapshot": DicecloudSnapshotSource(fixtures={})}
+        ),
+        registry=CharacterRegistry(),
+        rules_engine=RulesEngine(
+            compendium=FixtureCompendium(baseline="2014", fixtures={})
+        ),
     )
     turn_runner = TurnRunner(
         router=RouterService(model_client),
@@ -79,7 +131,9 @@ def build_runtime(settings: Settings | None = None) -> RuntimeBundle:
     )
     session_store = SessionStore()
     session_store.load_sessions(persistence_store.load_sessions())
-    turn_coordinator = TurnCoordinator(turn_runner=turn_runner, persistence_store=persistence_store)
+    turn_coordinator = TurnCoordinator(
+        turn_runner=turn_runner, persistence_store=persistence_store
+    )
     handlers = BotCommands(
         settings=settings,
         session_store=session_store,
@@ -107,16 +161,28 @@ def build_coc_assets(settings: Settings) -> COCAssetLibrary:
     if not root.exists():
         return COCAssetLibrary(
             community_references=[
-                COCReference(title="克苏鲁公社", url="https://www.cthulhuclub.com", summary="COC 模组、规则与工具入口。")
+                COCReference(
+                    title="克苏鲁公社",
+                    url="https://www.cthulhuclub.com",
+                    summary="COC 模组、规则与工具入口。",
+                )
             ]
         )
-    rulebooks = [path for path in root.iterdir() if path.is_file() and path.suffix.lower() == ".pdf"]
+    rulebooks = [
+        path
+        for path in root.iterdir()
+        if path.is_file() and path.suffix.lower() == ".pdf"
+    ]
     investigator_paths = [path for path in root.rglob("*.pdf") if path.parent != root]
     return COCAssetLibrary.from_paths(
         rulebook_paths=rulebooks,
         investigator_paths=investigator_paths,
         community_references=[
-            COCReference(title="克苏鲁公社", url="https://www.cthulhuclub.com", summary="COC 模组、规则与工具入口。")
+            COCReference(
+                title="克苏鲁公社",
+                url="https://www.cthulhuclub.com",
+                summary="COC 模组、规则与工具入口。",
+            )
         ],
     )
 
@@ -135,7 +201,9 @@ def run_api(settings: Settings | None = None) -> None:
 
 def run_control_panel(settings: Settings | None = None) -> None:
     settings = settings or get_settings()
-    app = create_app(control_service=RuntimeControlService(cwd=Path.cwd(), settings=settings))
+    app = create_app(
+        control_service=RuntimeControlService(cwd=Path.cwd(), settings=settings)
+    )
     uvicorn.run(app, host="127.0.0.1", port=8001)
 
 

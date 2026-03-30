@@ -1,11 +1,19 @@
 import json
 import asyncio
 from collections.abc import Awaitable, Callable
+from uuid import uuid4
 
 from dm_bot.config import Settings, get_settings
 from dm_bot.discord_bot.channel_enforcer import ChannelEnforcer
 from dm_bot.discord_bot.streaming import StreamingMessageTransport
+from dm_bot.discord_bot.onboarding_views import OnboardingView
 from dm_bot.orchestrator.message_filters import MessageDisposition, classify_message
+from dm_bot.router.intent import (
+    MessageIntent,
+    IntentClassificationResult,
+    should_buffer_intent,
+    get_handling_decision,
+)
 from dm_bot.runtime.health import build_health_snapshot
 
 
@@ -22,6 +30,8 @@ class BotCommands:
         coc_assets=None,
         archive_repository=None,
         character_builder=None,
+        intent_classifier=None,
+        message_buffer=None,
     ) -> None:
         self._settings = settings or get_settings()
         self._session_store = session_store
@@ -33,6 +43,8 @@ class BotCommands:
         self._archive_repository = archive_repository
         self._character_builder = character_builder
         self._enforcer = ChannelEnforcer(session_store) if session_store else None
+        self._intent_classifier = intent_classifier
+        self._message_buffer = message_buffer
 
     def check_channel(self, command_name: str, interaction) -> tuple[bool, str | None]:
         if self._enforcer is None:
@@ -408,6 +420,17 @@ class BotCommands:
         if blocked:
             await interaction.followup.send(blocked, ephemeral=True)
             return
+        from dm_bot.orchestrator.session_store import SessionPhase
+
+        if session.session_phase == SessionPhase.ONBOARDING:
+            user_id_str = str(interaction.user.id)
+            if not session.is_onboarding_complete(user_id_str):
+                await interaction.followup.send(
+                    "📋 当前处于规则介绍阶段。请先完成 onboarding 后再行动。\n"
+                    "使用 `/complete_onboarding` 确认已了解规则。",
+                    ephemeral=True,
+                )
+                return
         onboarding_block = (
             self._gameplay.onboarding_block_message()
             if self._gameplay is not None
@@ -639,12 +662,14 @@ class BotCommands:
         seeded = self._gameplay.seed_role_knowledge(
             user_id=str(interaction.user.id), role=role
         )
-        onboarding = self._gameplay.mark_adventure_ready(
-            user_id=str(interaction.user.id)
-        )
-        ready_ids = set(onboarding.get("ready_user_ids", []))
+        from dm_bot.orchestrator.session_store import SessionPhase
+
+        user_id_str = str(interaction.user.id)
+        session.set_player_ready(user_id_str, True)
+        ready_count = sum(1 for r in session.player_ready.values() if r)
+        total_members = len(session.member_ids) if session.member_ids else 1
         await interaction.response.send_message(
-            f"已就位 ({len(ready_ids)}/{len(session.member_ids)})",
+            f"已就位 ({ready_count}/{total_members})。等待管理员用 /start-session 启动游戏。",
             ephemeral=True,
         )
         track = self._gameplay.onboarding_track_for_role(role)
@@ -658,16 +683,232 @@ class BotCommands:
                     )
                 )
             await interaction.followup.send("\n".join(private_lines), ephemeral=True)
-        if session.member_ids and ready_ids.issuperset(session.member_ids):
-            self._gameplay.begin_adventure()
-            self._save_state_for_channel(str(interaction.channel_id))
+        if session.member_ids and ready_count >= len(session.member_ids):
+            session.transition_to(SessionPhase.AWAITING_ADMIN_START)
             await interaction.channel.send(
-                self._gameplay.adventure_opening_text(
-                    active_characters=session.active_characters
-                )
+                f"所有玩家已就位！管理员可以使用 `/start-session` 开始游戏。"
             )
+        self._save_campaign_state(session.campaign_id)
+        self._persist_sessions()
+
+    async def start_session(self, interaction) -> None:
+        from dm_bot.orchestrator.session_store import SessionPhase
+        from dm_bot.orchestrator.onboarding import get_default_coc7e_onboarding
+        from dm_bot.orchestrator.onboarding_controller import OnboardingController
+        from dm_bot.discord_bot.onboarding_views import OnboardingView
+
+        allowed, msg = self.check_channel("start_session", interaction)
+        if not allowed:
+            await interaction.response.send_message(msg, ephemeral=True)
+            return
+        if self._gameplay is None or self._session_store is None:
+            await interaction.response.send_message(
+                "gameplay is not configured", ephemeral=True
+            )
+            return
+        session = self._session_store.get_by_channel(str(interaction.channel_id))
+        if session is None:
+            await interaction.response.send_message(
+                "no campaign bound to this channel", ephemeral=True
+            )
+            return
+        if session.session_phase not in (
+            SessionPhase.LOBBY,
+            SessionPhase.AWAITING_ADMIN_START,
+        ):
+            await interaction.response.send_message(
+                f"无法从当前阶段启动：{session.session_phase.value}。需要玩家先 /ready。",
+                ephemeral=True,
+            )
+            return
+        ready_count = sum(1 for r in session.player_ready.values() if r)
+        if ready_count < len(session.member_ids):
+            await interaction.response.send_message(
+                f"无法启动：还有玩家未就位 ({ready_count}/{len(session.member_ids)})。",
+                ephemeral=True,
+            )
+            return
+        session.admin_started = True
+
+        session.transition_to(SessionPhase.ONBOARDING)
+        for member_id in session.member_ids:
+            session.set_onboarding_complete(member_id, False)
+
+        if self._gameplay:
+            self._gameplay.begin_adventure()
+
+        controller = OnboardingController(session=session, gameplay=self._gameplay)
+        welcome_content = controller.get_welcome_embed_content()
+
+        self._save_campaign_state(session.campaign_id)
+        self._persist_sessions()
+
+        await interaction.response.defer(thinking=True)
+
+        await interaction.channel.send(
+            "📋 **游戏准备开始！**\n\n"
+            "在正式进入模组之前，我们需要完成规则概览。\n"
+            "点击下方按钮查看 COC 7E 核心规则。",
+        )
+
+        view = OnboardingView(
+            user_id="all",
+            content=get_default_coc7e_onboarding(),
+            timeout=None,
+        )
+        await interaction.followup.send(
+            welcome_content,
+            view=view,
+            ephemeral=False,
+        )
+
+    async def complete_onboarding(self, interaction) -> None:
+        from dm_bot.orchestrator.session_store import SessionPhase
+        from dm_bot.orchestrator.onboarding_controller import OnboardingController
+
+        allowed, msg = self.check_channel("start_session", interaction)
+        if not allowed:
+            await interaction.response.send_message(msg, ephemeral=True)
+            return
+        if self._session_store is None:
+            await interaction.response.send_message(
+                "session store is not configured", ephemeral=True
+            )
+            return
+
+        session = self._session_store.get_by_channel(str(interaction.channel_id))
+        if session is None:
+            await interaction.response.send_message(
+                "no campaign bound to this channel", ephemeral=True
+            )
+            return
+
+        if session.session_phase != SessionPhase.ONBOARDING:
+            await interaction.response.send_message(
+                f"当前不在 onboarding 阶段：{session.session_phase.value}",
+                ephemeral=True,
+            )
+            return
+
+        user_id_str = str(interaction.user.id)
+        if user_id_str not in session.member_ids:
+            await interaction.response.send_message(
+                "你不在这个 campaign 中", ephemeral=True
+            )
+            return
+
+        session.set_onboarding_complete(user_id_str, True)
+        self._persist_sessions()
+
+        pending = []
+        for member_id in session.member_ids:
+            if not session.is_onboarding_complete(member_id):
+                pending.append(member_id)
+
+        if not pending:
+            session.transition_to(SessionPhase.SCENE_ROUND_OPEN)
+            self._persist_sessions()
+            await interaction.response.send_message(
+                "✅ 你已完成规则确认！\n\n🎮 **所有玩家已准备完毕，游戏开始！**",
+                ephemeral=False,
+            )
+            if self._gameplay and session.active_characters:
+                await interaction.channel.send(
+                    self._gameplay.adventure_opening_text(
+                        active_characters=session.active_characters
+                    )
+                )
         else:
-            self._save_state_for_channel(str(interaction.channel_id))
+            await interaction.response.send_message(
+                f"✅ 你已完成规则确认！\n\n等待其他玩家完成确认：{len(pending)} 人",
+                ephemeral=True,
+            )
+
+    async def resolve_round(self, interaction) -> None:
+        from dm_bot.orchestrator.session_store import SessionPhase
+
+        allowed, msg = self.check_channel("resolve_round", interaction)
+        if not allowed:
+            await interaction.response.send_message(msg, ephemeral=True)
+            return
+        if self._session_store is None or self._turn_coordinator is None:
+            await interaction.response.send_message(
+                "session store is not configured", ephemeral=True
+            )
+            return
+        session = self._session_store.get_by_channel(str(interaction.channel_id))
+        if session is None:
+            await interaction.response.send_message(
+                "no campaign bound to this channel", ephemeral=True
+            )
+            return
+        if session.session_phase != SessionPhase.SCENE_ROUND_OPEN:
+            await interaction.response.send_message(
+                f"当前不在行动收集阶段：{session.session_phase.value}",
+                ephemeral=True,
+            )
+            return
+        if not session.action_submitters:
+            await interaction.response.send_message(
+                "还没有玩家提交行动。请先等待玩家提交行动。",
+                ephemeral=True,
+            )
+            return
+        session.transition_to(SessionPhase.SCENE_ROUND_RESOLVING)
+        self._persist_sessions()
+        await interaction.response.defer(thinking=True)
+        self._load_campaign_state(session.campaign_id)
+        pending_actions_list = [
+            f"**{session.active_characters.get(uid, uid)}**: {action}"
+            for uid, action in session.pending_actions.items()
+        ]
+        actions_summary = (
+            "\n".join(pending_actions_list) if pending_actions_list else "无"
+        )
+        await interaction.followup.send(
+            "⚙️ **开始结算回合**\n\n请在行动描述后输入 `/next-round` 进入下一轮。"
+        )
+        await interaction.channel.send(f"📋 **本轮行动汇总**\n{actions_summary}")
+
+    async def next_round(self, interaction) -> None:
+        from dm_bot.orchestrator.session_store import SessionPhase
+
+        allowed, msg = self.check_channel("next_round", interaction)
+        if not allowed:
+            await interaction.response.send_message(msg, ephemeral=True)
+            return
+        if self._session_store is None:
+            await interaction.response.send_message(
+                "session store is not configured", ephemeral=True
+            )
+            return
+        session = self._session_store.get_by_channel(str(interaction.channel_id))
+        if session is None:
+            await interaction.response.send_message(
+                "no campaign bound to this channel", ephemeral=True
+            )
+            return
+        if session.session_phase != SessionPhase.SCENE_ROUND_RESOLVING:
+            await interaction.response.send_message(
+                f"当前不在回合结算阶段：{session.session_phase.value}",
+                ephemeral=True,
+            )
+            return
+        session.clear_all_actions()
+        session.transition_to(SessionPhase.SCENE_ROUND_OPEN)
+        self._persist_sessions()
+        self._save_campaign_state(session.campaign_id)
+
+        buffered_summary = self._format_buffered_summary(str(interaction.channel_id))
+        released_messages = self._release_buffered_messages(str(interaction.channel_id))
+
+        response = "🔄 **新回合开始**\n\n请各位玩家提交本轮行动！"
+        if released_messages:
+            response += f"\n\n📬 **{len(released_messages)} 条缓冲消息已释放**"
+        await interaction.response.send_message(response)
+
+        if buffered_summary:
+            await interaction.channel.send(buffered_summary)
 
     async def roll_expression(self, interaction, *, expression: str) -> None:
         result = self._safe_roll_for_channel(
@@ -884,6 +1125,53 @@ class BotCommands:
             return None
 
         self._load_campaign_state(session.campaign_id)
+
+        from dm_bot.orchestrator.session_store import SessionPhase
+
+        session_phase = session.session_phase.value
+
+        if session.session_phase == SessionPhase.ONBOARDING:
+            if not session.is_onboarding_complete(user_id):
+                return (
+                    "📋 当前处于规则介绍阶段。请先完成 onboarding 后再行动。\n"
+                    "使用 `/complete_onboarding` 确认已了解规则。"
+                )
+
+        classification = await self._classify_message_intent(
+            campaign_id=session.campaign_id,
+            channel_id=channel_id,
+            user_id=user_id,
+            content=content,
+            session_phase=session_phase,
+            is_admin=self._is_admin_user(user_id, session),
+        )
+
+        if classification and self._should_buffer_message(
+            classification.intent, session_phase
+        ):
+            self._buffer_message(
+                channel_id, user_id, content, classification.intent, session_phase
+            )
+            feedback = (
+                self._intent_classifier.get_feedback_message(
+                    classification.intent, session_phase
+                )
+                if self._intent_classifier
+                else None
+            )
+            return (
+                feedback
+                or f"_Your message has been buffered until the {session_phase} phase ends._"
+            )
+
+        if session.session_phase == SessionPhase.SCENE_ROUND_OPEN:
+            return await self._handle_round_action(
+                session=session,
+                channel_id=channel_id,
+                user_id=user_id,
+                content=content,
+            )
+
         onboarding_block = (
             self._gameplay.onboarding_block_message()
             if self._gameplay is not None
@@ -916,11 +1204,19 @@ class BotCommands:
         if blocked:
             return blocked
 
+        intent_value = (
+            classification.intent if classification else MessageIntent.UNKNOWN
+        )
+        intent_reasoning = classification.reasoning if classification else ""
+
         result = await self._dispatch_turn(
             campaign_id=session.campaign_id,
             channel_id=channel_id,
             user_id=user_id,
             content=content,
+            session_phase=session_phase,
+            intent=intent_value,
+            intent_reasoning=intent_reasoning,
         )
         self._save_campaign_state(session.campaign_id)
         return result.reply
@@ -959,6 +1255,56 @@ class BotCommands:
             return
 
         self._load_campaign_state(session.campaign_id)
+
+        from dm_bot.orchestrator.session_store import SessionPhase
+
+        session_phase = session.session_phase.value
+
+        if session.session_phase == SessionPhase.ONBOARDING:
+            if not session.is_onboarding_complete(user_id):
+                await message.channel.send(
+                    "📋 当前处于规则介绍阶段。请先完成 onboarding 后再行动。\n"
+                    "使用 `/complete_onboarding` 确认已了解规则。"
+                )
+                return
+
+        classification = await self._classify_message_intent(
+            campaign_id=session.campaign_id,
+            channel_id=channel_id,
+            user_id=user_id,
+            content=content,
+            session_phase=session_phase,
+            is_admin=self._is_admin_user(user_id, session),
+        )
+
+        if classification and self._should_buffer_message(
+            classification.intent, session_phase
+        ):
+            self._buffer_message(
+                channel_id, user_id, content, classification.intent, session_phase
+            )
+            feedback = (
+                self._intent_classifier.get_feedback_message(
+                    classification.intent, session_phase
+                )
+                if self._intent_classifier
+                else None
+            )
+            await message.channel.send(
+                feedback
+                or f"_Your message has been buffered until the {session_phase} phase ends._"
+            )
+            return
+
+        if session.session_phase == SessionPhase.SCENE_ROUND_OPEN:
+            await self._handle_round_action_stream(
+                session=session,
+                message=message,
+                user_id=user_id,
+                content=content,
+            )
+            return
+
         onboarding_block = (
             self._gameplay.onboarding_block_message()
             if self._gameplay is not None
@@ -993,6 +1339,11 @@ class BotCommands:
             await message.channel.send(blocked)
             return
 
+        intent_value = (
+            classification.intent if classification else MessageIntent.UNKNOWN
+        )
+        intent_reasoning = classification.reasoning if classification else ""
+
         await self._stream_turn_to_transport(
             campaign_id=session.campaign_id,
             channel_id=channel_id,
@@ -1002,17 +1353,31 @@ class BotCommands:
             edit_message=lambda sent_message, updated: sent_message.edit(
                 content=updated
             ),
+            session_phase=session_phase,
+            intent=intent_value,
+            intent_reasoning=intent_reasoning,
         )
         self._save_campaign_state(session.campaign_id)
 
     async def _dispatch_turn(
-        self, *, campaign_id: str, channel_id: str, user_id: str, content: str
+        self,
+        *,
+        campaign_id: str,
+        channel_id: str,
+        user_id: str,
+        content: str,
+        session_phase: str = "lobby",
+        intent: MessageIntent = MessageIntent.UNKNOWN,
+        intent_reasoning: str = "",
     ):
         return await self._turn_coordinator.handle_turn(
             campaign_id=campaign_id,
             channel_id=channel_id,
             user_id=user_id,
             content=content,
+            session_phase=session_phase,
+            intent=intent,
+            intent_reasoning=intent_reasoning,
         )
 
     async def _stream_turn_to_transport(
@@ -1024,6 +1389,9 @@ class BotCommands:
         content: str,
         send_initial: Callable[[str], Awaitable[object]],
         edit_message: Callable[[object, str], Awaitable[None]],
+        session_phase: str = "lobby",
+        intent: MessageIntent = MessageIntent.UNKNOWN,
+        intent_reasoning: str = "",
     ) -> str:
         transport = StreamingMessageTransport(
             send_initial=send_initial, edit_message=edit_message
@@ -1034,6 +1402,9 @@ class BotCommands:
                 channel_id=channel_id,
                 user_id=user_id,
                 content=content,
+                session_phase=session_phase,
+                intent=intent,
+                intent_reasoning=intent_reasoning,
             )
         )
 
@@ -1050,10 +1421,121 @@ class BotCommands:
             return None
         return f"当前轮到 {active_name} 行动。"
 
+    async def _handle_round_action(
+        self,
+        *,
+        session,
+        channel_id: str,
+        user_id: str,
+        content: str,
+    ) -> str | None:
+        if not content or not content.strip():
+            return None
+        session.set_player_action(user_id, content)
+        self._persist_sessions()
+        return self._build_round_status_message(session)
+
+    async def _handle_round_action_stream(
+        self,
+        *,
+        session,
+        message,
+        user_id: str,
+        content: str,
+    ) -> None:
+        if not content or not content.strip():
+            return
+        session.set_player_action(user_id, content)
+        self._persist_sessions()
+        status_msg = self._build_round_status_message(session)
+        await message.channel.send(status_msg)
+
+    def _build_round_status_message(self, session) -> str:
+        submitted_names = session.get_submitter_names()
+        pending_names = session.get_pending_member_names()
+        submitted_str = "，".join(submitted_names) if submitted_names else "无"
+        pending_str = "，".join(pending_names) if pending_names else "无"
+        if session.all_submitted():
+            return (
+                f"✅ **行动已全部提交！**\n"
+                f"已提交: {submitted_str}\n"
+                f"KP 可以使用 `/resolve-round` 进行结算。"
+            )
+        return f"📝 **行动收集中**\n已提交: {submitted_str} | 待提交: {pending_str}"
+
     def _persist_sessions(self) -> None:
         if self._persistence_store is None or self._session_store is None:
             return
         self._persistence_store.save_sessions(self._session_store.dump_sessions())
+
+    async def _classify_message_intent(
+        self,
+        *,
+        campaign_id: str,
+        channel_id: str,
+        user_id: str,
+        content: str,
+        session_phase: str,
+        is_admin: bool = False,
+    ) -> IntentClassificationResult | None:
+        if self._intent_classifier is None:
+            return None
+        try:
+            return await self._intent_classifier.classify_message(
+                trace_id=str(uuid4()),
+                campaign_id=campaign_id,
+                channel_id=channel_id,
+                user_id=user_id,
+                content=content,
+                session_phase=session_phase,
+                is_admin=is_admin,
+            )
+        except Exception:
+            return IntentClassificationResult(
+                intent=MessageIntent.UNKNOWN,
+                confidence=0.0,
+                reasoning="classification failed, defaulting to unknown",
+            )
+
+    def _should_buffer_message(self, intent: MessageIntent, session_phase: str) -> bool:
+        return should_buffer_intent(intent, session_phase)
+
+    def _buffer_message(
+        self,
+        channel_id: str,
+        user_id: str,
+        content: str,
+        intent: MessageIntent,
+        session_phase: str,
+    ) -> None:
+        if self._message_buffer is None:
+            return
+        from dm_bot.router.intent import MessageIntentMetadata
+
+        metadata = MessageIntentMetadata(
+            intent=intent,
+            classification_reasoning="auto-classified",
+            handling_decision=get_handling_decision(intent, session_phase),
+            was_buffered=True,
+            phase_at_classification=session_phase,
+        )
+        self._message_buffer.buffer_message(
+            channel_id=channel_id,
+            user_id=user_id,
+            content=content,
+            intent=intent,
+            metadata=metadata,
+        )
+
+    def _release_buffered_messages(self, channel_id: str) -> list:
+        if self._message_buffer is None:
+            return []
+        return self._message_buffer.release_buffered_messages(channel_id)
+
+    def _format_buffered_summary(self, channel_id: str) -> str | None:
+        if self._message_buffer is None:
+            return None
+        return self._message_buffer.format_buffered_message_summary(channel_id)
 
     def _persist_archives(self) -> None:
         if self._persistence_store is None or self._archive_repository is None:
@@ -1108,6 +1590,11 @@ class BotCommands:
             else None
         )
         return session is not None and session.owner_id == str(interaction.user.id)
+
+    def _is_admin_user(self, user_id: str, session) -> bool:
+        if session is None:
+            return False
+        return session.owner_id == user_id
 
     def _admin_channel_guidance(self, interaction) -> str:
         if self._session_store is None:

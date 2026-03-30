@@ -55,7 +55,13 @@ class FakeChannel:
 
 
 class FakeInteraction:
-    def __init__(self, *, channel_id: str = "chan-1", guild_id: str = "guild-1", user_id: str = "user-1") -> None:
+    def __init__(
+        self,
+        *,
+        channel_id: str = "chan-1",
+        guild_id: str = "guild-1",
+        user_id: str = "user-1",
+    ) -> None:
         self.channel_id = channel_id
         self.guild_id = guild_id
         self.user = type("User", (), {"id": user_id})()
@@ -68,11 +74,35 @@ class StubTurnService:
     def __init__(self) -> None:
         self.calls = []
 
-    async def handle_turn(self, *, campaign_id: str, channel_id: str, user_id: str, content: str):
+    async def handle_turn(
+        self,
+        *,
+        campaign_id: str,
+        channel_id: str,
+        user_id: str,
+        content: str,
+        session_phase: str = "lobby",
+        intent=None,
+        intent_reasoning: str = "",
+        **kwargs,
+    ):
         self.calls.append((campaign_id, channel_id, user_id, content))
-        return type("TurnResult", (), {"reply": "地牢里传来低语。", "trace_id": "trace-1"})()
+        return type(
+            "TurnResult", (), {"reply": "地牢里传来低语。", "trace_id": "trace-1"}
+        )()
 
-    async def stream_turn(self, *, campaign_id: str, channel_id: str, user_id: str, content: str):
+    async def stream_turn(
+        self,
+        *,
+        campaign_id: str,
+        channel_id: str,
+        user_id: str,
+        content: str,
+        session_phase: str = "lobby",
+        intent=None,
+        intent_reasoning: str = "",
+        **kwargs,
+    ):
         self.calls.append((campaign_id, channel_id, user_id, content))
         yield "地牢里"
         yield "地牢里传来低语。"
@@ -114,7 +144,9 @@ def test_bind_and_join_commands_manage_campaign_session() -> None:
 def test_turn_command_defers_and_sends_followup_reply() -> None:
     turn_service = StubTurnService()
     store = SessionStore()
-    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    store.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
     commands = BotCommands(
         settings=Settings(),
         session_store=store,
@@ -139,7 +171,9 @@ def test_bind_command_persists_session_binding(tmp_path) -> None:
         turn_coordinator=StubTurnService(),
         persistence_store=persistence,
     )
-    interaction = FakeInteraction(channel_id="chan-1", guild_id="guild-1", user_id="owner")
+    interaction = FakeInteraction(
+        channel_id="chan-1", guild_id="guild-1", user_id="owner"
+    )
 
     asyncio.run(commands.bind_campaign(interaction, campaign_id="camp-1"))
 
@@ -153,7 +187,9 @@ def test_load_adventure_prompts_ready_up_and_records_onboarding_state() -> None:
     from dm_bot.rules.engine import RulesEngine
 
     store = SessionStore()
-    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    store.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
     commands = BotCommands(
         settings=Settings(),
         session_store=store,
@@ -161,7 +197,9 @@ def test_load_adventure_prompts_ready_up_and_records_onboarding_state() -> None:
         gameplay=GameplayOrchestrator(
             importer=None,
             registry=CharacterRegistry(),
-            rules_engine=RulesEngine(compendium=FixtureCompendium(baseline="2014", fixtures={})),
+            rules_engine=RulesEngine(
+                compendium=FixtureCompendium(baseline="2014", fixtures={})
+            ),
         ),
     )
     interaction = FakeInteraction(channel_id="chan-1", user_id="user-1")
@@ -171,7 +209,9 @@ def test_load_adventure_prompts_ready_up_and_records_onboarding_state() -> None:
     assert "loaded adventure" in interaction.response.messages[0][0]
     assert interaction.channel.messages
     assert "ready" in interaction.channel.messages[0].lower()
-    assert commands._gameplay.adventure_state["onboarding"]["status"] == "awaiting_ready"
+    assert (
+        commands._gameplay.adventure_state["onboarding"]["status"] == "awaiting_ready"
+    )
 
 
 def test_ready_command_posts_opening_when_all_members_are_ready() -> None:
@@ -180,14 +220,22 @@ def test_ready_command_posts_opening_when_all_members_are_ready() -> None:
     from dm_bot.rules.engine import RulesEngine
 
     store = SessionStore()
-    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    store.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
     store.join_campaign(channel_id="chan-1", user_id="user-2")
     gameplay = GameplayOrchestrator(
         importer=None,
         registry=CharacterRegistry(),
-        rules_engine=RulesEngine(compendium=FixtureCompendium(baseline="2014", fixtures={})),
+        rules_engine=RulesEngine(
+            compendium=FixtureCompendium(baseline="2014", fixtures={})
+        ),
     )
-    gameplay.load_adventure(__import__("dm_bot.adventures.loader", fromlist=["load_adventure"]).load_adventure("mad_mansion"))
+    gameplay.load_adventure(
+        __import__(
+            "dm_bot.adventures.loader", fromlist=["load_adventure"]
+        ).load_adventure("mad_mansion")
+    )
     commands = BotCommands(
         settings=Settings(),
         session_store=store,
@@ -197,13 +245,24 @@ def test_ready_command_posts_opening_when_all_members_are_ready() -> None:
     first = FakeInteraction(channel_id="chan-1", user_id="user-1")
     second = FakeInteraction(channel_id="chan-1", user_id="user-2")
     first.channel = second.channel
+    first.guild_id = "guild-1"
 
     asyncio.run(commands.ready_for_adventure(first, character_name="调查员A"))
     asyncio.run(commands.ready_for_adventure(second, character_name="调查员B"))
 
-    assert any("疯狂之馆" in message for message in first.channel.messages)
-    assert any("先从最显眼的事物开始" in message for message in first.channel.messages)
-    assert commands._gameplay.adventure_state["onboarding"]["status"] == "in_progress"
+    messages_str = str(first.channel.messages)
+    assert "/start-session" in messages_str
+
+    asyncio.run(commands.start_session(first))
+
+    messages_str = str(first.channel.messages)
+    assert "游戏准备开始" in messages_str or "onboarding" in messages_str.lower()
+
+    asyncio.run(commands.complete_onboarding(first))
+    asyncio.run(commands.complete_onboarding(second))
+
+    messages_str = str(first.channel.messages)
+    assert "游戏开始" in messages_str or "疯狂之馆" in messages_str
 
 
 def test_streaming_channel_message_edits_single_message() -> None:
@@ -212,11 +271,15 @@ def test_streaming_channel_message_edits_single_message() -> None:
     from dm_bot.rules.engine import RulesEngine
 
     store = SessionStore()
-    store.bind_campaign(campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1")
+    store.bind_campaign(
+        campaign_id="camp-1", channel_id="chan-1", guild_id="guild-1", owner_id="user-1"
+    )
     gameplay = GameplayOrchestrator(
         importer=None,
         registry=CharacterRegistry(),
-        rules_engine=RulesEngine(compendium=FixtureCompendium(baseline="2014", fixtures={})),
+        rules_engine=RulesEngine(
+            compendium=FixtureCompendium(baseline="2014", fixtures={})
+        ),
     )
     coordinator = StubTurnService()
     commands = BotCommands(
