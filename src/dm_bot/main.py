@@ -34,6 +34,10 @@ from dm_bot.runtime.app import create_app
 from dm_bot.runtime.control_service import RuntimeControlService
 from dm_bot.runtime.restart_system import run_restart_system
 from dm_bot.runtime.smoke_check import run_local_smoke_check
+from dm_bot.testing.scenario_runner import ScenarioRunner
+from dm_bot.testing.runtime_driver import RuntimeTestDriver
+from dm_bot.testing.scenario_dsl import ScenarioRegistry, ScenarioParser
+from dm_bot.testing.artifact_writer import ArtifactWriter
 import uvicorn
 
 
@@ -177,20 +181,139 @@ def run_control_status(*, cwd: Path, settings: Settings | None = None) -> int:
     return 0
 
 
+def run_scenario_cli(
+    scenario_path: str | None = None,
+    suite: str | None = None,
+    run_all: bool = False,
+    write_artifacts: bool = True,
+    fail_fast: bool = False,
+    model_mode: str | None = None,
+    seed: int | None = None,
+) -> int:
+    import asyncio
+
+    registry = ScenarioRegistry()
+
+    if run_all:
+        scenarios = registry.scan()
+    elif suite:
+        scenarios = registry.scan()
+        scenarios = {k: v for k, v in scenarios.items() if suite in v.tags}
+    elif scenario_path:
+        parser = ScenarioParser()
+        try:
+            scenario = parser.parse(scenario_path)
+            scenarios = {scenario.id: scenario}
+        except Exception as e:
+            print(f"Error parsing scenario: {e}")
+            return 1
+    else:
+        print("Error: Must specify --scenario, --suite, or --all")
+        return 1
+
+    if not scenarios:
+        print("No scenarios found")
+        return 1
+
+    print(f"Found {len(scenarios)} scenario(s)")
+
+    passed = 0
+    failed = 0
+
+    for scenario_id, scenario in scenarios.items():
+        print(f"\nRunning: {scenario_id}")
+
+        db_path = ":memory:"
+        driver = RuntimeTestDriver(
+            dice_seed=seed or scenario.fixtures.dice_seed,
+            db_path=db_path,
+        )
+
+        runner = ScenarioRunner(driver)
+
+        async def run_one() -> None:
+            nonlocal passed, failed
+
+            try:
+                result = await runner.run(
+                    scenario_path=scenario_path
+                    or f"tests/scenarios/{scenario_id}.yaml",
+                    write_artifacts=write_artifacts,
+                    fail_fast=fail_fast,
+                )
+
+                status = "PASSED" if result.passed else "FAILED"
+                print(f"  Status: {status}")
+
+                if result.passed:
+                    passed += 1
+                else:
+                    failed += 1
+                    if result.failure:
+                        print(
+                            f"  Failure: {result.failure.code} - {result.failure.message}"
+                        )
+
+            except Exception as e:
+                print(f"  Error: {e}")
+                failed += 1
+
+        asyncio.run(run_one())
+
+        if fail_fast and failed > 0:
+            print("\nStopping due to failure (--fail-fast)")
+            break
+
+    print(f"\n{'=' * 40}")
+    print(f"Results: {passed} passed, {failed} failed")
+
+    return 0 if failed == 0 else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="dm-bot")
-    parser.add_argument(
-        "command",
-        choices=[
-            "preflight",
-            "run-api",
-            "run-bot",
-            "smoke-check",
-            "restart-system",
-            "control-status",
-            "run-control-panel",
-        ],
+    subparsers = parser.add_subparsers(dest="command")
+
+    subparsers.add_parser("preflight")
+    subparsers.add_parser("run-api")
+    subparsers.add_parser("run-bot")
+    subparsers.add_parser("smoke-check")
+    subparsers.add_parser("restart-system")
+    subparsers.add_parser("control-status")
+    subparsers.add_parser("run-control-panel")
+
+    run_scenario_parser = subparsers.add_parser("run-scenario")
+    run_scenario_parser.add_argument(
+        "--scenario", type=str, help="Path to scenario YAML file"
     )
+    run_scenario_parser.add_argument(
+        "--suite",
+        type=str,
+        help="Run all scenarios in a suite (acceptance, contract, chaos, recovery)",
+    )
+    run_scenario_parser.add_argument(
+        "--all", action="store_true", help="Run all scenarios"
+    )
+    run_scenario_parser.add_argument(
+        "--write-artifacts", action="store_true", default=True
+    )
+    run_scenario_parser.add_argument(
+        "--no-artifacts", action="store_true", help="Skip writing artifacts"
+    )
+    run_scenario_parser.add_argument(
+        "--fail-fast", action="store_true", help="Stop on first failure"
+    )
+    run_scenario_parser.add_argument(
+        "--keep-db", action="store_true", help="Keep temp DB files after run"
+    )
+    run_scenario_parser.add_argument(
+        "--model-mode",
+        type=str,
+        choices=["fake_contract", "recorded", "live"],
+        help="Override model_mode",
+    )
+    run_scenario_parser.add_argument("--seed", type=int, help="Override dice_seed")
+
     args = parser.parse_args(argv)
 
     if args.command == "preflight":
@@ -211,6 +334,21 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "run-control-panel":
         run_control_panel()
         return 0
+    if args.command == "run-scenario":
+        write_artifacts = not getattr(args, "no_artifacts", False)
+        if getattr(args, "all", False):
+            write_artifacts = True
+
+        result = run_scenario_cli(
+            scenario_path=getattr(args, "scenario", None),
+            suite=getattr(args, "suite", None),
+            run_all=getattr(args, "all", False),
+            write_artifacts=write_artifacts,
+            fail_fast=getattr(args, "fail_fast", False),
+            model_mode=getattr(args, "model_mode", None),
+            seed=getattr(args, "seed", None),
+        )
+        return result
     return 1
 
 
