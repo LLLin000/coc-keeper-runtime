@@ -18,6 +18,7 @@ from dm_bot.rules.coc.sanity import (
     spend_luck_for_sanity,
     InsanityType,
 )
+from dm_bot.rules.coc.magic import resolve_spell_cast
 
 
 @dataclass
@@ -94,6 +95,8 @@ class RulesEngine:
             return self._execute_coc_dodge(action)
         if action.action == "coc_grapple_attack":
             return self._execute_coc_grapple_attack(action)
+        if action.action == "coc_cast_spell":
+            return self._execute_coc_cast_spell(action)
         raise RulesEngineError(f"unsupported action: {action.action}")
 
     def execute_batch(
@@ -505,6 +508,45 @@ class RulesEngine:
             actor_stats, target_stats, attacker_roll, defender_roll
         )
         return result.model_dump()
+
+    def _execute_coc_cast_spell(self, action: RuleAction) -> dict[str, object]:
+        """Execute a spell casting attempt."""
+        # Extract caster parameters
+        spell_key = str(action.parameters.get("spell_key", ""))
+        caster_int = int(action.parameters.get("caster_int", 0))
+        caster_pow = int(action.parameters.get("caster_pow", 0))
+        caster_spellcast = int(action.parameters.get("caster_spellcast", 0))
+        caster_cthulhu_mythos = int(action.parameters.get("caster_cthulhu_mythos", 0))
+        caster_mp = int(action.parameters.get("caster_mp", 0))
+        caster_max_mp = int(action.parameters.get("caster_max_mp", caster_mp))
+        bonus_dice = int(action.parameters.get("bonus_dice", 0))
+        penalty_dice = int(action.parameters.get("penalty_dice", 0))
+
+        if not spell_key:
+            raise RulesEngineError("coc_cast_spell requires spell_key")
+
+        # Roll percentile for casting
+        rolled = self._roll_raw_percentile()
+
+        # Call resolve_spell_cast
+        result = resolve_spell_cast(
+            spell_key=spell_key,
+            caster_name=action.actor.name,
+            caster_int=caster_int,
+            caster_pow=caster_pow,
+            caster_spellcast=caster_spellcast,
+            caster_cthulhu_mythos=caster_cthulhu_mythos,
+            caster_mp=caster_mp,
+            caster_max_mp=caster_max_mp,
+            rolled=rolled,
+            bonus_dice=bonus_dice,
+            penalty_dice=penalty_dice,
+        )
+
+        # Build response dict
+        response = result.model_dump()
+        response["action"] = "coc_cast_spell"
+        return response
 
     def roll_initiative(self, combatants: list[tuple[str, int]]) -> list[dict]:
         """Roll initiative for combatants using COC7 DEX×2 + 1d100.
