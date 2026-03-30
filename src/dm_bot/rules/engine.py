@@ -12,6 +12,12 @@ from dm_bot.rules.coc.combat import (
     resolve_grapple_attack,
     get_initiative_order,
 )
+from dm_bot.rules.coc.sanity import (
+    resolve_sanity_check,
+    roll_insanity_break,
+    spend_luck_for_sanity,
+    InsanityType,
+)
 
 
 @dataclass
@@ -279,34 +285,116 @@ class RulesEngine:
         }
 
     def _execute_coc_sanity_check(self, action: RuleAction) -> dict[str, object]:
+        # Extract parameters
         current_san = int(action.parameters.get("current_san", 0))
+        max_san = int(action.parameters.get("max_san", current_san))
+        bonus_dice = int(action.parameters.get("bonus_dice", 0))
+        penalty_dice = int(action.parameters.get("penalty_dice", 0))
+        loss_on_success_str = str(action.parameters.get("loss_on_success", "0"))
+        loss_on_failure_str = str(action.parameters.get("loss_on_failure", "1"))
+        encounter_type = str(action.parameters.get("encounter_type", ""))
+        luck_available = int(action.parameters.get("luck_available", 0))
+
+        # Roll dice expressions for sanity loss
+        import d20
+
+        loss_on_success = (
+            d20.roll(loss_on_success_str).total
+            if isinstance(loss_on_success_str, str)
+            and not loss_on_success_str.isdigit()
+            else int(loss_on_success_str)
+        )
+        loss_on_failure = (
+            d20.roll(loss_on_failure_str).total
+            if isinstance(loss_on_failure_str, str)
+            and not loss_on_failure_str.isdigit()
+            else int(loss_on_failure_str)
+        )
+
         if current_san <= 0:
             raise RulesEngineError("coc_sanity_check requires current_san")
+
+        # Roll percentile
         outcome = self._roll_percentile(
             value=current_san,
             difficulty="regular",
-            bonus_dice=int(action.parameters.get("bonus_dice", 0)),
-            penalty_dice=int(action.parameters.get("penalty_dice", 0)),
+            bonus_dice=bonus_dice,
+            penalty_dice=penalty_dice,
             pushed=False,
         )
-        loss_on_success = str(action.parameters.get("loss_on_success", "0"))
-        loss_on_failure = str(action.parameters.get("loss_on_failure", "1"))
-        san_loss = loss_on_success if outcome.success else loss_on_failure
-        return {
+
+        # Call resolve_sanity_check with rolled value
+        result = resolve_sanity_check(
+            actor_name=action.actor.name,
+            current_san=current_san,
+            max_san=max_san,
+            rolled=outcome.rolled,
+            bonus_dice=bonus_dice,
+            penalty_dice=penalty_dice,
+            loss_on_success=loss_on_success,
+            loss_on_failure=loss_on_failure,
+            encounter_type=encounter_type,
+        )
+
+        # Build response dict
+        response = {
             "action": "coc_sanity_check",
             "actor": action.actor.name,
             "current_san": current_san,
+            "max_san": max_san,
             "rolled": outcome.rolled,
-            "success": outcome.success,
-            "success_rank": outcome.success_rank,
-            "critical": outcome.critical,
-            "fumble": outcome.fumble,
-            "roll": outcome.rendered,
+            "success": result.success,
+            "success_rank": result.success_rank,
+            "critical": outcome.rolled == 1,
+            "fumble": outcome.rolled == 100,
+            "roll": result.rendered,
             "total": outcome.rolled,
-            "san_loss": san_loss,
+            "sanity_loss": result.sanity_loss,
+            "mythos_gain": result.mythos_gain,
             "loss_on_success": loss_on_success,
             "loss_on_failure": loss_on_failure,
+            "luck_spent": 0,
+            "luck_explanation": "",
         }
+
+        # Add insanity info if triggered
+        if result.insanity_triggered != InsanityType.NONE:
+            response["insanity_triggered"] = result.insanity_triggered.value
+            if result.insanity_triggered == InsanityType.TEMPORARY:
+                # Need to get insanity break details - call roll_insanity_break again to get details
+                insanity_break = roll_insanity_break(
+                    action.actor.name,
+                    max(0, current_san - result.sanity_loss),
+                    max_san,
+                    f"SAN检定: {encounter_type}",
+                )
+                response["acute_response"] = insanity_break.acute_response
+                response["duration_rounds"] = insanity_break.duration_rounds
+            else:  # INDEFINITE
+                insanity_break = roll_insanity_break(
+                    action.actor.name, 0, max_san, f"SAN归零: {encounter_type}"
+                )
+                response["acquired_phobia"] = insanity_break.acquired_phobia
+                response["acquired_mania"] = insanity_break.acquired_mania
+
+        # Handle Luck expenditure for failed checks
+        if luck_available > 0 and not result.success:
+            luck_spent, adjusted_loss, luck_explanation = spend_luck_for_sanity(
+                actor_name=action.actor.name,
+                current_san=current_san,
+                max_san=max_san,
+                luck_available=luck_available,
+                sanity_loss=result.sanity_loss,
+                rolled=outcome.rolled,
+            )
+            if luck_spent > 0:
+                result.sanity_loss = adjusted_loss
+                response["luck_spent"] = luck_spent
+                response["luck_explanation"] = luck_explanation
+                response["sanity_loss"] = adjusted_loss
+                response["roll"] += f"\n{luck_explanation}"
+
+        return response
 
     def _build_combatant_stats(self, actor, params: dict) -> CombatantStats:
         """Build CombatantStats from actor and parameters dict."""
