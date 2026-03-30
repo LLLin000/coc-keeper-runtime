@@ -4,6 +4,7 @@ from pydantic import ValidationError
 
 from dm_bot.models.schemas import ModelRequest, TurnEnvelope
 from dm_bot.router.contracts import TurnPlan
+from dm_bot.router.intent import MessageIntent
 
 
 class RouterError(RuntimeError):
@@ -14,7 +15,13 @@ class RouterService:
     def __init__(self, client) -> None:
         self._client = client
 
-    async def route(self, envelope: TurnEnvelope) -> TurnPlan:
+    async def route(
+        self,
+        envelope: TurnEnvelope,
+        session_phase: str = "lobby",
+        intent: MessageIntent = MessageIntent.UNKNOWN,
+        intent_reasoning: str = "",
+    ) -> TurnPlan:
         request = ModelRequest(
             system_prompt=(
                 "You are the routing model for a Discord Call of Cthulhu Keeper runtime. "
@@ -27,6 +34,9 @@ class RouterService:
                 f"campaign_id={envelope.campaign_id}\n"
                 f"channel_id={envelope.channel_id}\n"
                 f"user_id={envelope.user_id}\n"
+                f"session_phase={session_phase}\n"
+                f"classified_intent={intent.value}\n"
+                f"intent_reasoning={intent_reasoning}\n"
                 f"player_input={envelope.content}"
             ),
             response_format={"type": "json_object"},
@@ -34,6 +44,8 @@ class RouterService:
         response = await self._client.call_router(request)
         try:
             payload = self._normalize_payload(json.loads(response.content))
+            payload["intent"] = intent.value
+            payload["intent_reasoning"] = intent_reasoning
             return TurnPlan.model_validate(payload)
         except (json.JSONDecodeError, ValidationError) as exc:
             raise RouterError("router returned invalid structured output") from exc
