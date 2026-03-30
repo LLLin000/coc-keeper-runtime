@@ -1,0 +1,195 @@
+{
+  "slug": "fuzhe_mini",
+  "title": "覆辙（迷你版）",
+  "premise": "一场车祸、一个论坛、一群魔法少女与调查员，被同一条异常轨迹拉入真相。调查员偶然目击魔法少女的存在，魔法少女在聊天室接到任务，双方在湿地公园相遇并共同探索X公司的真相。",
+  "objectives": [
+    "查清车祸与神秘少女的关系",
+    "进入湿地公园并应对第一次异常战斗"
+  ],
+  "start_scene_id": "car_crash_scene",
+  "start_location_id": "car_crash_intersection",
+  "start_story_node_id": "investigator_intro",
+  "state_fields": [
+    {"key": "car_crash_witnessed", "default": false, "visibility": "discoverable"},
+    {"key": "spring_shock_defeated", "default": false, "visibility": "discoverable"},
+    {"key": "current_investigation_stage", "default": "intro", "visibility": "discoverable"}
+  ],
+  "onboarding_tracks": [
+    {
+      "role": "investigator",
+      "title": "调查员导入",
+      "opening_text": "你只是一个普通人，却在傍晚目睹了一场惨烈车祸，以及一个本不该存在的金发少女。",
+      "seeded_knowledge": [
+        {"title": "车祸惨状", "content": "你亲眼见到了那场不合常理的车祸。"},
+        {"title": "神秘少女", "content": "你看到一名长着翅膀的金发少女从车祸中离开。"}
+      ]
+    }
+  ],
+  "story_nodes": [
+    {
+      "id": "investigator_intro",
+      "kind": "scene",
+      "title": "调查员导入",
+      "summary": "调查员从车祸与论坛接触异常。",
+      "location_id": "car_crash_intersection",
+      "next_node_ids": ["wetland_ambush"]
+    },
+    {
+      "id": "wetland_ambush",
+      "kind": "event",
+      "title": "湿地公园遭遇",
+      "summary": "调查员与魔法少女在湿地公园第一次共同遭遇异常战斗，春响魔物出现。",
+      "location_id": "wetland_gate",
+      "next_node_ids": []
+    }
+  ],
+  "locations": [
+    {
+      "id": "car_crash_intersection",
+      "scene_id": "car_crash_scene",
+      "title": "车祸路口",
+      "aliases": ["路口", "事故现场", "车祸"],
+      "landmarks": ["两辆相撞的轿车", "围观群众", "散开的血迹"],
+      "connections": [
+        {"to_location_id": "wetland_gate", "keywords": ["公园", "湿地", "周末"], "travel_text": "时间流逝后，你来到城南湿地公园。"}
+      ]
+    },
+    {
+      "id": "wetland_gate",
+      "scene_id": "wetland_scene",
+      "title": "湿地公园入口",
+      "aliases": ["公园", "入口", "湿地"],
+      "landmarks": ["低矮路灯", "树影", "通往深处的小路"],
+      "connections": []
+    }
+  ],
+  "scenes": [
+    {
+      "id": "car_crash_scene",
+      "title": "车祸路口",
+      "summary": "傍晚的十字路口被车祸和人群的骚动打破。调查员目击金发少女从车祸中离开。",
+      "guidance": {
+        "ambient_focus": ["车祸现场", "围观者反应", "离去的金发少女"],
+        "light_hint": "你可以观察现场、询问路人，或在事后继续追查新闻与论坛。",
+        "rescue_hint": "如果卡住了，可以从车祸新闻、论坛照片、湿地公园这三条线索继续推进。"
+      },
+      "presentation": {
+        "entry_text": "空气中弥漫着汽油和血腥味，晚霞像什么都没发生一样铺在路面上。",
+        "pressure_text": "人群发出巨大的骚动，有人尖叫，有人报警。",
+        "choice_prompt": "你最先关注的是惨烈现场、周围人的反应，还是这名异样的少女？"
+      },
+      "interactables": [
+        {
+          "id": "witness_girl",
+          "title": "目击金发少女",
+          "keywords": ["金发", "少女", "翅膀", "目击"],
+          "judgement": "auto",
+          "result_text": "你的视线中出现了一个奇怪的少女：你确信她是一个女孩，她有着金色的长发，和不该属于人体的翅膀。她从损坏的车中出来，像是受到了惊吓，飞速扇动翅膀离开了。"
+        },
+        {
+          "id": "inspect_crash",
+          "title": "查看车祸现场",
+          "keywords": ["车祸", "现场", "少女", "路口", "观察"],
+          "judgement": "roll",
+          "roll_type": "ability_check",
+          "roll_label": "Listen",
+          "prompt_text": "先聆听周围的声音..."
+        }
+      ],
+      "clues": ["金发少女存在", "车祸不是普通事故"],
+      "reveals": ["魔法少女确实存在"],
+      "combat": false,
+      "exits": ["wetland_gate"]
+    },
+    {
+      "id": "wetland_scene",
+      "title": "城南湿地公园",
+      "summary": "夜色中的湿地公园安静得过分，第一次异常遭遇发生，春响魔物出现。",
+      "guidance": {
+        "ambient_focus": ["稀疏路灯", "草叶摩挲声", "同行者的反应"],
+        "light_hint": "这里很适合分辨队伍状态、安排站位，或警惕是否有异样接近。",
+        "rescue_hint": "第一次真正的异常遭遇将在这里发生，不要忽视声音、气温和同行者的异常。"
+      },
+      "presentation": {
+        "entry_text": "公园晚上也会有不少人前来，但内部人流较少。你不远处有一个沉默的过客。",
+        "pressure_text": "你忽然觉得脊背发凉，扭头却看到一个可怖的人形怪物向你冲来！",
+        "choice_prompt": "你该怎么办？"
+      },
+      "interactables": [
+        {
+          "id": "listen_noise",
+          "title": "聆听",
+          "keywords": ["聆听", "听"],
+          "judgement": "roll",
+          "roll_type": "ability_check",
+          "roll_label": "Listen",
+          "prompt_text": "进行聆听检定..."
+        },
+        {
+          "id": "spring_shock_battle",
+          "title": "春响魔物战斗",
+          "keywords": ["战斗", "魔物", "春响", "怪物"],
+          "trigger_ids": ["spring_shock_defeated"],
+          "judgement": "auto",
+          "result_text": "你看到了那个魔物，那个女孩。她有了基本的人形，身上穿着新海中学的校服。她的眼神中没有疯狂。"
+        }
+      ],
+      "clues": ["春响是曾经的魔法少女", "魔法少女会变成魔物"],
+      "reveals": ["魔法少女的真相"],
+      "combat": true,
+      "exits": []
+    }
+  ],
+  "triggers": [
+    {
+      "id": "wetland_listen_success",
+      "event_kind": "roll",
+      "pending_roll_id": "wetland_listen_check",
+      "roll_action": "ability_check",
+      "roll_label": "Listen",
+      "conditions": {"min_total": 10},
+      "effects": [
+        {"kind": "move_story_node", "key": "wetland_ambush"},
+        {"kind": "set_module_state", "key": "current_investigation_stage", "value": "battle"},
+        {"kind": "clear_pending_roll"}
+      ],
+      "table_summary": "你听到了簌簌的草叶摩擦声，循声望去，你看到一个可怖的人形怪物向你冲来！"
+    },
+    {
+      "id": "wetland_listen_fail",
+      "event_kind": "roll",
+      "pending_roll_id": "wetland_listen_check",
+      "roll_action": "ability_check",
+      "roll_label": "Listen",
+      "conditions": {"max_total": 9},
+      "effects": [
+        {"kind": "move_story_node", "key": "wetland_ambush"},
+        {"kind": "set_module_state", "key": "current_investigation_stage", "value": "battle"},
+        {"kind": "clear_pending_roll"}
+      ],
+      "table_summary": "你叹了口气，忽然觉得脊背发凉，扭头却看到一个可怖的人形怪物向你冲来！"
+    },
+    {
+      "id": "spring_shock_defeated",
+      "event_kind": "action",
+      "action_id": "spring_shock_battle",
+      "effects": [
+        {"kind": "set_module_state", "key": "spring_shock_defeated", "value": true},
+        {"kind": "add_clue", "clue_id": "spring_shock_defeated"}
+      ],
+      "table_summary": "扣除春响25的生命后她离开了。她不会在这里和玩家过多纠缠。"
+    }
+  ],
+  "endings": [
+    {
+      "id": "nothing_happens",
+      "title": "结局1: 无事发生",
+      "summary": "如果玩家在前期放弃调查。调查员玩家继续自己的工作，魔法少女继续当超级英雄。你们并没有在日后相遇。"
+    },
+    {
+      "id": "dream_broken",
+      "title": "结局2: 梦破",
+      "summary": "伴随着最后一位同伴的倒下，你们好像真的成为了斯瑞提卡的玩具。你们以人类的身份死亡了。"
+    }
+  ]
+}
