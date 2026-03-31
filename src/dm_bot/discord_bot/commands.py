@@ -787,6 +787,27 @@ class BotCommands:
             f"《{adventure.title}》已加载。已加入玩家请使用 `/ready` 完成就位；如未导入角色，可在 `/ready` 时填写角色名。"
         )
 
+    async def advance_story(self, interaction, *, scene_id: str = "") -> None:
+        """Stub: advance to a story scene. Full implementation pending adventure graph navigation."""
+        await interaction.response.send_message(
+            f"[stub] 故事推进到场景: {scene_id}",
+            ephemeral=True,
+        )
+
+    async def move_to_location(self, interaction, *, location_id: str = "") -> None:
+        """Stub: move character to a location. Full implementation pending adventure graph navigation."""
+        await interaction.response.send_message(
+            f"[stub] 移动到地点: {location_id}",
+            ephemeral=True,
+        )
+
+    async def interact(self, interaction, *, interactable_id: str = "") -> None:
+        """Stub: interact with an object/NPC. Full implementation pending adventure graph navigation."""
+        await interaction.response.send_message(
+            f"[stub] 与交互对象互动: {interactable_id}",
+            ephemeral=True,
+        )
+
     async def ready(self, interaction) -> None:
         if self._session_store is None:
             await interaction.response.send_message("会话系统尚未配置", ephemeral=True)
