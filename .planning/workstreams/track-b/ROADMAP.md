@@ -322,8 +322,8 @@
 
 ## vB.1.5 Phases
 
-- [ ] **Phase 55: Profile List And Event Logging Foundation** — Profile listing, status display, event log foundation
-  (planned)
+- [x] **Phase 55: Profile List And Event Logging Foundation** — Profile listing, status display, event log foundation
+  (completed 2026-03-31)
 - [ ] **Phase 56: Archive Lifecycle Operations** — Activate, archive, replace operations with audit logging
   (planned)
 - [ ] **Phase 57: Delete And Recovery Operations** — Permanent delete, grace-period recovery, instance lifecycle
@@ -352,8 +352,8 @@
   4. Admin can list all player profiles via `/admin_profiles`
 
 **Plans:**
-- [ ] `55-01` — GovernanceEventLog + SessionStore integration
-- [ ] `55-02` — `/profiles` upgrade + `/my_character` + `/admin_profiles`
+- [x] `55-01` — GovernanceEventLog + SessionStore integration (completed 2026-03-31)
+- [x] `55-02` — `/profiles` upgrade + `/my_character` + `/admin_profiles` (completed 2026-03-31)
 
 ### Phase 56: Archive Lifecycle Operations
 
@@ -442,7 +442,7 @@
 
 | Phase | Requirements | Status |
 |-------|--------------|--------|
-| 55. Profile List And Event Logging Foundation | PLC-01, ILC-01, ILC-04, PV-01, AV-01, AUD-01 | 2 plans |
+| 55. Profile List And Event Logging Foundation | PLC-01, ILC-01, ILC-04, PV-01, AV-01, AUD-01 | Complete |
 | 56. Archive Lifecycle Operations | PLC-02, PLC-03, PV-03, AUD-02 | Planned |
 | 57. Delete And Recovery Operations | PLC-04, PLC-05, PLC-06 | Planned |
 | 58. Instance Management | ILC-02, ILC-03 | Planned |
