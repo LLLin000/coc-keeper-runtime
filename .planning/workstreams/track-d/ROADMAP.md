@@ -15,7 +15,7 @@ Track D owns the perceived table experience — Keeper-style narration, guidance
 **vD.1.1** - Keeper-Guided Archive Experience
 - **Primary Track:** Track D - 游戏呈现层
 - **Goal:** Make archive and builder feel like a Keeper-guided experience, not a bot interface
-- **Status:** Planned (not started)
+- **Status:** In progress (D40 complete)
 
 **4 Planned Phases:**
 - D40: Private-First Builder Experience
@@ -163,7 +163,7 @@ Plans:
 | Phase | Plans | Status | Completed |
 |-------|-------|--------|-----------|
 | **vD.1.1** | | | |
-| D40. Private-First Builder Experience | 0/0 | Planned | - |
+| D40. Private-First Builder Experience | 1/1 | Complete | D40-01 |
 | D41. Archive Card Redesign | 0/0 | Planned | - |
 | D42. Keeper Prompt Polish | 0/0 | Planned | - |
 | D43. Activity-Ready Presentation Contracts | 0/0 | Planned | - |
