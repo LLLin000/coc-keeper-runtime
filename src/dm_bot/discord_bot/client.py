@@ -199,6 +199,26 @@ class DiscordDmBot(commands.Bot):
             await self.handlers.activate_profile(interaction, profile_id=profile_id)
 
         @self.tree.command(
+            name="delete_profile",
+            description="Soft-delete an archived profile (7-day recovery grace period)",
+        )
+        @app_commands.describe(profile_id="Archive profile id to delete")
+        async def delete_profile(
+            interaction: discord.Interaction, profile_id: str
+        ) -> None:
+            await self.handlers.delete_profile(interaction, profile_id=profile_id)
+
+        @self.tree.command(
+            name="recover_profile",
+            description="Recover a deleted profile within the 7-day grace period",
+        )
+        @app_commands.describe(profile_id="Deleted profile id to recover")
+        async def recover_profile(
+            interaction: discord.Interaction, profile_id: str
+        ) -> None:
+            await self.handlers.recover_profile(interaction, profile_id=profile_id)
+
+        @self.tree.command(
             name="admin_profiles", description="List all player archive profiles"
         )
         async def admin_profiles(interaction: discord.Interaction) -> None:

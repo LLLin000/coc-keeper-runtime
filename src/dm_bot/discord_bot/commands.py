@@ -469,8 +469,26 @@ class BotCommands:
 
         lines = []
         for profile in profiles:
-            status_emoji = "🟢" if profile.status == "active" else "⚪"
-            lines.append(f"{status_emoji} 【{profile.name}】（{profile.status}）")
+            if profile.status == "deleted":
+                from datetime import datetime, timezone, timedelta
+
+                grace_remaining = None
+                if profile.deleted_at:
+                    elapsed = datetime.now(timezone.utc) - profile.deleted_at
+                    grace_remaining = timedelta(days=7) - elapsed
+                if grace_remaining and grace_remaining.total_seconds() > 0:
+                    days = int(grace_remaining.total_seconds() // 86400)
+                    lines.append(
+                        f"🔴 【{profile.name}】（deleted - {days}天后可永久删除）"
+                    )
+                else:
+                    lines.append(f"⚫ 【{profile.name}】（deleted - 已过期）")
+            elif profile.status == "active":
+                status_emoji = "🟢"
+                lines.append(f"{status_emoji} 【{profile.name}】（{profile.status}）")
+            else:
+                status_emoji = "⚪"
+                lines.append(f"{status_emoji} 【{profile.name}】（{profile.status}）")
             lines.append(profile.detail_view())
             lines.append("")
 
@@ -697,16 +715,52 @@ class BotCommands:
                 "archive repository is not configured", ephemeral=True
             )
             return
+        user_id = str(interaction.user.id)
+
+        # Get before_state for governance event (D-03)
+        before_profile = self._archive_repository.get_profile(user_id, profile_id)
+        before_state = {"status": before_profile.status}
+
+        # Archive the profile
         profile = self._archive_repository.archive_profile(
-            user_id=str(interaction.user.id), profile_id=profile_id
+            user_id=user_id, profile_id=profile_id
         )
+
+        # Check for active campaign instances (D-02: warn but don't auto-retire)
+        active_instances = self._session_store.get_active_instances_for_user(user_id)
+        instance_warnings = []
+        for session, instance in active_instances:
+            instance_warnings.append(
+                f"战役 [{session.campaign_id}] 中的 [{instance.character_name}]"
+            )
+        instance_warning = ""
+        if instance_warnings:
+            instance_warning = (
+                "\n⚠️ 注意：你有活跃角色 "
+                + "、".join(instance_warnings)
+                + "，如需退役请在游戏大厅手动处理。"
+            )
+
+        # Log governance event (D-03: all lifecycle operations write events)
+        self._session_store.append_event(
+            operation="profile_archive",
+            user_id=user_id,
+            profile_id=profile_id,
+            operator_id=user_id,
+            before_state=before_state,
+            after_state={"status": "archived"},
+        )
+
         self._persist_archives()
-        await self._sync_selected_profile_projections(
-            user_id=str(interaction.user.id), profile=profile
+        await self._sync_selected_profile_projections(user_id=user_id, profile=profile)
+
+        # Detailed transition message (D-01)
+        detailed_message = (
+            f"✓ 已归档「{profile.name}」\n"
+            f"状态：active → archived\n"
+            f"该档案已从可用列表移除。{instance_warning}"
         )
-        await interaction.response.send_message(
-            f"已归档 `{profile.name}`。", ephemeral=True
-        )
+        await interaction.response.send_message(detailed_message, ephemeral=True)
 
     async def activate_profile(self, interaction, *, profile_id: str) -> None:
         if self._archive_repository is None:
@@ -714,16 +768,166 @@ class BotCommands:
                 "archive repository is not configured", ephemeral=True
             )
             return
+        user_id = str(interaction.user.id)
+
+        # Check for active campaign instances BEFORE activating (D-04: conflict detection)
+        active_instances = self._session_store.get_active_instances_for_user(user_id)
+        if active_instances:
+            instance_info = []
+            for session, instance in active_instances:
+                instance_info.append(
+                    f"战役 [{session.campaign_id}] 中的 [{instance.character_name}]"
+                )
+            error_message = (
+                f"无法激活档案「{profile_id}」，因为你在 "
+                + "、".join(instance_info)
+                + " 中有活跃角色。\n"
+                "请先在游戏大厅使用 /retire 或 /leave 退役后再激活。"
+            )
+            await interaction.response.send_message(error_message, ephemeral=True)
+            return
+
+        # Get before_state for governance event (D-03)
+        before_profile = self._archive_repository.get_profile(user_id, profile_id)
+        before_state = {"status": before_profile.status}
+
+        # Activate the profile
         profile = self._archive_repository.replace_active_with(
-            user_id=str(interaction.user.id), profile_id=profile_id
+            user_id=user_id, profile_id=profile_id
         )
+
+        # Log governance event (D-03: all lifecycle operations write events)
+        self._session_store.append_event(
+            operation="profile_activate",
+            user_id=user_id,
+            profile_id=profile_id,
+            operator_id=user_id,
+            before_state=before_state,
+            after_state={"status": "active"},
+        )
+
         self._persist_archives()
-        await self._sync_selected_profile_projections(
-            user_id=str(interaction.user.id), profile=profile
+        await self._sync_selected_profile_projections(user_id=user_id, profile=profile)
+
+        # Detailed transition message (D-01)
+        detailed_message = (
+            f"✓ 已激活「{profile.name}」\n"
+            f"状态：archived → active\n"
+            f"该档案现已可用于战役选择。"
         )
-        await interaction.response.send_message(
-            f"已将 `{profile.name}` 设为当前激活档案。", ephemeral=True
+        await interaction.response.send_message(detailed_message, ephemeral=True)
+
+    async def delete_profile(self, interaction, *, profile_id: str) -> None:
+        """Soft-delete an archived profile. Enters 7-day grace period before permanent erasure."""
+        if self._archive_repository is None:
+            await interaction.response.send_message(
+                "archive repository is not configured", ephemeral=True
+            )
+            return
+        user_id = str(interaction.user.id)
+
+        # Get before_state for governance event (D-03)
+        try:
+            before_profile = self._archive_repository.get_profile(user_id, profile_id)
+        except KeyError:
+            await interaction.response.send_message(
+                f"找不到档案 ID：{profile_id}", ephemeral=True
+            )
+            return
+        before_state = {"status": before_profile.status}
+
+        # Cannot delete active profile (per PLC-05)
+        if before_profile.status == "active":
+            await interaction.response.send_message(
+                f"无法删除「{before_profile.name}」—— 当前状态为 active。\n"
+                "请先使用 /archive_profile 将其归档。",
+                ephemeral=True,
+            )
+            return
+
+        # Delete (soft-delete) the profile - enters grace period
+        try:
+            profile = self._archive_repository.delete_profile(
+                user_id=user_id, profile_id=profile_id
+            )
+        except ValueError as e:
+            await interaction.response.send_message(str(e), ephemeral=True)
+            return
+
+        # Log governance event (D-03: all lifecycle operations write events)
+        self._session_store.append_event(
+            operation="profile_delete",
+            user_id=user_id,
+            profile_id=profile_id,
+            operator_id=user_id,
+            before_state=before_state,
+            after_state={"status": "deleted"},
         )
+
+        self._persist_archives()
+
+        # Detailed transition message (D-01)
+        detailed_message = (
+            f"✓ 已删除「{profile.name}」\n"
+            f"状态：{before_profile.status} → deleted\n"
+            f"档案已进入 7 天恢复期，之后将永久删除。\n"
+            f"恢复命令：/recover_profile {profile_id}"
+        )
+        await interaction.response.send_message(detailed_message, ephemeral=True)
+
+    async def recover_profile(self, interaction, *, profile_id: str) -> None:
+        """Recover a deleted profile within the 7-day grace period."""
+        if self._archive_repository is None:
+            await interaction.response.send_message(
+                "archive repository is not configured", ephemeral=True
+            )
+            return
+        user_id = str(interaction.user.id)
+
+        # Get before_state for governance event (D-03)
+        try:
+            before_profile = self._archive_repository.get_profile(user_id, profile_id)
+        except KeyError:
+            await interaction.response.send_message(
+                f"找不到档案 ID：{profile_id}", ephemeral=True
+            )
+            return
+        before_state = {
+            "status": before_profile.status,
+            "deleted_at": str(before_profile.deleted_at)
+            if before_profile.deleted_at
+            else None,
+        }
+
+        # Recover the profile
+        try:
+            profile = self._archive_repository.recover_profile(
+                user_id=user_id, profile_id=profile_id
+            )
+        except ValueError as e:
+            await interaction.response.send_message(
+                f"恢复失败：{str(e)}\n请在 7 天恢复期内重试。", ephemeral=True
+            )
+            return
+
+        # Log governance event (D-03: all lifecycle operations write events)
+        self._session_store.append_event(
+            operation="profile_recover",
+            user_id=user_id,
+            profile_id=profile_id,
+            operator_id=user_id,
+            before_state=before_state,
+            after_state={"status": "active"},
+        )
+
+        self._persist_archives()
+        await self._sync_selected_profile_projections(user_id=user_id, profile=profile)
+
+        # Detailed transition message (D-01)
+        detailed_message = (
+            f"✓ 已恢复「{profile.name}」\n状态：deleted → active\n档案已恢复正常使用。"
+        )
+        await interaction.response.send_message(detailed_message, ephemeral=True)
 
     async def admin_profiles(self, interaction) -> None:
         allowed, msg = self.check_channel("admin_profiles", interaction)
