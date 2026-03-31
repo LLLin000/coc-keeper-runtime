@@ -1,0 +1,96 @@
+id: scen_character_creation
+title: Character Creation E2E - Session Join with Investigator Ready
+description: |
+  E2E scenario for character creation lifecycle.
+  
+  Note: Full character builder flow (start_character_builder + builder_reply)
+  requires archive_repository and character_builder to be wired in RuntimeTestDriver,
+  which is not currently available. This scenario tests the session join and
+  ready flow with a player joining as an investigator.
+  
+  Full character creation E2E would require Phase 76 driver enhancement.
+
+tags:
+  - acceptance
+  - character_lifecycle
+mode: acceptance
+
+actors:
+  kp:
+    kind: admin
+    user_id: u_kp
+  p1:
+    kind: player
+    user_id: u_p1
+
+fixtures:
+  adventure: null
+  dice_seed: 42
+  model_mode: fake_contract
+  db_mode: temp_sqlite
+
+steps:
+  - actor: kp
+    action: command
+    name: bind_campaign
+    args:
+      campaign_id: camp_char
+
+  - actor: p1
+    action: command
+    name: join_campaign
+    args: {}
+
+  - actor: kp
+    action: command
+    name: set_role
+    args:
+      role: investigator
+
+  - actor: p1
+    action: command
+    name: ready
+    args: {}
+
+  - actor: kp
+    action: command
+    name: start_session
+    args: {}
+
+  - actor: kp
+    action: command
+    name: complete_onboarding
+    args: {}
+
+  - actor: kp
+    action: command
+    name: next_round
+    args: {}
+
+  - actor: p1
+    action: message
+    text: "我的调查员准备好了，开始探索"
+
+  - actor: kp
+    action: command
+    name: resolve_round
+    args: {}
+
+assertions:
+  phase_timeline:
+    - lobby
+    - awaiting_ready
+    - awaiting_admin_start
+    - onboarding
+    - scene_round_open
+    - scene_round_resolving
+    - scene_round_open
+
+  state:
+    campaign_members: 1
+    no_duplicate_members: true
+
+  visible:
+    public_must_include:
+      - "就位"
+      - "游戏开始"
