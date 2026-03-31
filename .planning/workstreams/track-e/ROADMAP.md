@@ -486,7 +486,9 @@
 4. E2E scenario validates combat → skill tracking → improvement flow
 
 **Plans:** 1 plan created
-- Plan 01: Core skill tracking integration (SkillUsageTracker + combat hooks + tests)
+- [ ] **E79-01-PLAN.md** — Core skill tracking integration (SkillUsageTracker + combat hooks + tests)
+  - Files: `src/dm_bot/orchestrator/skill_tracker.py`, `src/dm_bot/rules/coc/combat.py`, `tests/rules/coc/test_skill_tracking.py`
+  - Tasks: 6 (tracker, session integration, combat hooks, RuntimeTestDriver, unit tests, E2E scenario)
 
 ### Phase E80: Visibility Dispatcher Completion
 
@@ -503,7 +505,10 @@
 4. gm_only content never leaks to player channels (enforced + tested)
 5. All 3 TODOs from visibility_dispatcher.py are resolved and tested
 
-**Plans:** TBD
+**Plans:** 1 plan created
+- [ ] **E80-01-PLAN.md** — Complete visibility dispatcher with Discord integration
+  - Files: `src/dm_bot/discord_bot/visibility_dispatcher.py`, `tests/discord_bot/test_visibility_dispatcher.py`
+  - Tasks: 6 (public messages, private DMs, group DMs, FakeDiscordClient, unit tests, contract tests)
 
 ### Phase E81: Creature Bestiary & Stats
 
@@ -520,7 +525,10 @@
 4. Sanity loss values are linked to creature encounters
 5. Creatures can be used in fuzhe_mini adventure scenarios
 
-**Plans:** TBD
+**Plans:** 1 plan created
+- [ ] **E81-01-PLAN.md** — Bestiary system with 10+ COC creatures
+  - Files: `src/dm_bot/coc/bestiary.py`, `src/dm_bot/coc/creature.py`, `data/bestiary/creatures.json`
+  - Tasks: 7 (models, instance manager, creatures.json, combat integration, sanity integration, unit tests, E2E scenario)
 
 ### Phase E82: Chase Rules Implementation
 
@@ -537,7 +545,10 @@
 4. Chase ends correctly on escape, capture, or transition to combat
 5. E2E scenario validates a complete chase flow
 
-**Plans:** TBD
+**Plans:** 1 plan created
+- [ ] **E82-01-PLAN.md** — COC 7e chase mechanics
+  - Files: `src/dm_bot/rules/coc/chase.py`, `src/dm_bot/gameplay/chase.py`
+  - Tasks: 5 (chase models, gameplay integration, RuntimeTestDriver, unit tests, E2E scenario)
 
 ### Phase E83: Archive Repository Completion
 
@@ -554,7 +565,10 @@
 4. Archive is fully wired into RuntimeTestDriver
 5. E2E tests validate archive CRUD operations
 
-**Plans:** TBD
+**Plans:** 1 plan created
+- [ ] **E83-01-PLAN.md** — Complete archive CRUD with persistence
+  - Files: `src/dm_bot/coc/archive.py`, `src/dm_bot/persistence/store.py`
+  - Tasks: 6 (update_profile, persistence methods, integration, RuntimeTestDriver, unit tests, E2E scenario)
 
 ### Phase E84: Character Builder Integration
 
@@ -570,7 +584,10 @@
 3. Builder validates against COC rules (point totals, skill limits)
 4. E2E scenario validates full builder → archive → projection flow
 
-**Plans:** TBD
+**Plans:** 1 plan created
+- [ ] **E84-01-PLAN.md** — Character builder RuntimeTestDriver integration
+  - Files: `src/dm_bot/testing/runtime_driver.py`, `src/dm_bot/orchestrator/gameplay.py`
+  - Tasks: 4 (gameplay integration, RuntimeTestDriver methods, unit tests, E2E scenario)
 
 ### Phase E85: Equipment System
 
@@ -587,8 +604,11 @@
 4. Basic inventory management tracks equipped items
 5. Equipment can be used in scenario tests
 
-**Plans:** TBD
+**Plans:** 1 plan created
+- [ ] **E85-01-PLAN.md** — Equipment database with weapons and armor
+  - Files: `src/dm_bot/coc/equipment.py`, `data/equipment/weapons.json`, `data/equipment/armor.json`
+  - Tasks: 7 (equipment models, weapons.json, armor.json, inventory system, combat integration, unit tests, E2E scenario)
 
 ---
 
-*Last updated: 2026-03-31 for milestone vE.3.2*
+*Last updated: 2026-03-31 for milestone vE.3.2 - All 7 phases planned*

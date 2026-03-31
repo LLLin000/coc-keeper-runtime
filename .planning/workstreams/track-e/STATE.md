@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: vE.3.2
 milestone_name: Gap Closure & Integration
 status: in_progress
-stopped_at: Starting vE.3.2 - Gap Closure & Integration
-last_updated: "2026-03-31T17:30:00.000Z"
+stopped_at: Phase E79-E85 planning complete - ready for execution
+last_updated: "2026-03-31T18:30:00.000Z"
 progress:
   total_phases: 7
   completed_phases: 0
-  total_plans: 0
+  total_plans: 7
   completed_plans: 0
 ---
 
@@ -17,8 +17,8 @@ progress:
 ## Current Position
 
 Phase: 79
-Plan: Not started
-Status: Defining requirements for vE.3.2
+Plan: 01 (planned, ready for execution)
+Status: Planning complete for all vE.3.2 phases
 
 ## Progress
 
@@ -48,18 +48,43 @@ Status: Defining requirements for vE.3.2
 
 ## vE.3.2 Progress
 
-- [ ] E79: Skill Usage Tracking & Combat Integration
-- [ ] E80: Visibility Dispatcher Completion
-- [ ] E81: Creature Bestiary & Stats
-- [ ] E82: Chase Rules Implementation
-- [ ] E83: Archive Repository Completion
-- [ ] E84: Character Builder Integration
-- [ ] E85: Equipment System (optional)
+### Planned Phases (7 total)
+
+| Phase | Name | Status | Plan |
+|-------|------|--------|------|
+| E79 | Skill Usage Tracking & Combat Integration | Planned | E79-01-PLAN.md |
+| E80 | Visibility Dispatcher Completion | Planned | E80-01-PLAN.md |
+| E81 | Creature Bestiary & Stats | Planned | E81-01-PLAN.md |
+| E82 | Chase Rules Implementation | Planned | E82-01-PLAN.md |
+| E83 | Archive Repository Completion | Planned | E83-01-PLAN.md |
+| E84 | Character Builder Integration | Planned | E84-01-PLAN.md |
+| E85 | Equipment System (optional) | Planned | E85-01-PLAN.md |
+
+### Execution Order
+
+**Wave 1 (Parallel):** E79, E80, E81
+**Wave 2 (Parallel):** E82, E83
+**Wave 3 (Parallel):** E84, E85
+
+Dependencies:
+- E79 → E82 (chase uses skill tracking)
+- E81 → E82 (chase may involve creatures)
+- E83 → E84 (builder uses archive)
+- All → E85 (equipment is independent)
 
 ## Session Continuity
 
-**Stopped At:** Starting vE.3.2 milestone planning
-**Next Step:** Phase E79 — Skill Usage Tracking & Combat Integration
+**Stopped At:** Planning complete for all vE.3.2 phases
+**Next Step:** Execute Phase E79 — Skill Usage Tracking & Combat Integration
+**Phase Plans:**
+- `.planning/workstreams/track-e/phases/79-skill-usage-tracking/E79-01-PLAN.md`
+- `.planning/workstreams/track-e/phases/80-visibility-dispatcher/E80-01-PLAN.md`
+- `.planning/workstreams/track-e/phases/81-creature-bestiary/E81-01-PLAN.md`
+- `.planning/workstreams/track-e/phases/82-chase-rules/E82-01-PLAN.md`
+- `.planning/workstreams/track-e/phases/83-archive-repository/E83-01-PLAN.md`
+- `.planning/workstreams/track-e/phases/84-builder-integration/E84-01-PLAN.md`
+- `.planning/workstreams/track-e/phases/85-equipment-system/E85-01-PLAN.md`
+
 **Milestone Roadmap:** .planning/workstreams/track-e/ROADMAP.md
 **Track Roadmap:** .planning/workstreams/track-e/ROADMAP.md
 
