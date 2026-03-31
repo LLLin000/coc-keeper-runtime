@@ -108,3 +108,89 @@ class PersistenceStore:
                 "select profiles_json from archive_profiles where id = 1"
             ).fetchone()
         return json.loads(row[0]) if row else {}
+
+    def save_profile(self, user_id: str, profile: dict) -> None:
+        """Save a profile to the database.
+
+        Args:
+            user_id: The user ID
+            profile: Profile data as dict
+        """
+        profile_id = profile.get("profile_id")
+        if not profile_id:
+            raise ValueError("Profile must have profile_id")
+
+        with self._connect() as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS profiles (
+                    user_id TEXT NOT NULL,
+                    profile_id TEXT NOT NULL,
+                    data TEXT NOT NULL,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, profile_id)
+                )
+                """
+            )
+
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO profiles (user_id, profile_id, data)
+                VALUES (?, ?, ?)
+                """,
+                (user_id, profile_id, json.dumps(profile, ensure_ascii=False)),
+            )
+            conn.commit()
+
+    def load_profile(self, user_id: str, profile_id: str) -> dict | None:
+        """Load a profile from the database.
+
+        Args:
+            user_id: The user ID
+            profile_id: The profile ID
+
+        Returns:
+            Profile data as dict, or None if not found
+        """
+        with self._connect() as conn:
+            cursor = conn.execute(
+                "SELECT data FROM profiles WHERE user_id = ? AND profile_id = ?",
+                (user_id, profile_id),
+            )
+            row = cursor.fetchone()
+            if row:
+                return json.loads(row[0])
+            return None
+
+    def load_user_profiles(self, user_id: str) -> list[dict]:
+        """Load all profiles for a user.
+
+        Args:
+            user_id: The user ID
+
+        Returns:
+            List of profile dicts
+        """
+        with self._connect() as conn:
+            cursor = conn.execute(
+                "SELECT data FROM profiles WHERE user_id = ?", (user_id,)
+            )
+            return [json.loads(row[0]) for row in cursor.fetchall()]
+
+    def delete_profile(self, user_id: str, profile_id: str) -> bool:
+        """Delete a profile from the database.
+
+        Args:
+            user_id: The user ID
+            profile_id: The profile ID
+
+        Returns:
+            True if deleted, False if not found
+        """
+        with self._connect() as conn:
+            cursor = conn.execute(
+                "DELETE FROM profiles WHERE user_id = ? AND profile_id = ?",
+                (user_id, profile_id),
+            )
+            conn.commit()
+            return cursor.rowcount > 0

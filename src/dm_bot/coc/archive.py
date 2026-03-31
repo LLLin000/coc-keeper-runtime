@@ -47,7 +47,9 @@ class InvestigatorArchiveProfile(BaseModel):
     favored_skills: list[str] = Field(default_factory=list)
     portrait_summary: str = ""
     status: str = "active"
-    finishing: ArchiveFinishingRecommendation = Field(default_factory=ArchiveFinishingRecommendation)
+    finishing: ArchiveFinishingRecommendation = Field(
+        default_factory=ArchiveFinishingRecommendation
+    )
     coc: COCInvestigatorProfile
 
     def summary_line(self) -> str:
@@ -57,9 +59,21 @@ class InvestigatorArchiveProfile(BaseModel):
 
     def detail_view(self) -> str:
         favored = "、".join(self.favored_skills) if self.favored_skills else "未记录"
-        occ_skills = "、".join(self.finishing.recommended_occupation_skills) if self.finishing.recommended_occupation_skills else "未记录"
-        interest_skills = "、".join(self.finishing.recommended_interest_skills) if self.finishing.recommended_interest_skills else "未记录"
-        adjustments = "；".join(self.finishing.allowed_adjustments) if self.finishing.allowed_adjustments else "无"
+        occ_skills = (
+            "、".join(self.finishing.recommended_occupation_skills)
+            if self.finishing.recommended_occupation_skills
+            else "未记录"
+        )
+        interest_skills = (
+            "、".join(self.finishing.recommended_interest_skills)
+            if self.finishing.recommended_interest_skills
+            else "未记录"
+        )
+        adjustments = (
+            "；".join(self.finishing.allowed_adjustments)
+            if self.finishing.allowed_adjustments
+            else "无"
+        )
         important_person = self.important_person or self.important_tie or "未记录"
         lines = [
             "【调查员档案】",
@@ -110,8 +124,9 @@ class InvestigatorArchiveProfile(BaseModel):
 
 
 class InvestigatorArchiveRepository:
-    def __init__(self) -> None:
+    def __init__(self, persistence_store=None) -> None:
         self._profiles: dict[str, dict[str, InvestigatorArchiveProfile]] = {}
+        self._persistence = persistence_store
 
     def create_profile(
         self,
@@ -199,7 +214,8 @@ class InvestigatorArchiveRepository:
             phobias_and_manias=phobias_and_manias,
             disposition=disposition,
             favored_skills=favored,
-            portrait_summary=portrait_summary or f"{occupation}。{background} 性格上{disposition}",
+            portrait_summary=portrait_summary
+            or f"{occupation}。{background} 性格上{disposition}",
             status="active",
             finishing=finishing,
             coc=COCInvestigatorProfile(
@@ -211,7 +227,9 @@ class InvestigatorArchiveRepository:
                 luck=int(generation["luck"]),
                 build=_build_for(attributes.str + attributes.siz),
                 damage_bonus=_damage_bonus_for(attributes.str + attributes.siz),
-                move_rate=_move_rate_for(attributes.str, attributes.dex, attributes.siz, age),
+                move_rate=_move_rate_for(
+                    attributes.str, attributes.dex, attributes.siz, age
+                ),
                 attributes=attributes,
                 skills=skills,
             ),
@@ -224,7 +242,11 @@ class InvestigatorArchiveRepository:
         return sorted(profiles, key=lambda item: (item.status != "active", item.name))
 
     def list_all_profiles(self) -> list[InvestigatorArchiveProfile]:
-        return [profile for profiles in self._profiles.values() for profile in profiles.values()]
+        return [
+            profile
+            for profiles in self._profiles.values()
+            for profile in profiles.values()
+        ]
 
     def get_profile(self, user_id: str, profile_id: str) -> InvestigatorArchiveProfile:
         return self._profiles[user_id][profile_id]
@@ -239,12 +261,16 @@ class InvestigatorArchiveRepository:
                 return profile
         return None
 
-    def archive_profile(self, *, user_id: str, profile_id: str) -> InvestigatorArchiveProfile:
+    def archive_profile(
+        self, *, user_id: str, profile_id: str
+    ) -> InvestigatorArchiveProfile:
         profile = self.get_profile(user_id, profile_id)
         profile.status = "archived"
         return profile
 
-    def replace_active_with(self, *, user_id: str, profile_id: str) -> InvestigatorArchiveProfile:
+    def replace_active_with(
+        self, *, user_id: str, profile_id: str
+    ) -> InvestigatorArchiveProfile:
         active = self.active_profile(user_id)
         if active is not None and active.profile_id != profile_id:
             active.status = "replaced"
@@ -252,12 +278,111 @@ class InvestigatorArchiveRepository:
         profile.status = "active"
         return profile
 
+    def update_profile(
+        self,
+        *,
+        user_id: str,
+        profile_id: str,
+        **updates,
+    ) -> InvestigatorArchiveProfile:
+        """Update an existing profile.
+
+        Args:
+            user_id: The user ID
+            profile_id: The profile ID to update
+            **updates: Fields to update (only updatable fields)
+
+        Returns:
+            The updated profile
+
+        Raises:
+            ValueError: If profile not found or invalid updates
+        """
+        profile = self.get_profile(user_id, profile_id)
+
+        # Fields that cannot be updated
+        read_only = {"profile_id", "user_id", "coc", "schema_version"}
+
+        # Validate updates
+        invalid = set(updates.keys()) & read_only
+        if invalid:
+            raise ValueError(f"Cannot update read-only fields: {invalid}")
+
+        # Apply updates
+        for key, value in updates.items():
+            if hasattr(profile, key):
+                setattr(profile, key, value)
+            else:
+                raise ValueError(f"Unknown field: {key}")
+
+        # Update in storage
+        self._profiles[user_id][profile_id] = profile
+
+        return profile
+
+    def update_coc_stats(
+        self,
+        *,
+        user_id: str,
+        profile_id: str,
+        **coc_updates,
+    ) -> InvestigatorArchiveProfile:
+        """Update COC-specific stats.
+
+        Args:
+            user_id: The user ID
+            profile_id: The profile ID
+            **coc_updates: Updates to COCInvestigatorProfile
+
+        Returns:
+            The updated profile
+        """
+        profile = self.get_profile(user_id, profile_id)
+
+        # Update COC fields
+        for key, value in coc_updates.items():
+            if hasattr(profile.coc, key):
+                setattr(profile.coc, key, value)
+            else:
+                raise ValueError(f"Unknown COC field: {key}")
+
+        self._profiles[user_id][profile_id] = profile
+        return profile
+
+    def update_skills(
+        self,
+        *,
+        user_id: str,
+        profile_id: str,
+        skills: dict[str, int],
+    ) -> InvestigatorArchiveProfile:
+        """Update character skills.
+
+        Args:
+            user_id: The user ID
+            profile_id: The profile ID
+            skills: Dict of skill_name -> skill_value
+
+        Returns:
+            The updated profile
+        """
+        profile = self.get_profile(user_id, profile_id)
+
+        for skill, value in skills.items():
+            profile.coc.skills[skill] = value
+
+        self._profiles[user_id][profile_id] = profile
+        return profile
+
     def delete_profile(self, *, user_id: str, profile_id: str) -> None:
         self._profiles.get(user_id, {}).pop(profile_id, None)
 
     def export_state(self) -> dict[str, object]:
         return {
-            user_id: {profile_id: profile.model_dump() for profile_id, profile in profiles.items()}
+            user_id: {
+                profile_id: profile.model_dump()
+                for profile_id, profile in profiles.items()
+            }
             for user_id, profiles in self._profiles.items()
         }
 
@@ -269,6 +394,54 @@ class InvestigatorArchiveRepository:
                 bucket[profile_id] = InvestigatorArchiveProfile.model_validate(raw)
             self._profiles[str(user_id)] = bucket
 
+    def save_to_persistence(self, user_id: str, profile_id: str) -> None:
+        """Save a profile to persistent storage.
+
+        Args:
+            user_id: The user ID
+            profile_id: The profile ID
+        """
+        if not self._persistence:
+            return
+
+        profile = self.get_profile(user_id, profile_id)
+        self._persistence.save_profile(user_id, profile.model_dump())
+
+    def load_from_persistence(self, user_id: str) -> list[InvestigatorArchiveProfile]:
+        """Load all profiles for a user from persistent storage.
+
+        Args:
+            user_id: The user ID
+
+        Returns:
+            List of loaded profiles
+        """
+        if not self._persistence:
+            return []
+
+        profiles_data = self._persistence.load_user_profiles(user_id)
+        profiles = []
+
+        for data in profiles_data:
+            profile = InvestigatorArchiveProfile.model_validate(data)
+            profiles.append(profile)
+
+            # Add to memory
+            if user_id not in self._profiles:
+                self._profiles[user_id] = {}
+            self._profiles[user_id][profile.profile_id] = profile
+
+        return profiles
+
+    def persist_all(self) -> None:
+        """Save all profiles to persistent storage."""
+        if not self._persistence:
+            return
+
+        for user_id, profiles in self._profiles.items():
+            for profile_id, profile in profiles.items():
+                self._persistence.save_profile(user_id, profile.model_dump())
+
 
 def _build_finishing_recommendation(
     *,
@@ -278,7 +451,9 @@ def _build_finishing_recommendation(
     specialty: str,
     concept: str,
 ) -> ArchiveFinishingRecommendation:
-    occupation_skills = _occupation_skill_suggestions(occupation=occupation, specialty=specialty)
+    occupation_skills = _occupation_skill_suggestions(
+        occupation=occupation, specialty=specialty
+    )
     interest_skills = list(dict.fromkeys([skill for skill in favored_skills if skill]))
     allowed_adjustments = [
         "按职业与兴趣技能点分配来体现人物采访结果",
@@ -287,7 +462,9 @@ def _build_finishing_recommendation(
     if age >= 40:
         allowed_adjustments.append("按本地规则书应用年龄相关修正")
     if "落魄" in concept or "失意" in concept:
-        allowed_adjustments.append("只通过信用评级、资源叙述和技能倾向体现落魄感，不直接改核心属性")
+        allowed_adjustments.append(
+            "只通过信用评级、资源叙述和技能倾向体现落魄感，不直接改核心属性"
+        )
     return ArchiveFinishingRecommendation(
         recommended_occupation_skills=occupation_skills,
         recommended_interest_skills=interest_skills,
