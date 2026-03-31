@@ -78,7 +78,9 @@ class ArchiveWritebackPayload(BaseModel):
 
 
 class AnswerNormalizer:
-    def normalize_slot(self, *, slot: str, raw: str, current_answers: dict[str, str] | None = None) -> dict[str, str]:
+    def normalize_slot(
+        self, *, slot: str, raw: str, current_answers: dict[str, str] | None = None
+    ) -> dict[str, str]:
         current_answers = current_answers or {}
         text = _normalize_free_text(raw)
         if slot == "name":
@@ -128,7 +130,8 @@ class AnswerNormalizer:
             occupation_detail=semantic_fields.get("occupation_detail", ""),
             specialty=semantic_fields.get("specialty", ""),
             career_arc=semantic_fields.get("career_arc", ""),
-            core_belief=normalized.core_belief or semantic_fields.get("core_belief", ""),
+            core_belief=normalized.core_belief
+            or semantic_fields.get("core_belief", ""),
             material_desire=semantic_fields.get("material_desire", ""),
             fear_or_taboo=semantic_fields.get("fear_or_taboo", ""),
             important_tie=semantic_fields.get("important_tie", ""),
@@ -136,9 +139,12 @@ class AnswerNormalizer:
             residence="",
             family="",
             education_background="",
-            important_person=normalized.important_person or semantic_fields.get("important_person", ""),
-            significant_location=normalized.significant_location or semantic_fields.get("significant_location", ""),
-            treasured_possession=normalized.treasured_possession or semantic_fields.get("treasured_possession", ""),
+            important_person=normalized.important_person
+            or semantic_fields.get("important_person", ""),
+            significant_location=normalized.significant_location
+            or semantic_fields.get("significant_location", ""),
+            treasured_possession=normalized.treasured_possession
+            or semantic_fields.get("treasured_possession", ""),
             trait_notes=semantic_fields.get("trait_notes", ""),
             scars_and_injuries=semantic_fields.get("scars_and_injuries", ""),
             phobias_and_manias=semantic_fields.get("phobias_and_manias", ""),
@@ -188,7 +194,9 @@ class CharacterSheetSynthesis(BaseModel):
 
 
 class CharacterSheetSynthesizer(Protocol):
-    async def synthesize(self, session: BuilderSession, semantic_fields: dict[str, str]) -> CharacterSheetSynthesis: ...
+    async def synthesize(
+        self, session: BuilderSession, semantic_fields: dict[str, str]
+    ) -> CharacterSheetSynthesis: ...
 
 
 class HeuristicInterviewPlanner:
@@ -196,7 +204,10 @@ class HeuristicInterviewPlanner:
         concept = session.answers.get("concept", "")
         occupation = session.answers.get("occupation", "")
         if "key_past_event" not in session.answers:
-            return BuilderQuestionChoice(slot="key_past_event", question=_past_event_question(concept, occupation))
+            return BuilderQuestionChoice(
+                slot="key_past_event",
+                question=_past_event_question(concept, occupation),
+            )
         if "life_goal" not in session.answers:
             return BuilderQuestionChoice(
                 slot="life_goal",
@@ -219,19 +230,26 @@ class HeuristicInterviewPlanner:
 
 
 class ModelGuidedInterviewPlanner:
-    def __init__(self, *, model_client, fallback: InterviewPlanner | None = None) -> None:
+    def __init__(
+        self, *, model_client, fallback: InterviewPlanner | None = None
+    ) -> None:
         self._model_client = model_client
         self._fallback = fallback or HeuristicInterviewPlanner()
 
     async def next_question(self, session: BuilderSession) -> BuilderQuestionChoice:
-        missing_slots = [slot for slot in REQUIRED_INTERVIEW_SLOTS if not session.answers.get(slot)]
+        missing_slots = [
+            slot for slot in REQUIRED_INTERVIEW_SLOTS if not session.answers.get(slot)
+        ]
         if not missing_slots:
-            return BuilderQuestionChoice(slot="important_person", question="如果还要再补一笔人物关系，在他心里最重要的那个人是谁？")
+            return BuilderQuestionChoice(
+                slot="important_person",
+                question="如果还要再补一笔人物关系，在他心里最重要的那个人是谁？",
+            )
         request = ModelRequest(
             system_prompt=(
-                "你是克苏鲁的呼唤建卡采访器。"
-                "基于已知角色信息，选择下一条最有价值的追问。"
-                "一次只能问一个问题。不要重复已知信息，不要谈属性数值，不要输出解释。"
+                "你是克苏鲁的呼唤的 Keeper，正在引导一位新调查员完成建卡访谈。"
+                "基于已知的人物信息，选择下一条最有价值的追问。"
+                "一次只问一个问题，像 Keeper 了解角色那样自然地提问——不要重复已知信息，不要谈属性数值，不要输出解释。"
                 "只返回 JSON，键为 slot 和 question。"
                 f"slot 必须是这些候选之一: {', '.join(missing_slots)}。"
             ),
@@ -265,9 +283,12 @@ class HeuristicArchiveSemanticExtractor:
             "material_desire": _infer_material_desire(answers),
             "fear_or_taboo": _infer_fear_or_taboo(answers),
             "important_tie": _infer_important_tie(answers),
-            "important_person": answers.get("important_person", "") or _infer_important_person(answers),
-            "significant_location": answers.get("significant_location", "") or _infer_significant_location(answers),
-            "treasured_possession": answers.get("treasured_possession", "") or _infer_treasured_possession(answers),
+            "important_person": answers.get("important_person", "")
+            or _infer_important_person(answers),
+            "significant_location": answers.get("significant_location", "")
+            or _infer_significant_location(answers),
+            "treasured_possession": answers.get("treasured_possession", "")
+            or _infer_treasured_possession(answers),
             "trait_notes": _infer_trait_notes(answers),
             "scars_and_injuries": _infer_scars_and_injuries(answers),
             "phobias_and_manias": _infer_phobias_and_manias(answers),
@@ -275,14 +296,16 @@ class HeuristicArchiveSemanticExtractor:
 
 
 class ModelGuidedArchiveSemanticExtractor:
-    def __init__(self, *, model_client, fallback: ArchiveSemanticExtractor | None = None) -> None:
+    def __init__(
+        self, *, model_client, fallback: ArchiveSemanticExtractor | None = None
+    ) -> None:
         self._model_client = model_client
         self._fallback = fallback or HeuristicArchiveSemanticExtractor()
 
     async def extract(self, session: BuilderSession) -> dict[str, str]:
         request = ModelRequest(
             system_prompt=(
-                "你是克苏鲁的呼唤人物档案归档器。"
+                "你是克苏鲁的呼唤的 Keeper，正在为刚刚完成访谈的调查员整理长期档案。"
                 "根据采访答案，提取适合长期档案保存的人物语义字段。"
                 "不要编造采访里完全不存在的事实。"
                 "可以做适度归纳，但必须忠于原意。"
@@ -313,8 +336,7 @@ class ModelGuidedArchiveSemanticExtractor:
                 "phobias_and_manias",
             }
             normalized = {
-                key: str(payload.get(key, "") or "").strip()
-                for key in allowed
+                key: str(payload.get(key, "") or "").strip() for key in allowed
             }
             if any(normalized.values()):
                 return normalized
@@ -324,26 +346,40 @@ class ModelGuidedArchiveSemanticExtractor:
 
 
 class HeuristicCharacterSheetSynthesizer:
-    async def synthesize(self, session: BuilderSession, semantic_fields: dict[str, str]) -> CharacterSheetSynthesis:
+    async def synthesize(
+        self, session: BuilderSession, semantic_fields: dict[str, str]
+    ) -> CharacterSheetSynthesis:
         answers = session.answers
         return CharacterSheetSynthesis(
-            occupation_detail=semantic_fields.get("occupation_detail", "") or _build_occupation_detail(answers),
+            occupation_detail=semantic_fields.get("occupation_detail", "")
+            or _build_occupation_detail(answers),
             specialty=semantic_fields.get("specialty", "") or _infer_specialty(answers),
             background=_build_background_summary(answers),
-            career_arc=semantic_fields.get("career_arc", "") or _infer_career_arc(answers),
+            career_arc=semantic_fields.get("career_arc", "")
+            or _infer_career_arc(answers),
             key_past_event=answers.get("key_past_event", ""),
-            core_belief=semantic_fields.get("core_belief", "") or _infer_core_belief(answers),
+            core_belief=semantic_fields.get("core_belief", "")
+            or _infer_core_belief(answers),
             life_goal=answers.get("life_goal", ""),
-            material_desire=semantic_fields.get("material_desire", "") or _infer_material_desire(answers),
+            material_desire=semantic_fields.get("material_desire", "")
+            or _infer_material_desire(answers),
             weakness=answers.get("weakness", ""),
-            fear_or_taboo=semantic_fields.get("fear_or_taboo", "") or _infer_fear_or_taboo(answers),
-            important_tie=semantic_fields.get("important_tie", "") or _infer_important_tie(answers),
-            important_person=semantic_fields.get("important_person", "") or answers.get("important_person", ""),
-            significant_location=semantic_fields.get("significant_location", "") or answers.get("significant_location", ""),
-            treasured_possession=semantic_fields.get("treasured_possession", "") or answers.get("treasured_possession", ""),
-            trait_notes=semantic_fields.get("trait_notes", "") or _infer_trait_notes(answers),
-            scars_and_injuries=semantic_fields.get("scars_and_injuries", "") or _infer_scars_and_injuries(answers),
-            phobias_and_manias=semantic_fields.get("phobias_and_manias", "") or _infer_phobias_and_manias(answers),
+            fear_or_taboo=semantic_fields.get("fear_or_taboo", "")
+            or _infer_fear_or_taboo(answers),
+            important_tie=semantic_fields.get("important_tie", "")
+            or _infer_important_tie(answers),
+            important_person=semantic_fields.get("important_person", "")
+            or answers.get("important_person", ""),
+            significant_location=semantic_fields.get("significant_location", "")
+            or answers.get("significant_location", ""),
+            treasured_possession=semantic_fields.get("treasured_possession", "")
+            or answers.get("treasured_possession", ""),
+            trait_notes=semantic_fields.get("trait_notes", "")
+            or _infer_trait_notes(answers),
+            scars_and_injuries=semantic_fields.get("scars_and_injuries", "")
+            or _infer_scars_and_injuries(answers),
+            phobias_and_manias=semantic_fields.get("phobias_and_manias", "")
+            or _infer_phobias_and_manias(answers),
             disposition=answers.get("disposition", ""),
             favored_skills=_normalize_skill_list(answers.get("favored_skills", "")),
             portrait_summary=_build_portrait_summary(answers),
@@ -351,14 +387,18 @@ class HeuristicCharacterSheetSynthesizer:
 
 
 class ModelGuidedCharacterSheetSynthesizer:
-    def __init__(self, *, model_client, fallback: CharacterSheetSynthesizer | None = None) -> None:
+    def __init__(
+        self, *, model_client, fallback: CharacterSheetSynthesizer | None = None
+    ) -> None:
         self._model_client = model_client
         self._fallback = fallback or HeuristicCharacterSheetSynthesizer()
 
-    async def synthesize(self, session: BuilderSession, semantic_fields: dict[str, str]) -> CharacterSheetSynthesis:
+    async def synthesize(
+        self, session: BuilderSession, semantic_fields: dict[str, str]
+    ) -> CharacterSheetSynthesis:
         request = ModelRequest(
             system_prompt=(
-                "你是克苏鲁的呼唤角色卡整理器。"
+                "你是克苏鲁的呼唤的 Keeper，正在将一位新调查员的访谈内容整理为完整的角色档案。"
                 "根据采访答案和已有语义字段，把人物整理为更连贯的长期档案。"
                 "不要编造采访里没有的具体事实，不要发明新职业，不要改动明确给出的年龄和职业。"
                 "输出必须是 JSON，对每个字段给出简洁中文；不确定就留空。"
@@ -384,11 +424,21 @@ class ModelGuidedCharacterSheetSynthesizer:
                 for key in CharacterSheetSynthesis.model_fields
             }
             if isinstance(normalized["favored_skills"], str):
-                normalized["favored_skills"] = _normalize_skill_list(normalized["favored_skills"])
+                normalized["favored_skills"] = _normalize_skill_list(
+                    normalized["favored_skills"]
+                )
             elif isinstance(normalized["favored_skills"], list):
-                normalized["favored_skills"] = [str(item).strip() for item in normalized["favored_skills"] if str(item).strip()]
+                normalized["favored_skills"] = [
+                    str(item).strip()
+                    for item in normalized["favored_skills"]
+                    if str(item).strip()
+                ]
             synthesis = CharacterSheetSynthesis.model_validate(normalized)
-            if synthesis.background or synthesis.career_arc or synthesis.portrait_summary:
+            if (
+                synthesis.background
+                or synthesis.career_arc
+                or synthesis.portrait_summary
+            ):
                 return synthesis
         except Exception:
             pass
@@ -420,15 +470,22 @@ class SectionNormalizer:
             weakness=normalized.weakness or synthesis.weakness,
             fear_or_taboo=synthesis.fear_or_taboo,
             important_tie=synthesis.important_tie,
-            important_person=normalized.important_person or synthesis.important_person or synthesis.important_tie,
-            significant_location=normalized.significant_location or synthesis.significant_location,
-            treasured_possession=normalized.treasured_possession or synthesis.treasured_possession,
-            trait_notes=synthesis.trait_notes or normalized.disposition or synthesis.disposition,
+            important_person=normalized.important_person
+            or synthesis.important_person
+            or synthesis.important_tie,
+            significant_location=normalized.significant_location
+            or synthesis.significant_location,
+            treasured_possession=normalized.treasured_possession
+            or synthesis.treasured_possession,
+            trait_notes=synthesis.trait_notes
+            or normalized.disposition
+            or synthesis.disposition,
             scars_and_injuries=synthesis.scars_and_injuries,
             phobias_and_manias=synthesis.phobias_and_manias,
             disposition=normalized.disposition or synthesis.disposition,
             favored_skills=explicit_skills or synthesis.favored_skills,
-            portrait_summary=synthesis.portrait_summary or _build_portrait_summary(answers),
+            portrait_summary=synthesis.portrait_summary
+            or _build_portrait_summary(answers),
             concept=normalized.concept,
             birthplace=synthesis.birthplace,
             residence=synthesis.residence,
@@ -455,7 +512,9 @@ class ConversationalCharacterBuilder:
         self._archive_repository = archive_repository
         self._roll_provider = roll_provider or self._default_roll_provider
         self._interview_planner = interview_planner or HeuristicInterviewPlanner()
-        self._semantic_extractor = semantic_extractor or HeuristicArchiveSemanticExtractor()
+        self._semantic_extractor = (
+            semantic_extractor or HeuristicArchiveSemanticExtractor()
+        )
         self._answer_normalizer = answer_normalizer or AnswerNormalizer()
         self._synthesizer = synthesizer or HeuristicCharacterSheetSynthesizer()
         self._section_normalizer = section_normalizer or SectionNormalizer()
@@ -467,7 +526,9 @@ class ConversationalCharacterBuilder:
         self._sessions[user_id] = BuilderSession(user_id=user_id, visibility=visibility)
         return self.INTRO_QUESTION
 
-    async def answer(self, *, user_id: str, answer: str) -> tuple[str, InvestigatorArchiveProfile | None]:
+    async def answer(
+        self, *, user_id: str, answer: str
+    ) -> tuple[str, InvestigatorArchiveProfile | None]:
         session = self._sessions[user_id]
         if session.stage == "finalize":
             return await self._finalize_from_portrait(session=session, answer=answer)
@@ -475,7 +536,9 @@ class ConversationalCharacterBuilder:
         answer = answer.strip()
         session.raw_answers[slot] = answer
         session.answers.update(
-            self._answer_normalizer.normalize_slot(slot=slot, raw=answer, current_answers=session.answers)
+            self._answer_normalizer.normalize_slot(
+                slot=slot, raw=answer, current_answers=session.answers
+            )
         )
 
         if slot == "name":
@@ -504,12 +567,21 @@ class ConversationalCharacterBuilder:
     def has_session(self, user_id: str) -> bool:
         return user_id in self._sessions
 
-    async def _next_question(self, session: BuilderSession) -> BuilderQuestionChoice | None:
+    async def _next_question(
+        self, session: BuilderSession
+    ) -> BuilderQuestionChoice | None:
         if not session.answers.get("age"):
-            return BuilderQuestionChoice(slot="age", question="这位调查员看起来有多大？岁月在他身上留下了什么痕迹？")
+            return BuilderQuestionChoice(
+                slot="age",
+                question="这位调查员看起来有多大？岁月在他身上留下了什么痕迹？",
+            )
         if not session.answers.get("occupation"):
-            return BuilderQuestionChoice(slot="occupation", question="在成为调查员之前，他以什么为生？")
-        missing_dynamic = [slot for slot in REQUIRED_INTERVIEW_SLOTS if not session.answers.get(slot)]
+            return BuilderQuestionChoice(
+                slot="occupation", question="在成为调查员之前，他以什么为生？"
+            )
+        missing_dynamic = [
+            slot for slot in REQUIRED_INTERVIEW_SLOTS if not session.answers.get(slot)
+        ]
         if not missing_dynamic:
             return None
         return await self._interview_planner.next_question(session)
@@ -580,13 +652,24 @@ class ConversationalCharacterBuilder:
             return sum(random.randint(1, 6) for _ in range(3)) * 5
         raise KeyError(expr)
 
+
 REQUIRED_INTERVIEW_SLOTS = [
     "key_past_event",
     "life_goal",
     "weakness",
     "core_belief",
 ]
-DOWNFALL_KEYWORDS = ("落魄", "潦倒", "失意", "破产", "酗酒", "停职", "离婚", "退学", "失业")
+DOWNFALL_KEYWORDS = (
+    "落魄",
+    "潦倒",
+    "失意",
+    "破产",
+    "酗酒",
+    "停职",
+    "离婚",
+    "退学",
+    "失业",
+)
 
 
 def _extract_concept_fields(concept: str) -> dict[str, str]:
@@ -601,7 +684,9 @@ def _extract_concept_fields(concept: str) -> dict[str, str]:
     normalized = normalized.strip(" ，。；、")
     if "的" in normalized:
         normalized = normalized.split("的")[-1]
-    normalized = re.sub(r"^(?:落魄|潦倒|失意|疲惫|年轻|年老|酗酒|偏执|孤僻|失业|没落)+", "", normalized).strip()
+    normalized = re.sub(
+        r"^(?:落魄|潦倒|失意|疲惫|年轻|年老|酗酒|偏执|孤僻|失业|没落)+", "", normalized
+    ).strip()
     if normalized:
         payload["occupation"] = normalized
     return payload
@@ -627,7 +712,9 @@ def _normalize_skill_list(raw: str) -> list[str]:
     text = _normalize_free_text(raw)
     if not text:
         return []
-    text = text.replace("，", ",").replace("、", ",").replace("；", ",").replace("/", ",")
+    text = (
+        text.replace("，", ",").replace("、", ",").replace("；", ",").replace("/", ",")
+    )
     return [item.strip() for item in text.split(",") if item.strip()]
 
 
@@ -670,7 +757,14 @@ def _build_occupation_detail(answers: dict[str, str]) -> str:
 def _infer_specialty(answers: dict[str, str]) -> str:
     occupation = answers.get("occupation", "")
     favored = answers.get("favored_skills", "")
-    source = " ".join([occupation, answers.get("key_past_event", ""), favored, answers.get("concept", "")])
+    source = " ".join(
+        [
+            occupation,
+            answers.get("key_past_event", ""),
+            favored,
+            answers.get("concept", ""),
+        ]
+    )
     if "脑" in source or "神经" in source:
         return "神经外科"
     if "医生" in occupation or "医学" in favored:
@@ -742,7 +836,10 @@ def _infer_trait_notes(answers: dict[str, str]) -> str:
 
 def _infer_scars_and_injuries(answers: dict[str, str]) -> str:
     event = answers.get("key_past_event", "")
-    if any(keyword in event for keyword in ("手术", "枪", "爆炸", "车祸", "烧伤", "断", "伤")):
+    if any(
+        keyword in event
+        for keyword in ("手术", "枪", "爆炸", "车祸", "烧伤", "断", "伤")
+    ):
         return "可能留下与那段过往有关的旧伤，但调查员本人并不愿主动提起。"
     return ""
 
@@ -811,7 +908,9 @@ def _looks_like_skill_list(text: str) -> bool:
         return False
     return all(
         len(item) <= 8
-        and not any(token in item for token in ("。", "！", "？", " ", "我", "他", "她"))
+        and not any(
+            token in item for token in ("。", "！", "？", " ", "我", "他", "她")
+        )
         for item in items
     )
 
