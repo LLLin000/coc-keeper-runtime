@@ -661,8 +661,9 @@ def test_profiles_command_shows_richer_summary_line() -> None:
 
 
 def test_card_view_returns_six_sections() -> None:
-    """card_view() returns list of 6 (title, content) tuples."""
+    """card_view() returns list of 6 CardSection objects."""
     from dm_bot.coc.archive import InvestigatorArchiveRepository
+    from dm_bot.coc.presentation import CardSection
 
     repo = InvestigatorArchiveRepository()
     profile = repo.create_profile(
@@ -697,14 +698,15 @@ def test_card_view_returns_six_sections() -> None:
 
     assert isinstance(sections, list)
     assert len(sections) == 6
-    for title, content in sections:
-        assert isinstance(title, str)
-        assert isinstance(content, str)
-        assert len(content) < 1024, (
-            f"Section '{title}' exceeds 1024 chars: {len(content)}"
+    for section in sections:
+        assert isinstance(section, CardSection)
+        assert isinstance(section.title, str)
+        assert isinstance(section.content, str)
+        assert len(section.content) < 1024, (
+            f"Section '{section.title}' exceeds 1024 chars: {len(section.content)}"
         )
 
-    titles = [t for t, _ in sections]
+    titles = [s.title for s in sections]
     assert any("档案" in t for t in titles)
     assert any("身份" in t for t in titles)
     assert any("人物" in t for t in titles)
@@ -748,9 +750,9 @@ def test_card_view_sections_under_discord_limit() -> None:
     )
 
     sections = profile.card_view()
-    for title, content in sections:
-        assert len(content) < 1024, (
-            f"Section '{title}' is {len(content)} chars (limit: 1024)"
+    for section in sections:
+        assert len(section.content) < 1024, (
+            f"Section '{section.title}' is {len(section.content)} chars (limit: 1024)"
         )
 
 
@@ -781,7 +783,7 @@ def test_card_view_has_emoji_stats() -> None:
     )
 
     sections = profile.card_view()
-    stats_section = next((c for t, c in sections if "数值" in t), None)
+    stats_section = next((s.content for s in sections if "数值" in s.title), None)
     assert stats_section is not None, "No stats section found"
     assert "❤️" in stats_section, "Missing HP emoji"
     assert "🧠" in stats_section, "Missing SAN emoji"
@@ -820,8 +822,8 @@ def test_card_view_has_archive_label() -> None:
     )
 
     sections = profile.card_view()
-    header_title, header_content = sections[0]
-    combined = header_title + header_content
+    header = sections[0]
+    combined = header.title + header.content
     assert "长期档案" in combined, "Header must include '长期档案' label"
 
 
@@ -857,10 +859,13 @@ def test_card_view_preserves_detail_view() -> None:
     assert "【人物】" in detail
     assert "【数值】" in detail
 
-    # card_view should return list of tuples
+    # card_view should return list of CardSection
     sections = profile.card_view()
     assert isinstance(sections, list)
     assert len(sections) == 6
+    from dm_bot.coc.presentation import CardSection
+
+    assert all(isinstance(s, CardSection) for s in sections)
 
 
 def test_profile_detail_command_renders_investigator_card_sections() -> None:

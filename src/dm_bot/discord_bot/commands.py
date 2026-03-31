@@ -490,14 +490,15 @@ class BotCommands:
         if not sections:
             await interaction.response.send_message("档案为空。", ephemeral=True)
             return
+        from dm_bot.coc.presentation import DiscordCardRenderer
+
+        renderer = DiscordCardRenderer()
+        rendered = renderer.render(sections)
         # Send first section as initial response
-        first_title, first_content = sections[0]
-        await interaction.response.send_message(
-            f"**{first_title}**\n{first_content}", ephemeral=True
-        )
+        await interaction.response.send_message(rendered[0], ephemeral=True)
         # Send remaining sections as followups
-        for title, content in sections[1:]:
-            await interaction.followup.send(f"**{title}**\n{content}", ephemeral=True)
+        for message in rendered[1:]:
+            await interaction.followup.send(message, ephemeral=True)
 
     async def select_profile(self, interaction, *, profile_id: str) -> None:
         if self._session_store is None:
