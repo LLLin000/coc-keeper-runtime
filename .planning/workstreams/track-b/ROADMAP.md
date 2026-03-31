@@ -351,6 +351,10 @@
   3. Users cannot have more than one active campaign instance per campaign (enforced)
   4. Admin can list all player profiles via `/admin_profiles`
 
+**Plans:**
+- [ ] `55-01` — GovernanceEventLog + SessionStore integration
+- [ ] `55-02` — `/profiles` upgrade + `/my_character` + `/admin_profiles`
+
 ### Phase 56: Archive Lifecycle Operations
 
 **Goal:** Implement activate, archive, and replace operations for profiles with full audit trail.
@@ -438,7 +442,7 @@
 
 | Phase | Requirements | Status |
 |-------|--------------|--------|
-| 55. Profile List And Event Logging Foundation | PLC-01, ILC-01, ILC-04, PV-01, AV-01, AUD-01 | Planned |
+| 55. Profile List And Event Logging Foundation | PLC-01, ILC-01, ILC-04, PV-01, AV-01, AUD-01 | 2 plans |
 | 56. Archive Lifecycle Operations | PLC-02, PLC-03, PV-03, AUD-02 | Planned |
 | 57. Delete And Recovery Operations | PLC-04, PLC-05, PLC-06 | Planned |
 | 58. Instance Management | ILC-02, ILC-03 | Planned |
