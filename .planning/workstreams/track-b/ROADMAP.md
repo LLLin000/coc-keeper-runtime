@@ -451,7 +451,7 @@
 |-------|--------------|--------|
 | 55. Profile List And Event Logging Foundation | PLC-01, ILC-01, ILC-04, PV-01, AV-01, AUD-01 | Complete |
 | 56. Archive Lifecycle Operations | PLC-02, PLC-03, PV-03, AUD-02 | Complete |
-| 57. Delete And Recovery Operations | PLC-04, PLC-05, PLC-06 | Planned |
+| 57. Delete And Recovery Operations | PLC-04, PLC-05, PLC-06 | Complete |
 | 58. Instance Management | ILC-02, ILC-03 | Planned |
 | 59. Admin Visibility Surfaces | AV-02, AV-03, AV-04 | Planned |
 | 60. Admin Governance Actions | AV-05, AV-06, AV-07, AV-08, AUD-03 | Planned |
