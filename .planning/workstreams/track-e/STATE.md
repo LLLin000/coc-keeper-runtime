@@ -3,22 +3,29 @@ gsd_state_version: 1.0
 milestone: vE.3.2
 milestone_name: Gap Closure & Integration
 status: in_progress
-stopped_at: Phase E79 executed - SkillUsageTracker implemented
-last_updated: "2026-03-31T19:00:00.000Z"
+stopped_at: Phase E81 executed - Creature Bestiary & Stats complete
+last_updated: "2026-03-31T20:30:00.000Z"
 progress:
   total_phases: 7
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 79
-Plan: 01 (planned, ready for execution)
-Status: Planning complete for all vE.3.2 phases
+Phase: 81
+Plan: 01 (executed, complete)
+Status: E81 complete - bestiary system with 10 creatures
+
+## Progress
+
+**Milestones Complete:** 4 (vE.1.1, vE.2.1, vE.2.2, vE.3.1)
+**Phases Complete:** 40 (E40-E43, E60-E79, E81)
+**Total Tests:** 746 passing (40 new bestiary tests)
+**Current Milestone:** vE.3.2
 
 ## Progress
 
@@ -54,7 +61,7 @@ Status: Planning complete for all vE.3.2 phases
 |-------|------|--------|------|
 | E79 | Skill Usage Tracking & Combat Integration | ✅ Complete | E79-01-PLAN.md |
 | E80 | Visibility Dispatcher Completion | Planned | E80-01-PLAN.md |
-| E81 | Creature Bestiary & Stats | Planned | E81-01-PLAN.md |
+| E81 | Creature Bestiary & Stats | ✅ Complete | E81-01-PLAN.md |
 | E82 | Chase Rules Implementation | Planned | E82-01-PLAN.md |
 | E83 | Archive Repository Completion | Planned | E83-01-PLAN.md |
 | E84 | Character Builder Integration | Planned | E84-01-PLAN.md |
@@ -74,8 +81,8 @@ Dependencies:
 
 ## Session Continuity
 
-**Stopped At:** Phase E79 executed - SkillUsageTracker implemented
-**Next Step:** Execute Phase E80 — Visibility Dispatcher Completion
+**Stopped At:** Phase E81 executed - Creature Bestiary & Stats complete
+**Next Step:** Execute Phase E80 — Visibility Dispatcher Completion (parallel with E81 in Wave 1)
 **Phase Plans:**
 - `.planning/workstreams/track-e/phases/79-skill-usage-tracking/E79-01-PLAN.md`
 - `.planning/workstreams/track-e/phases/80-visibility-dispatcher/E80-01-PLAN.md`
@@ -97,11 +104,11 @@ Dependencies:
 - Scenario-driven testing framework operational
 
 ### Critical Gaps Identified (from MAP-CODEBASE-TRACK-E.md)
+- ~~Skill Usage Tracking~~ - ✅ E79 Complete
+- ~~Creature Stats/Bestiary~~ - ✅ E81 Complete
 - visibility_dispatcher.py has 3 unresolved TODOs
 - Archive repository referenced but not fully implemented
 - Character builder exists but not wired
-- No skill usage tracking for improvement
-- Missing creature stats for combat scenarios
 - Chase rules not implemented
 
 ### Dependencies
