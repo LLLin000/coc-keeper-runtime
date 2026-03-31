@@ -31,7 +31,7 @@ steps:
     action: command
     name: load_adventure
     args:
-      adventure_slug: fuzhe
+      adventure_id: fuzhe
        
   - actor: p1
     action: command
