@@ -324,8 +324,8 @@
 
 - [x] **Phase 55: Profile List And Event Logging Foundation** — Profile listing, status display, event log foundation
   (completed 2026-03-31)
-- [ ] **Phase 56: Archive Lifecycle Operations** — Activate, archive, replace operations with audit logging
-  (planned)
+- [x] **Phase 56: Archive Lifecycle Operations** — Activate, archive, replace operations with audit logging
+  (completed 2026-03-31)
 - [ ] **Phase 57: Delete And Recovery Operations** — Permanent delete, grace-period recovery, instance lifecycle
   (planned)
 - [ ] **Phase 58: Instance Management** — Campaign instance archival, profile re-selection
@@ -370,7 +370,7 @@
   4. All operations are logged with full context
 
 **Plans:**
-- [ ] `56-01` — Archive/activate lifecycle ops with event logging and detailed messages
+- [x] `56-01` — Archive/activate lifecycle ops with event logging and detailed messages (completed 2026-03-31)
 
 ### Phase 57: Delete And Recovery Operations
 
@@ -385,6 +385,10 @@
   2. Deleted profiles enter a grace period before permanent erasure
   3. User can recover a recently deleted profile within the grace period
   4. Replacing an active profile moves the old one to archived state
+
+**Plans:**
+- [x] `57-01` — TDD: Archive repository (soft-delete, recover, replace→archived, auto-purge)
+- [x] `57-02` — Discord commands (/delete_profile, /recover_profile, /profiles visibility)
 
 ### Phase 58: Instance Management
 
@@ -446,7 +450,7 @@
 | Phase | Requirements | Status |
 |-------|--------------|--------|
 | 55. Profile List And Event Logging Foundation | PLC-01, ILC-01, ILC-04, PV-01, AV-01, AUD-01 | Complete |
-| 56. Archive Lifecycle Operations | PLC-02, PLC-03, PV-03, AUD-02 | Planned |
+| 56. Archive Lifecycle Operations | PLC-02, PLC-03, PV-03, AUD-02 | Complete |
 | 57. Delete And Recovery Operations | PLC-04, PLC-05, PLC-06 | Planned |
 | 58. Instance Management | ILC-02, ILC-03 | Planned |
 | 59. Admin Visibility Surfaces | AV-02, AV-03, AV-04 | Planned |
