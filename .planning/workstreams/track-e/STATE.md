@@ -1,37 +1,30 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: completed
-stopped_at: Phase E82 executed - Chase Rules Implementation complete
-last_updated: "2026-03-31T12:40:30.076Z"
+milestone: vE.3.2
+milestone_name: Gap Closure & Integration
+status: in_progress
+stopped_at: Phase E83 executed - Archive Repository CRUD complete
+last_updated: "2026-03-31T12:57:00.000Z"
 progress:
-  total_phases: 27
-  completed_phases: 10
-  total_plans: 14
-  completed_plans: 10
+  total_phases: 7
+  completed_phases: 4
+  total_plans: 7
+  completed_plans: 4
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 82
+Phase: 83
 Plan: 01 (executed, complete)
-Status: E82 complete - chase mechanics with CON checks, movement, escape/capture
+Status: E83 complete - archive repository CRUD with persistence
 
 ## Progress
 
 **Milestones Complete:** 4 (vE.1.1, vE.2.1, vE.2.2, vE.3.1)
-**Phases Complete:** 41 (E40-E43, E60-E79, E81, E82)
-**Total Tests:** 767 passing (21 new chase tests)
-**Current Milestone:** vE.3.2
-
-## Progress
-
-**Milestones Complete:** 4 (vE.1.1, vE.2.1, vE.2.2, vE.3.1)
-**Phases Complete:** 39 (E40-E43, E60-E78)
-**Total Tests:** 676+ passing (222 COC rules tests, 454+ other)
+**Phases Complete:** 42 (E40-E43, E60-E79, E81, E82, E83)
+**Total Tests:** 795 passing (12 new archive tests)
 **Current Milestone:** vE.3.2
 
 ## vE.3.2 Overview
@@ -63,10 +56,10 @@ Status: E82 complete - chase mechanics with CON checks, movement, escape/capture
 | Phase | Name | Status | Plan |
 |-------|------|--------|------|
 | E79 | Skill Usage Tracking & Combat Integration | ✅ Complete | E79-01-PLAN.md |
-| E80 | Visibility Dispatcher Completion | Planned | E80-01-PLAN.md |
+| E80 | Visibility Dispatcher Completion | ✅ Complete | E80-01-PLAN.md |
 | E81 | Creature Bestiary & Stats | ✅ Complete | E81-01-PLAN.md |
 | E82 | Chase Rules Implementation | ✅ Complete | E82-01-PLAN.md |
-| E83 | Archive Repository Completion | Planned | E83-01-PLAN.md |
+| E83 | Archive Repository Completion | ✅ Complete | E83-01-PLAN.md |
 | E84 | Character Builder Integration | Planned | E84-01-PLAN.md |
 | E85 | Equipment System (optional) | Planned | E85-01-PLAN.md |
 
@@ -85,8 +78,8 @@ Dependencies:
 
 ## Session Continuity
 
-**Stopped At:** Phase E82 executed - Chase Rules Implementation complete
-**Next Step:** Execute Phase E83 — Archive Repository Completion (or E80 in parallel)
+**Stopped At:** Phase E83 executed - Archive Repository CRUD complete
+**Next Step:** Execute Phase E84 — Character Builder Integration (depends on E83 archive)
 **Phase Plans:**
 
 - `.planning/workstreams/track-e/phases/79-skill-usage-tracking/E79-01-PLAN.md`
@@ -114,8 +107,8 @@ Dependencies:
 - ~~Skill Usage Tracking~~ - ✅ E79 Complete
 - ~~Creature Stats/Bestiary~~ - ✅ E81 Complete
 - ~~Chase Rules~~ - ✅ E82 Complete
+- ~~Archive Repository~~ - ✅ E83 Complete (CRUD + persistence)
 - visibility_dispatcher.py has 3 unresolved TODOs
-- Archive repository referenced but not fully implemented
 - Character builder exists but not wired
 
 ### Dependencies
