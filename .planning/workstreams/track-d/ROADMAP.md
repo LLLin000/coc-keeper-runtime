@@ -84,19 +84,23 @@ Plans:
 
 ### Phase D42: Keeper Prompt Polish
 
-**Goal:** Rewrite builder interview prompts to feel like a Keeper guiding character creation.
+**Goal:** Polish all remaining Keeper voice across the system beyond builder prompts — model-guided system prompts, narration service, consequence formatting, and system messages.
 
-**Requirements:** PRIVATE-03
+**Requirements:** KEEPER-01, KEEPER-02, KEEPER-03, KEEPER-04
 
 **Success Criteria** (what must be TRUE):
-1. INTRO_QUESTION feels like Keeper's opening: "让我先了解一下这位即将踏入黑暗的调查员..."
-2. CONCEPT_QUESTION asks in character, not as a form field
-3. All follow-up questions maintain Keeper voice throughout interview
-4. Finalization prompt makes player feel they shaped a person, not submitted a form
+1. Model-guided system prompts use "你是克苏鲁的呼唤的 Keeper" instead of "你是XX器"
+2. Consequence formatting uses narrative Keeper-style text instead of mechanical labels
+3. All player-facing system messages use consistent Chinese
+4. Narration service prompt remains solid (no changes needed)
+5. No regression in builder prompt quality (D40's work preserved)
 
 **Depends on:** D40
 
-**Plans:** Not yet created
+**Plans:** 1 plan
+
+Plans:
+- [ ] D42-01-PLAN.md — Polish model prompts, consequence formatting, and system messages
 
 ---
 
@@ -165,7 +169,7 @@ Plans:
 | **vD.1.1** | | | |
 | D40. Private-First Builder Experience | 1/1 | Complete | D40-01 |
 | D41. Archive Card Redesign | 0/0 | Planned | - |
-| D42. Keeper Prompt Polish | 0/0 | Planned | - |
+| D42. Keeper Prompt Polish | 1/1 | Planned | - |
 | D43. Activity-Ready Presentation Contracts | 0/0 | Planned | - |
 | **vD.1.2** | | | |
 | D44. Session Board | 0/0 | Queued | - |
