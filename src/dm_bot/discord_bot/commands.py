@@ -502,7 +502,18 @@ class BotCommands:
         profile = self._archive_repository.get_profile(
             str(interaction.user.id), profile_id
         )
-        await interaction.response.send_message(profile.detail_view(), ephemeral=True)
+        sections = profile.card_view()
+        if not sections:
+            await interaction.response.send_message("档案为空。", ephemeral=True)
+            return
+        # Send first section as initial response
+        first_title, first_content = sections[0]
+        await interaction.response.send_message(
+            f"**{first_title}**\n{first_content}", ephemeral=True
+        )
+        # Send remaining sections as followups
+        for title, content in sections[1:]:
+            await interaction.followup.send(f"**{title}**\n{content}", ephemeral=True)
 
     async def select_profile(self, interaction, *, profile_id: str) -> None:
         if self._session_store is None:

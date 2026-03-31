@@ -660,6 +660,209 @@ def test_profiles_command_shows_richer_summary_line() -> None:
     assert "目标" in content
 
 
+def test_card_view_returns_six_sections() -> None:
+    """card_view() returns list of 6 (title, content) tuples."""
+    from dm_bot.coc.archive import InvestigatorArchiveRepository
+
+    repo = InvestigatorArchiveRepository()
+    profile = repo.create_profile(
+        user_id="user-1",
+        name="林秋",
+        occupation="记者",
+        age=26,
+        background="夜班记者",
+        concept="26岁的夜班记者",
+        important_person="姐姐",
+        significant_location="旧报社顶楼",
+        treasured_possession="录音笔",
+        trait_notes="冷静、偏执、抗压",
+        scars_and_injuries="左手虎口有一道旧伤",
+        phobias_and_manias="面对失控现场时会过度清醒",
+        disposition="冷静但固执",
+        favored_skills=["图书馆使用", "聆听", "心理学"],
+        generation={
+            "str": 50,
+            "con": 55,
+            "dex": 60,
+            "app": 65,
+            "pow": 70,
+            "siz": 50,
+            "int": 75,
+            "edu": 80,
+            "luck": 45,
+        },
+    )
+
+    sections = profile.card_view()
+
+    assert isinstance(sections, list)
+    assert len(sections) == 6
+    for title, content in sections:
+        assert isinstance(title, str)
+        assert isinstance(content, str)
+        assert len(content) < 1024, (
+            f"Section '{title}' exceeds 1024 chars: {len(content)}"
+        )
+
+    titles = [t for t, _ in sections]
+    assert any("档案" in t for t in titles)
+    assert any("身份" in t for t in titles)
+    assert any("人物" in t for t in titles)
+    assert any("塑造" in t for t in titles)
+    assert any("数值" in t for t in titles)
+    assert any("技能" in t for t in titles)
+
+
+def test_card_view_sections_under_discord_limit() -> None:
+    """Each section content stays under 1024 characters (Discord embed field limit)."""
+    from dm_bot.coc.archive import InvestigatorArchiveRepository
+
+    repo = InvestigatorArchiveRepository()
+    profile = repo.create_profile(
+        user_id="user-1",
+        name="林钟轩",
+        occupation="临床医生",
+        age=38,
+        concept="38岁的落魄临床医生",
+        background="被手术纠纷拖下神坛的临床医生。",
+        key_past_event="一次违规手术让他被迫离开三甲医院。",
+        life_goal="赚很多钱然后逃到山里隐居。",
+        weakness="过度自信且酗酒。",
+        disposition="嘴硬，控制欲强。",
+        specialty="神经外科",
+        career_arc="三甲医院神经外科名医，后被贬至县城医院。",
+        core_belief="我不是在犯错，我是在救人。",
+        portrait_summary="落魄但不肯认输的临床医生。",
+        favored_skills=["医学", "急救", "心理学"],
+        generation={
+            "str": 50,
+            "con": 55,
+            "dex": 60,
+            "app": 65,
+            "pow": 70,
+            "siz": 50,
+            "int": 75,
+            "edu": 80,
+            "luck": 45,
+        },
+    )
+
+    sections = profile.card_view()
+    for title, content in sections:
+        assert len(content) < 1024, (
+            f"Section '{title}' is {len(content)} chars (limit: 1024)"
+        )
+
+
+def test_card_view_has_emoji_stats() -> None:
+    """Stats section uses emoji indicators: ❤️ HP, 🧠 SAN, 💧 MP, 🍀 LUCK."""
+    from dm_bot.coc.archive import InvestigatorArchiveRepository
+
+    repo = InvestigatorArchiveRepository()
+    profile = repo.create_profile(
+        user_id="user-1",
+        name="测试角色",
+        occupation="记者",
+        age=30,
+        background="记者",
+        disposition="冷静",
+        favored_skills=["图书馆使用"],
+        generation={
+            "str": 50,
+            "con": 55,
+            "dex": 60,
+            "app": 65,
+            "pow": 70,
+            "siz": 50,
+            "int": 75,
+            "edu": 80,
+            "luck": 45,
+        },
+    )
+
+    sections = profile.card_view()
+    stats_section = next((c for t, c in sections if "数值" in t), None)
+    assert stats_section is not None, "No stats section found"
+    assert "❤️" in stats_section, "Missing HP emoji"
+    assert "🧠" in stats_section, "Missing SAN emoji"
+    assert "💧" in stats_section, "Missing MP emoji"
+    assert "🍀" in stats_section, "Missing LUCK emoji"
+    assert "HP" in stats_section
+    assert "SAN" in stats_section
+    assert "MP" in stats_section
+    assert "LUCK" in stats_section
+
+
+def test_card_view_has_archive_label() -> None:
+    """Header section includes '长期档案' label per PRESENT-03."""
+    from dm_bot.coc.archive import InvestigatorArchiveRepository
+
+    repo = InvestigatorArchiveRepository()
+    profile = repo.create_profile(
+        user_id="user-1",
+        name="测试角色",
+        occupation="记者",
+        age=30,
+        background="记者",
+        disposition="冷静",
+        favored_skills=["图书馆使用"],
+        generation={
+            "str": 50,
+            "con": 55,
+            "dex": 60,
+            "app": 65,
+            "pow": 70,
+            "siz": 50,
+            "int": 75,
+            "edu": 80,
+            "luck": 45,
+        },
+    )
+
+    sections = profile.card_view()
+    header_title, header_content = sections[0]
+    combined = header_title + header_content
+    assert "长期档案" in combined, "Header must include '长期档案' label"
+
+
+def test_card_view_preserves_detail_view() -> None:
+    """detail_view() still works unchanged after adding card_view()."""
+    from dm_bot.coc.archive import InvestigatorArchiveRepository
+
+    repo = InvestigatorArchiveRepository()
+    profile = repo.create_profile(
+        user_id="user-1",
+        name="林秋",
+        occupation="记者",
+        age=26,
+        background="夜班记者",
+        disposition="冷静但固执",
+        favored_skills=["图书馆使用", "聆听", "心理学"],
+        generation={
+            "str": 50,
+            "con": 55,
+            "dex": 60,
+            "app": 65,
+            "pow": 70,
+            "siz": 50,
+            "int": 75,
+            "edu": 80,
+            "luck": 45,
+        },
+    )
+
+    # detail_view should still return plain text
+    detail = profile.detail_view()
+    assert "【调查员档案】" in detail
+    assert "【人物】" in detail
+    assert "【数值】" in detail
+
+    # card_view should return list of tuples
+    sections = profile.card_view()
+    assert isinstance(sections, list)
+    assert len(sections) == 6
+
+
 def test_profile_detail_command_renders_investigator_card_sections() -> None:
     from dm_bot.coc.archive import InvestigatorArchiveRepository
 
@@ -702,12 +905,17 @@ def test_profile_detail_command_renders_investigator_card_sections() -> None:
 
     asyncio.run(commands.profile_detail(interaction, profile_id=profile.profile_id))
 
-    content = interaction.response.messages[0][0]
-    assert "【调查员档案】" in content
-    assert "【人物】" in content
-    assert "【数值】" in content
-    assert "【塑造】" in content
-    assert "神经外科" in content
+    # Check all messages (first response + followups)
+    all_content = "\n".join(msg[0] for msg in interaction.response.messages)
+    all_content += "\n".join(msg[0] for msg in interaction.followup.messages)
+    assert "调查员档案" in all_content
+    assert "人物" in all_content
+    assert "数值" in all_content
+    assert "塑造" in all_content
+    assert "神经外科" in all_content
+    assert "长期档案" in all_content
+    # Should have 1 response + 5 followups = 6 sections
+    assert len(interaction.response.messages) + len(interaction.followup.messages) == 6
 
 
 def test_builder_does_not_create_second_active_profile_without_explicit_replace() -> (

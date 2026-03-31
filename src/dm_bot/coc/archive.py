@@ -57,6 +57,100 @@ class InvestigatorArchiveProfile(BaseModel):
         goal = goal[:20] + ("…" if len(goal) > 20 else "")
         return f"{self.profile_id} | {self.name} | {self.coc.occupation} | SAN {self.coc.san} | {self.status} | 目标 {goal}"
 
+    def card_view(self) -> list[tuple[str, str]]:
+        """Return archive profile as a list of (section_title, section_content) tuples.
+
+        Each section is designed to fit within Discord's 1024-character embed field limit.
+        Long-lived archive data only — campaign-local state (SAN, HP, MP, Luck from
+        InvestigatorPanel) is shown separately.
+
+        Returns:
+            List of 6 sections: 档案, 身份, 人物, 塑造, 数值, 技能与收束
+        """
+        sections: list[tuple[str, str]] = []
+
+        # Section 1: Header with 长期档案 label
+        header = (
+            f"**{self.name}** | {self.coc.occupation} | {self.age}岁 | {self.status}\n"
+            f"📁 长期档案 — 以下内容属于长期调查员档案，不包含当前模组里的临时状态。"
+        )
+        sections.append(("📋 调查员档案", header))
+
+        # Section 2: 身份
+        identity_lines = [
+            f"骨架：{self.concept or '未记录'}",
+            f"出生地：{self.birthplace or '未记录'}",
+            f"现居地：{self.residence or '未记录'}",
+            f"家庭：{self.family or '未记录'}",
+            f"教育：{self.education_background or '未记录'}",
+        ]
+        sections.append(("🏷️ 身份", "\n".join(identity_lines)))
+
+        # Section 3: 人物
+        person_lines = [
+            f"职业：{self.occupation_detail or self.occupation or '未记录'}",
+            f"专长：{self.specialty or '未记录'}",
+            f"职业轨迹：{self.career_arc or self.background or '未记录'}",
+        ]
+        sections.append(("💼 人物", "\n".join(person_lines)))
+
+        # Section 4: 塑造
+        important_person = self.important_person or self.important_tie or "未记录"
+        shaping_lines = [
+            f"关键过往：{self.key_past_event or '未记录'}",
+            f"核心信念：{self.core_belief or '未记录'}",
+            f"人生目标：{self.life_goal or '未记录'}",
+            f"物质欲望：{self.material_desire or '未记录'}",
+            f"弱点：{self.weakness or '未记录'}",
+            f"特质：{self.trait_notes or self.disposition or '未记录'}",
+            f"重要之人：{important_person}",
+            f"重要场所：{self.significant_location or '未记录'}",
+            f"珍贵之物：{self.treasured_possession or '未记录'}",
+            f"恐惧/禁忌：{self.fear_or_taboo or '未记录'}",
+            f"伤口与疤痕：{self.scars_and_injuries or '未记录'}",
+            f"恐惧症/躁狂症：{self.phobias_and_manias or '未记录'}",
+            f"处事方式：{self.disposition or '未记录'}",
+        ]
+        sections.append(("🎭 塑造", "\n".join(shaping_lines)))
+
+        # Section 5: 数值 with emoji indicators
+        attrs = self.coc.attributes
+        stats_lines = [
+            f"STR {attrs.str} / CON {attrs.con} / DEX {attrs.dex} / APP {attrs.app}",
+            f"POW {attrs.pow} / SIZ {attrs.siz} / INT {attrs.int} / EDU {attrs.edu}",
+            f"🧠 SAN {self.coc.san} / ❤️ HP {self.coc.hp} / 💧 MP {self.coc.mp} / 🍀 LUCK {self.coc.luck}",
+            f"MOV {self.coc.move_rate} / 体格 {self.coc.build} / 伤害加值 {self.coc.damage_bonus}",
+        ]
+        sections.append(("📊 数值", "\n".join(stats_lines)))
+
+        # Section 6: 技能与收束
+        favored = "、".join(self.favored_skills) if self.favored_skills else "未记录"
+        occ_skills = (
+            "、".join(self.finishing.recommended_occupation_skills)
+            if self.finishing.recommended_occupation_skills
+            else "未记录"
+        )
+        interest_skills = (
+            "、".join(self.finishing.recommended_interest_skills)
+            if self.finishing.recommended_interest_skills
+            else "未记录"
+        )
+        adjustments = (
+            "；".join(self.finishing.allowed_adjustments)
+            if self.finishing.allowed_adjustments
+            else "无"
+        )
+        skills_lines = [
+            f"偏好技能：{favored}",
+            f"职业技能建议：{occ_skills}",
+            f"兴趣技能建议：{interest_skills}",
+            f"允许的规则内收束：{adjustments}",
+            f"规则说明：{self.finishing.rules_note or '未记录'}",
+        ]
+        sections.append(("📚 技能与收束", "\n".join(skills_lines)))
+
+        return sections
+
     def detail_view(self) -> str:
         favored = "、".join(self.favored_skills) if self.favored_skills else "未记录"
         occ_skills = (
