@@ -757,7 +757,7 @@
 - `tests/test_session_phase_transitions.py` — add phase transition tests
 
 **Plans:** 1 plan created
-- [ ] **E90-01-PLAN.md** — Auto-transition lobby → awaiting_ready in join_campaign()
+- [x] **E90-01-PLAN.md** — Auto-transition lobby → awaiting_ready in join_campaign() (completed 2026-04-01)
   - Files: `src/dm_bot/orchestrator/session_store.py`, `tests/test_session_phase_transitions.py`
   - Tasks: 2 (conditional phase transition in join_campaign, 4 new test functions)
 
@@ -775,6 +775,11 @@
 **Files to modify:**
 - `src/dm_bot/orchestrator/session_store.py` — add `all_ready()` method
 - `src/dm_bot/discord_bot/commands.py` — check all_ready and transition phase in `ready()`
+
+**Plans:** 1 plan created
+- [ ] **E91-01-PLAN.md** — Ready command phase transitions (all_ready helper + transition wiring + tests)
+  - Files: `src/dm_bot/orchestrator/session_store.py`, `src/dm_bot/discord_bot/commands.py`, `tests/test_session_phase_transitions.py`
+  - Tasks: 3 (all_ready + transition methods, wire ready() command, full test verification)
 
 ### Phase E92: Admin Start → Onboarding → Scene Round
 
