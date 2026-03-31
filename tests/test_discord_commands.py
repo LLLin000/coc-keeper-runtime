@@ -332,7 +332,7 @@ async def test_load_adventure_loads_adventure():
     # Verify response sent
     load_interaction.response.send_message.assert_called()
     response_msg = load_interaction.response.send_message.call_args.args[0]
-    assert "loaded adventure" in response_msg
+    assert "已加载" in response_msg
 
     # Verify channel message with ready prompt
     assert len(load_interaction.channel.messages) > 0
