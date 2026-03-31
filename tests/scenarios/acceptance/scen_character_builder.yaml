@@ -1,0 +1,150 @@
+# Character Builder E2E Scenario
+# Validates: interview flow → profile creation → archive storage
+
+scenario:
+  id: scen_character_builder
+  name: "Character Builder Flow"
+  description: "Validates complete character creation through builder"
+  
+actors:
+  - id: p1
+    role: player
+    name: "测试玩家"
+
+initial_state:
+  dice_mode: seeded
+  dice_seed: 12345
+  
+steps:
+  # Start builder
+  - actor: p1
+    action: command
+    name: start_character_build
+    args:
+      user_id: "p1"
+      
+  - actor: system
+    action: assert
+    assertions:
+      builder_started:
+        started: true
+        has_session: true
+        question:
+          contains: ["名字", "name"]
+          
+  # Answer: Name
+  - actor: p1
+    action: command
+    name: answer_builder_question
+    args:
+      user_id: "p1"
+      answer: "李明"
+      
+  - actor: system
+    action: assert
+    assertions:
+      question_received:
+        question:
+          contains: ["骨架", "concept"]
+          
+  # Answer: Concept
+  - actor: p1
+    action: command
+    name: answer_builder_question
+    args:
+      user_id: "p1"
+      answer: "42岁的落魄记者"
+      
+  # Answer: Age (extracted from concept, but confirm)
+  - actor: p1
+    action: command
+    name: answer_builder_question
+    args:
+      user_id: "p1"
+      answer: "42"
+      
+  # Answer: Occupation
+  - actor: p1
+    action: command
+    name: answer_builder_question
+    args:
+      user_id: "p1"
+      answer: "记者"
+      
+  # Answer: Key past event
+  - actor: p1
+    action: command
+    name: answer_builder_question
+    args:
+      user_id: "p1"
+      answer: "报道失误导致无辜者入狱"
+      
+  # Answer: Life goal
+  - actor: p1
+    action: command
+    name: answer_builder_question
+    args:
+      user_id: "p1"
+      answer: "揭露真相平反冤案"
+      
+  # Answer: Weakness
+  - actor: p1
+    action: command
+    name: answer_builder_question
+    args:
+      user_id: "p1"
+      answer: "酗酒麻痹愧疚"
+      
+  # Answer: Core belief
+  - actor: p1
+    action: command
+    name: answer_builder_question
+    args:
+      user_id: "p1"
+      answer: "真相值得追到底"
+      
+  # Finalize: Should get portrait
+  - actor: p1
+    action: command
+    name: answer_builder_question
+    args:
+      user_id: "p1"
+      answer: "定卡"
+      
+  - actor: system
+    action: assert
+    assertions:
+      profile_created:
+        has_profile: true
+        profile:
+          name: "李明"
+          occupation: "记者"
+          age: 42
+          coc:
+            san: "> 0"
+            hp: "> 0"
+            attributes:
+              str: "> 0"
+              
+  # Verify in archive
+  - actor: p1
+    action: command
+    name: list_profiles
+    args:
+      user_id: "p1"
+      
+  - actor: system
+    action: assert
+    assertions:
+      profile_in_archive:
+        count: 1
+        profiles:
+          - name: "李明"
+            occupation: "记者"
+            status: "active"
+
+expected_outcomes:
+  - builder_flow_completed: true
+  - profile_created: true
+  - profile_in_archive: true
+  - coc_stats_generated: true

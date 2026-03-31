@@ -7,6 +7,7 @@ from dm_bot.router.contracts import TurnPlan
 from dm_bot.rules.actions import LookupAction, RuleAction, StatBlock
 from dm_bot.adventures.models import AdventureLocationConnection, AdventurePackage
 from dm_bot.coc.archive import InvestigatorArchiveProfile
+from dm_bot.coc.builder import ConversationalCharacterBuilder
 
 
 class CharacterRegistry:
@@ -21,10 +22,18 @@ class CharacterRegistry:
 
 
 class GameplayOrchestrator:
-    def __init__(self, *, importer, registry: CharacterRegistry, rules_engine) -> None:
+    def __init__(
+        self,
+        *,
+        importer,
+        registry: CharacterRegistry,
+        rules_engine,
+        archive_repository=None,
+    ) -> None:
         self._importer = importer
         self.registry = registry
         self._rules_engine = rules_engine
+        self.archive_repository = archive_repository
         self.mode_state = GameModeState()
         self.combat: CombatEncounter | None = None
         self.adventure: AdventurePackage | None = None
@@ -33,7 +42,20 @@ class GameplayOrchestrator:
         self._trigger_engine = TriggerEngine()
         self._pending_trigger_events: list[dict[str, object]] = []
 
-    def import_character(self, *, user_id: str, provider: str, external_id: str) -> CharacterRecord:
+        # Initialize character builder if archive available
+        self.character_builder: ConversationalCharacterBuilder | None = None
+        if archive_repository:
+            self.character_builder = ConversationalCharacterBuilder(
+                archive_repository=archive_repository,
+            )
+
+    def get_builder(self) -> ConversationalCharacterBuilder | None:
+        """Get the character builder instance."""
+        return self.character_builder
+
+    def import_character(
+        self, *, user_id: str, provider: str, external_id: str
+    ) -> CharacterRecord:
         character = self._importer.import_character(provider, external_id)
         self.registry.put(user_id, character)
         self.sync_panel_from_character(user_id)
@@ -104,8 +126,12 @@ class GameplayOrchestrator:
                 "title": self.adventure.title,
                 "current_scene": scene.model_dump(),
                 "current_location": location.model_dump(),
-                "current_story_node": self._current_story_node().model_dump() if self.adventure.story_nodes else None,
-                "reachable_locations": [connection.model_dump() for connection in location.connections],
+                "current_story_node": self._current_story_node().model_dump()
+                if self.adventure.story_nodes
+                else None,
+                "reachable_locations": [
+                    connection.model_dump() for connection in location.connections
+                ],
                 "objectives": list(self.adventure_state.get("objectives", [])),
                 "state": self.adventure.public_state(module_state),
                 "guidance": self.adventure_guidance_snapshot(),
@@ -146,7 +172,9 @@ class GameplayOrchestrator:
         if scene.presentation.choice_prompt:
             lines.append(scene.presentation.choice_prompt)
         elif scene.guidance.ambient_focus:
-            lines.append(f"现在最值得留意的是：{'、'.join(scene.guidance.ambient_focus)}。")
+            lines.append(
+                f"现在最值得留意的是：{'、'.join(scene.guidance.ambient_focus)}。"
+            )
         return "\n".join(line for line in lines if line)
 
     def set_adventure_scene(self, scene_id: str) -> None:
@@ -207,7 +235,11 @@ class GameplayOrchestrator:
         if self.adventure is None:
             raise RuntimeError("adventure not loaded")
         roster = [name for name in active_characters.values() if name]
-        roster_line = f"已就位调查员：{', '.join(roster)}。" if roster else "已就位调查员：未命名调查员。"
+        roster_line = (
+            f"已就位调查员：{', '.join(roster)}。"
+            if roster
+            else "已就位调查员：未命名调查员。"
+        )
         return (
             f"《{self.adventure.title}》开始。\n"
             f"{self.adventure.premise}\n"
@@ -230,7 +262,9 @@ class GameplayOrchestrator:
             return []
         seeded = []
         knowledge_log = list(self.adventure_state.get("knowledge_log", []))
-        existing_titles = {(item.get("recipient_user_id"), item.get("title")) for item in knowledge_log}
+        existing_titles = {
+            (item.get("recipient_user_id"), item.get("title")) for item in knowledge_log
+        }
         for item in track.get("seeded_knowledge", []):
             pair = (user_id, item.get("title"))
             if pair in existing_titles:
@@ -247,11 +281,18 @@ class GameplayOrchestrator:
         self.adventure_state["knowledge_log"] = knowledge_log
         return seeded
 
-    def ensure_investigator_panel(self, *, user_id: str, display_name: str, role: str = "investigator") -> InvestigatorPanel:
+    def ensure_investigator_panel(
+        self, *, user_id: str, display_name: str, role: str = "investigator"
+    ) -> InvestigatorPanel:
         if user_id not in self.panels:
-            defaults = {"investigator": {"san": 50, "hp": 10, "mp": 10, "luck": 50}, "magical_girl": {"san": 60, "hp": 12, "mp": 14, "luck": 55}}
+            defaults = {
+                "investigator": {"san": 50, "hp": 10, "mp": 10, "luck": 50},
+                "magical_girl": {"san": 60, "hp": 12, "mp": 14, "luck": 55},
+            }
             base = defaults.get(role, defaults["investigator"])
-            self.panels[user_id] = InvestigatorPanel(user_id=user_id, name=display_name, role=role, **base)
+            self.panels[user_id] = InvestigatorPanel(
+                user_id=user_id, name=display_name, role=role, **base
+            )
         else:
             self.panels[user_id].role = role or self.panels[user_id].role
             if display_name:
@@ -263,8 +304,12 @@ class GameplayOrchestrator:
         if character is None:
             return
         if character.coc is not None:
-            existing_role = self.panels[user_id].role if user_id in self.panels else "investigator"
-            panel = self.ensure_investigator_panel(user_id=user_id, display_name=character.name, role=existing_role)
+            existing_role = (
+                self.panels[user_id].role if user_id in self.panels else "investigator"
+            )
+            panel = self.ensure_investigator_panel(
+                user_id=user_id, display_name=character.name, role=existing_role
+            )
             panel.name = character.name
             panel.occupation = character.coc.occupation
             panel.san = character.coc.san
@@ -273,8 +318,16 @@ class GameplayOrchestrator:
             panel.luck = character.coc.luck
             panel.skills = dict(character.coc.skills)
 
-    def sync_panel_from_archive_profile(self, *, user_id: str, profile: InvestigatorArchiveProfile, role: str = "investigator") -> InvestigatorPanel:
-        panel = self.ensure_investigator_panel(user_id=user_id, display_name=profile.name, role=role)
+    def sync_panel_from_archive_profile(
+        self,
+        *,
+        user_id: str,
+        profile: InvestigatorArchiveProfile,
+        role: str = "investigator",
+    ) -> InvestigatorPanel:
+        panel = self.ensure_investigator_panel(
+            user_id=user_id, display_name=profile.name, role=role
+        )
         panel.name = profile.name
         panel.role = role or panel.role
         panel.occupation = profile.coc.occupation
@@ -288,9 +341,22 @@ class GameplayOrchestrator:
         panel.module_flags["archive_sync_status"] = "synced"
         return panel
 
-    def apply_panel_update(self, *, user_id: str, san: int = 0, hp: int = 0, mp: int = 0, luck: int = 0, note: str = "") -> None:
-        existing_name = self.panels[user_id].name if user_id in self.panels else f"玩家{user_id}"
-        panel = self.ensure_investigator_panel(user_id=user_id, display_name=existing_name)
+    def apply_panel_update(
+        self,
+        *,
+        user_id: str,
+        san: int = 0,
+        hp: int = 0,
+        mp: int = 0,
+        luck: int = 0,
+        note: str = "",
+    ) -> None:
+        existing_name = (
+            self.panels[user_id].name if user_id in self.panels else f"玩家{user_id}"
+        )
+        panel = self.ensure_investigator_panel(
+            user_id=user_id, display_name=existing_name
+        )
         panel.san += san
         panel.hp += hp
         panel.mp += mp
@@ -298,7 +364,9 @@ class GameplayOrchestrator:
         if note:
             panel.journal.append(note)
 
-    def visible_knowledge(self, *, user_id: str, role: str = "") -> list[dict[str, object]]:
+    def visible_knowledge(
+        self, *, user_id: str, role: str = ""
+    ) -> list[dict[str, object]]:
         entries = []
         for item in list(self.adventure_state.get("knowledge_log", [])):
             scope = item.get("scope", "public")
@@ -313,7 +381,9 @@ class GameplayOrchestrator:
     def investigator_panel_snapshot(self, user_id: str) -> dict[str, object]:
         panel = self.panels.get(user_id)
         if panel is None:
-            panel = self.ensure_investigator_panel(user_id=user_id, display_name=f"玩家{user_id}")
+            panel = self.ensure_investigator_panel(
+                user_id=user_id, display_name=f"玩家{user_id}"
+            )
         visible_knowledge = self.visible_knowledge(user_id=user_id, role=panel.role)
         snapshot = panel.model_dump()
         snapshot["knowledge"] = visible_knowledge
@@ -324,7 +394,11 @@ class GameplayOrchestrator:
         story_node = self._current_story_node()
         return {
             "panel": snapshot,
-            "knowledge_titles": [item.get("title", "") for item in snapshot.get("knowledge", []) if item.get("title")],
+            "knowledge_titles": [
+                item.get("title", "")
+                for item in snapshot.get("knowledge", [])
+                if item.get("title")
+            ],
             "story_node": story_node.model_dump() if story_node is not None else None,
         }
 
@@ -340,18 +414,24 @@ class GameplayOrchestrator:
         scene = self.adventure.scene_by_id(self._current_scene_id())
         location = self._current_location()
         lowered = content.lower()
-        connection_result = self._evaluate_location_connections(content=content, lowered=lowered, location=location)
+        connection_result = self._evaluate_location_connections(
+            content=content, lowered=lowered, location=location
+        )
         if connection_result is not None:
             return connection_result
         scored_matches: list[tuple[int, object]] = []
         for interactable in scene.interactables:
-            score = sum(1 for keyword in interactable.keywords if keyword.lower() in lowered)
+            score = sum(
+                1 for keyword in interactable.keywords if keyword.lower() in lowered
+            )
             if score > 0:
                 scored_matches.append((score, interactable))
 
         scored_matches.sort(key=lambda item: item[0], reverse=True)
         top_score = scored_matches[0][0] if scored_matches else 0
-        matches = [interactable for score, interactable in scored_matches if score == top_score]
+        matches = [
+            interactable for score, interactable in scored_matches if score == top_score
+        ]
 
         if not matches:
             return self._record_scene_miss_and_hint(scene)
@@ -372,22 +452,32 @@ class GameplayOrchestrator:
                 trigger_ids=interactable.trigger_ids,
             )
             summary = resolution.merged_table_summary()
-            self._pending_trigger_events.extend(event.__dict__ for event in resolution.events)
+            self._pending_trigger_events.extend(
+                event.__dict__ for event in resolution.events
+            )
             if interactable.judgement == "roll":
                 pending_roll = dict(self.adventure_state.get("pending_roll", {}))
                 return {
                     "kind": "roll_needed",
-                    "message": summary or interactable.prompt_text or f"这里需要一次 {interactable.roll_label or '检定'}。",
+                    "message": summary
+                    or interactable.prompt_text
+                    or f"这里需要一次 {interactable.roll_label or '检定'}。",
                     "roll": {
-                        "action": pending_roll.get("action") or interactable.roll_type or "ability_check",
-                        "label": pending_roll.get("label") or interactable.roll_label or "Check",
+                        "action": pending_roll.get("action")
+                        or interactable.roll_type
+                        or "ability_check",
+                        "label": pending_roll.get("label")
+                        or interactable.roll_label
+                        or "Check",
                     },
                     "trigger_events": [event.__dict__ for event in resolution.events],
                 }
             return {
                 "kind": "auto" if interactable.judgement != "clarify" else "clarify",
                 "message": summary or interactable.result_text or scene.summary,
-                "guidance": scene.guidance.light_hint if interactable.judgement != "clarify" else "",
+                "guidance": scene.guidance.light_hint
+                if interactable.judgement != "clarify"
+                else "",
                 "trigger_events": [event.__dict__ for event in resolution.events],
             }
 
@@ -399,7 +489,8 @@ class GameplayOrchestrator:
         if interactable.judgement == "roll":
             return {
                 "kind": "roll_needed",
-                "message": interactable.prompt_text or f"这里需要一次 {interactable.roll_label or '检定'}。",
+                "message": interactable.prompt_text
+                or f"这里需要一次 {interactable.roll_label or '检定'}。",
                 "roll": {
                     "action": interactable.roll_type or "ability_check",
                     "label": interactable.roll_label or "Check",
@@ -408,7 +499,8 @@ class GameplayOrchestrator:
         if interactable.judgement == "clarify":
             return {
                 "kind": "clarify",
-                "message": interactable.prompt_text or f"请先说明你打算怎么处理{interactable.title}。",
+                "message": interactable.prompt_text
+                or f"请先说明你打算怎么处理{interactable.title}。",
             }
         if interactable.transition_scene_id:
             return {
@@ -425,12 +517,20 @@ class GameplayOrchestrator:
     def _record_scene_miss_and_hint(self, scene) -> dict[str, object]:
         miss_count = int(self.adventure_state.get("scene_miss_count", 0)) + 1
         self.adventure_state["scene_miss_count"] = miss_count
-        hint = scene.guidance.rescue_hint if miss_count >= 2 and scene.guidance.rescue_hint else scene.guidance.light_hint
+        hint = (
+            scene.guidance.rescue_hint
+            if miss_count >= 2 and scene.guidance.rescue_hint
+            else scene.guidance.light_hint
+        )
         return {
             "kind": "hint",
             "message": hint or scene.summary,
-            "guidance": f"现在最值得留意的是：{'、'.join(scene.guidance.ambient_focus)}。" if scene.guidance.ambient_focus else "",
-            "tier": "rescue" if miss_count >= 2 and scene.guidance.rescue_hint else "light",
+            "guidance": f"现在最值得留意的是：{'、'.join(scene.guidance.ambient_focus)}。"
+            if scene.guidance.ambient_focus
+            else "",
+            "tier": "rescue"
+            if miss_count >= 2 and scene.guidance.rescue_hint
+            else "light",
         }
 
     def _current_scene_id(self) -> str:
@@ -441,12 +541,23 @@ class GameplayOrchestrator:
     def _current_location(self):
         if self.adventure is None:
             raise RuntimeError("adventure not loaded")
-        return self.adventure.location_by_id(str(self.adventure_state.get("location_id", self.adventure.start_location_id or self.adventure.start_scene_id)))
+        return self.adventure.location_by_id(
+            str(
+                self.adventure_state.get(
+                    "location_id",
+                    self.adventure.start_location_id or self.adventure.start_scene_id,
+                )
+            )
+        )
 
-    def _evaluate_location_connections(self, *, content: str, lowered: str, location) -> dict[str, object] | None:
+    def _evaluate_location_connections(
+        self, *, content: str, lowered: str, location
+    ) -> dict[str, object] | None:
         scored_connections: list[tuple[int, AdventureLocationConnection]] = []
         for connection in location.connections:
-            score = sum(1 for keyword in connection.keywords if keyword.lower() in lowered)
+            score = sum(
+                1 for keyword in connection.keywords if keyword.lower() in lowered
+            )
             if score > 0:
                 scored_connections.append((score, connection))
         if not scored_connections:
@@ -454,7 +565,9 @@ class GameplayOrchestrator:
 
         scored_connections.sort(key=lambda item: item[0], reverse=True)
         top_score = scored_connections[0][0]
-        matches = [connection for score, connection in scored_connections if score == top_score]
+        matches = [
+            connection for score, connection in scored_connections if score == top_score
+        ]
         if len(matches) > 1:
             return {
                 "kind": "clarify",
@@ -467,16 +580,29 @@ class GameplayOrchestrator:
                 resolution = self._trigger_engine.execute(
                     package=self.adventure,
                     adventure_state=self.adventure_state,
-                    event={"kind": "action", "action_id": f"observe:{location.id}->{connection.to_location_id}"},
+                    event={
+                        "kind": "action",
+                        "action_id": f"observe:{location.id}->{connection.to_location_id}",
+                    },
                     trigger_ids=connection.observe_trigger_ids,
                 )
-                self._pending_trigger_events.extend(event.__dict__ for event in resolution.events)
+                self._pending_trigger_events.extend(
+                    event.__dict__ for event in resolution.events
+                )
                 summary = resolution.merged_table_summary()
                 if summary:
-                    return {"kind": "auto", "message": summary, "guidance": "", "trigger_events": [event.__dict__ for event in resolution.events]}
+                    return {
+                        "kind": "auto",
+                        "message": summary,
+                        "guidance": "",
+                        "trigger_events": [
+                            event.__dict__ for event in resolution.events
+                        ],
+                    }
             return {
                 "kind": "auto",
-                "message": connection.observe_text or f"你靠近后暂时没有立刻踏进去，而是先观察通往 {self.adventure.location_by_id(connection.to_location_id).title} 的入口。",
+                "message": connection.observe_text
+                or f"你靠近后暂时没有立刻踏进去，而是先观察通往 {self.adventure.location_by_id(connection.to_location_id).title} 的入口。",
                 "guidance": "",
             }
         if self._is_travel_intent(content):
@@ -484,13 +610,25 @@ class GameplayOrchestrator:
                 resolution = self._trigger_engine.execute(
                     package=self.adventure,
                     adventure_state=self.adventure_state,
-                    event={"kind": "action", "action_id": f"travel:{location.id}->{connection.to_location_id}"},
+                    event={
+                        "kind": "action",
+                        "action_id": f"travel:{location.id}->{connection.to_location_id}",
+                    },
                     trigger_ids=connection.travel_trigger_ids,
                 )
-                self._pending_trigger_events.extend(event.__dict__ for event in resolution.events)
+                self._pending_trigger_events.extend(
+                    event.__dict__ for event in resolution.events
+                )
                 summary = resolution.merged_table_summary()
                 if summary:
-                    return {"kind": "auto", "message": summary, "guidance": "", "trigger_events": [event.__dict__ for event in resolution.events]}
+                    return {
+                        "kind": "auto",
+                        "message": summary,
+                        "guidance": "",
+                        "trigger_events": [
+                            event.__dict__ for event in resolution.events
+                        ],
+                    }
             self.set_adventure_location(connection.to_location_id)
             self.adventure_state["scene_miss_count"] = 0
             return {
@@ -502,16 +640,51 @@ class GameplayOrchestrator:
 
     def _is_observation_only(self, content: str) -> bool:
         lowered = content.lower()
-        if any(marker in lowered for marker in ("不进去", "先不进", "先不进去", "只是打量", "只是观察", "先看看")):
+        if any(
+            marker in lowered
+            for marker in (
+                "不进去",
+                "先不进",
+                "先不进去",
+                "只是打量",
+                "只是观察",
+                "先看看",
+            )
+        ):
             return True
         observe_verbs = ("看", "观察", "打量", "端详", "试探", "靠近")
-        travel_verbs = ("进入", "走进", "进去", "踏入", "迈进", "穿过", "回到", "返回", "离开", "出去")
-        return any(verb in content for verb in observe_verbs) and not any(verb in content for verb in travel_verbs)
+        travel_verbs = (
+            "进入",
+            "走进",
+            "进去",
+            "踏入",
+            "迈进",
+            "穿过",
+            "回到",
+            "返回",
+            "离开",
+            "出去",
+        )
+        return any(verb in content for verb in observe_verbs) and not any(
+            verb in content for verb in travel_verbs
+        )
 
     def _is_travel_intent(self, content: str) -> bool:
         return any(
             verb in content
-            for verb in ("进入", "走进", "进去", "踏入", "迈进", "穿过", "回到", "返回", "离开", "出去", "去")
+            for verb in (
+                "进入",
+                "走进",
+                "进去",
+                "踏入",
+                "迈进",
+                "穿过",
+                "回到",
+                "返回",
+                "离开",
+                "出去",
+                "去",
+            )
         )
 
     def resolve_manual_roll(
@@ -539,7 +712,11 @@ class GameplayOrchestrator:
         weapon: str = "unarmed",
     ) -> dict[str, object]:
         actor = StatBlock(name=actor_name or "Unknown", armor_class=10, hit_points=1)
-        target = StatBlock(name=target_name, armor_class=target_ac, hit_points=1) if target_name else None
+        target = (
+            StatBlock(name=target_name, armor_class=target_ac, hit_points=1)
+            if target_name
+            else None
+        )
         parameters: dict[str, object]
         if action == "raw_roll":
             parameters = {"expression": expression or ""}
@@ -563,7 +740,10 @@ class GameplayOrchestrator:
                 "penalty_dice": penalty_dice,
             }
         elif action == "damage_roll":
-            parameters = {"damage_expression": damage_expression or expression or "", "damage_type": damage_type}
+            parameters = {
+                "damage_expression": damage_expression or expression or "",
+                "damage_type": damage_type,
+            }
         elif action == "attack_roll":
             parameters = {
                 "attack_bonus": attack_bonus,
@@ -585,14 +765,18 @@ class GameplayOrchestrator:
         if consequence is not None:
             result["consequence_summary"] = consequence.merged_table_summary()
             result["trigger_events"] = [event.__dict__ for event in consequence.events]
-            self._pending_trigger_events.extend(event.__dict__ for event in consequence.events)
+            self._pending_trigger_events.extend(
+                event.__dict__ for event in consequence.events
+            )
         return result
 
     def export_state(self) -> dict[str, object]:
         return {
             "mode": self.mode_state.model_dump(),
             "combat": self.combat.model_dump() if self.combat else None,
-            "panels": {user_id: panel.model_dump() for user_id, panel in self.panels.items()},
+            "panels": {
+                user_id: panel.model_dump() for user_id, panel in self.panels.items()
+            },
             "registry": {
                 user_id: character.model_dump()
                 for user_id, character in self.registry._characters.items()
@@ -601,7 +785,9 @@ class GameplayOrchestrator:
         }
 
     def import_state(self, state: dict[str, object]) -> None:
-        self.mode_state = GameModeState.model_validate(state.get("mode", {"mode": "dm", "scene_speakers": []}))
+        self.mode_state = GameModeState.model_validate(
+            state.get("mode", {"mode": "dm", "scene_speakers": []})
+        )
         combat = state.get("combat")
         self.combat = CombatEncounter.model_validate(combat) if combat else None
         registry = {}
@@ -652,7 +838,11 @@ class GameplayOrchestrator:
     def _current_story_node(self):
         if self.adventure is None or not self.adventure.story_nodes:
             return None
-        node_id = str(self.adventure_state.get("story_node_id") or self.adventure.start_story_node_id or "")
+        node_id = str(
+            self.adventure_state.get("story_node_id")
+            or self.adventure.start_story_node_id
+            or ""
+        )
         if not node_id:
             return None
         return self.adventure.story_node_by_id(node_id)
@@ -661,21 +851,47 @@ class GameplayOrchestrator:
         results: list[dict[str, object]] = []
         for call in plan.tool_calls:
             if call.name == "rules.lookup":
-                result = self._rules_engine.lookup(LookupAction.model_validate(call.arguments))
+                result = self._rules_engine.lookup(
+                    LookupAction.model_validate(call.arguments)
+                )
             elif call.name == "rules.attack_roll":
-                result = self._rules_engine.execute(RuleAction.model_validate(call.arguments))
+                result = self._rules_engine.execute(
+                    RuleAction.model_validate(call.arguments)
+                )
             elif call.name == "rules.ability_check":
-                result = self._rules_engine.execute(RuleAction.model_validate({"action": "ability_check", **call.arguments}))
+                result = self._rules_engine.execute(
+                    RuleAction.model_validate(
+                        {"action": "ability_check", **call.arguments}
+                    )
+                )
             elif call.name == "rules.saving_throw":
-                result = self._rules_engine.execute(RuleAction.model_validate({"action": "saving_throw", **call.arguments}))
+                result = self._rules_engine.execute(
+                    RuleAction.model_validate(
+                        {"action": "saving_throw", **call.arguments}
+                    )
+                )
             elif call.name == "rules.damage_roll":
-                result = self._rules_engine.execute(RuleAction.model_validate({"action": "damage_roll", **call.arguments}))
+                result = self._rules_engine.execute(
+                    RuleAction.model_validate(
+                        {"action": "damage_roll", **call.arguments}
+                    )
+                )
             elif call.name == "rules.coc_skill_check":
-                result = self._rules_engine.execute(RuleAction.model_validate({"action": "coc_skill_check", **call.arguments}))
+                result = self._rules_engine.execute(
+                    RuleAction.model_validate(
+                        {"action": "coc_skill_check", **call.arguments}
+                    )
+                )
             elif call.name == "rules.coc_sanity_check":
-                result = self._rules_engine.execute(RuleAction.model_validate({"action": "coc_sanity_check", **call.arguments}))
+                result = self._rules_engine.execute(
+                    RuleAction.model_validate(
+                        {"action": "coc_sanity_check", **call.arguments}
+                    )
+                )
             elif call.name == "rules.raw_roll":
-                result = self._rules_engine.execute(RuleAction.model_validate({"action": "raw_roll", **call.arguments}))
+                result = self._rules_engine.execute(
+                    RuleAction.model_validate({"action": "raw_roll", **call.arguments})
+                )
             else:
                 result = {"tool": call.name, "status": "unsupported"}
             results.append(result)

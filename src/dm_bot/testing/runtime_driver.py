@@ -94,13 +94,21 @@ class RuntimeTestDriver:
             compendium=FixtureCompendium(baseline="2014", fixtures={})
         )
 
+        # Import here to avoid circular imports
+        from dm_bot.coc.archive import InvestigatorArchiveRepository
+
+        archive_repository = InvestigatorArchiveRepository()
+
         self._gameplay = GameplayOrchestrator(
             importer=CharacterImporter(
                 sources={"dicecloud_snapshot": DicecloudSnapshotSource(fixtures={})}
             ),
             registry=CharacterRegistry(),
             rules_engine=rules_engine,
+            archive_repository=archive_repository,
         )
+
+        self._archive_repository = archive_repository
 
         model_client = self._model_client
         turn_runner = TurnRunner(
@@ -644,6 +652,117 @@ class RuntimeTestDriver:
             "luck": 50,
         }
 
+    # E84: Character Builder methods
+    async def start_character_build(self, user_id: str) -> dict:
+        """Start character building interview.
+
+        Args:
+            user_id: The user starting the build
+
+        Returns:
+            Dict with question and session info
+        """
+        if not self._gameplay:
+            raise RuntimeError("Gameplay not initialized")
+
+        builder = self._gameplay.get_builder()
+        if not builder:
+            raise RuntimeError("Character builder not available")
+
+        question = builder.start(user_id=user_id)
+
+        return {
+            "started": True,
+            "question": question,
+            "user_id": user_id,
+            "has_session": builder.has_session(user_id),
+        }
+
+    async def answer_builder_question(
+        self,
+        user_id: str,
+        answer: str,
+    ) -> dict:
+        """Answer a builder question.
+
+        Args:
+            user_id: The user answering
+            answer: The answer text
+
+        Returns:
+            Dict with next question or completed profile
+        """
+        if not self._gameplay:
+            raise RuntimeError("Gameplay not initialized")
+
+        builder = self._gameplay.get_builder()
+        if not builder:
+            raise RuntimeError("Character builder not available")
+
+        if not builder.has_session(user_id):
+            raise RuntimeError(f"No builder session for user {user_id}")
+
+        next_question, profile = await builder.answer(
+            user_id=user_id,
+            answer=answer,
+        )
+
+        result = {
+            "answered": True,
+            "question": next_question,
+            "has_profile": profile is not None,
+        }
+
+        if profile:
+            result["profile"] = profile.model_dump()
+            result["profile_id"] = profile.profile_id
+
+        return result
+
+    def get_builder_session(self, user_id: str) -> dict:
+        """Get current builder session state.
+
+        Args:
+            user_id: The user to check
+
+        Returns:
+            Session state dict
+        """
+        if not self._gameplay:
+            return {"error": "Gameplay not initialized"}
+
+        builder = self._gameplay.get_builder()
+        if not builder:
+            return {"error": "Character builder not available"}
+
+        return {
+            "has_session": builder.has_session(user_id),
+            "user_id": user_id,
+        }
+
+    def cancel_builder_session(self, user_id: str) -> dict:
+        """Cancel a builder session.
+
+        Args:
+            user_id: The user to cancel for
+
+        Returns:
+            Result dict
+        """
+        if not self._gameplay:
+            return {"error": "Gameplay not initialized"}
+
+        builder = self._gameplay.get_builder()
+        if not builder:
+            return {"error": "Character builder not available"}
+
+        # Remove session if exists
+        if builder.has_session(user_id):
+            del builder._sessions[user_id]
+            return {"cancelled": True}
+
+        return {"cancelled": False, "reason": "No active session"}
+
 
 def _build_commands(
     session_store: SessionStore,
@@ -653,8 +772,8 @@ def _build_commands(
     model_client: StubModelClient,
 ) -> Any:
     coc_assets: Any = None
-    archive_repository: Any = None
-    character_builder: Any = None
+    archive_repository = getattr(gameplay, "_archive_repository", None)
+    character_builder = getattr(gameplay, "character_builder", None)
     intent_classifier = IntentClassifier(model_client)
     message_buffer = MessageBuffer()
     intent_handler_registry = IntentHandlerRegistry(message_buffer=message_buffer)
