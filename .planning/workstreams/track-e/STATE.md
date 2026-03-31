@@ -1,30 +1,53 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: Phase complete — ready for verification
-stopped_at: Completed 88-01-PLAN.md execution
-last_updated: "2026-03-31T16:12:28.500Z"
+milestone: vE.3.4
+milestone_name: Runtime Phase Transition Wiring
+status: in_progress
+stopped_at: E92 complete
+last_updated: "2026-04-01T02:45:00.000Z"
 progress:
-  total_phases: 31
-  completed_phases: 10
-  total_plans: 14
-  completed_plans: 10
+  total_phases: 4
+  completed_phases: 3
+  total_plans: 3
+  completed_plans: 3
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 87 (API Signature Alignment) — EXECUTING
-Plan: 1 of 1
+Phase: E92
+Plan: 01 (executed, complete)
+Status: E92 complete - Admin start and onboarding transitions verified
+Next: E93 - Scenario Precondition Alignment
 
 ## Progress
 
-**Milestones Complete:** 5 (vE.1.1, vE.2.1, vE.2.2, vE.3.1, vE.3.2)
-**Phases Complete:** 51 (E40-E43, E60-E85)
-**Total Tests:** 808 passing (after vE.3.2 completion)
-**Current Milestone:** vE.3.2 (completed)
+**Milestones Complete:** 7 (vE.1.1, vE.2.1, vE.2.2, vE.3.1, vE.3.2, vE.3.3, vE.3.4 in progress)
+**Phases Complete:** 58 (E40-E43, E60-E92)
+**Total Tests:** 855 passing, 13 scenario failures (expected - need E93)
+**Current Milestone:** vE.3.4 (in progress - 3/4 phases complete)
+
+## vE.3.4 Progress
+
+### Planned Phases (4 total)
+
+| Phase | Name | Status | Plan |
+|-------|------|--------|------|
+| E90 | Auto-Advance Lobby → Awaiting Ready | ✅ Complete | E90-01-PLAN.md |
+| E91 | Ready Command Phase Transitions | ✅ Complete | E91-01-SUMMARY.md |
+| E92 | Admin Start → Onboarding → Scene Round | ✅ Complete | E92-01-SUMMARY.md |
+| E93 | Scenario Precondition Alignment | ⏳ Pending | not yet planned |
+
+**vE.3.4 Status:** IN PROGRESS - E90/E91/E92 complete, E93 remaining
+
+### Key Findings from E92
+
+- `start_session()` already has transition to ONBOARDING at line 983 in commands.py
+- `complete_onboarding()` already has transition to SCENE_ROUND_OPEN at line 1057 in commands.py
+- Transition wiring is complete at the API level
+- 3 new tests verify the transitions: 19/19 tests pass
+- 13 scenario failures remain due to missing preconditions (profile selection, character binding) - addressed in E93
 
 ## vE.3.2 Overview
 

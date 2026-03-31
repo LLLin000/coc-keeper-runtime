@@ -90,9 +90,10 @@
 - `src/dm_bot/discord_bot/commands.py` — wire transitions in `start_session()` and onboarding handlers
 
 **Plans:** 1 plan created
-- [x] **E92-01-PLAN.md** — Admin start → onboarding → scene round transitions
+- [x] **E92-01-PLAN.md** — Admin start → onboarding → scene round transitions (completed 2026-04-01)
   - Files: `src/dm_bot/orchestrator/session_store.py`, `src/dm_bot/discord_bot/commands.py`, `tests/test_session_phase_transitions.py`
   - Tasks: 2 (verify transition wiring, scenario verification)
+  - **Summary:** E92-01-SUMMARY.md (verified transitions already present, added 3 tests)
 
 ### Phase E93: Scenario Precondition Alignment
 
