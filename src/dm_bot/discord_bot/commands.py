@@ -80,7 +80,9 @@ class BotCommands:
             "本 Bot 采用六频道职责分离设计：",
             "",
             "1. **#角色档案** - 档案管理命令",
-            "   `/profiles`, `/profile_detail`, `/start_builder`, `/select_profile`",
+            "   建卡请用 `/start_builder`，访谈将在私信中进行",
+            "   查看档案：`/profiles`（列表）, `/profile_detail`（详情）",
+            "   管理档案：`/select_profile`, `/archive_profile`, `/activate_profile`",
             "",
             "2. **#游戏大厅** - 跑团主战场",
             "   `/bind_campaign`, `/join_campaign`, `/load_adventure`, `/ready`, `/turn`",
@@ -145,7 +147,9 @@ class BotCommands:
         return """本 Bot 采用六频道职责分离设计：
 
 1. **#角色档案** - 档案管理命令
-   `/profiles`, `/profile_detail`, `/start_builder`, `/select_profile`
+   建卡请用 `/start_builder`，访谈将在私信中进行
+   查看档案：`/profiles`（列表）, `/profile_detail`（详情）
+   管理档案：`/select_profile`, `/archive_profile`, `/activate_profile`
 
 2. **#游戏大厅** - 跑团主战场
    `/bind_campaign`, `/join_campaign`, `/load_adventure`, `/ready`, `/turn`
@@ -419,9 +423,25 @@ class BotCommands:
         prompt = self._character_builder.start(
             user_id=str(interaction.user.id), visibility=visibility
         )
-        await interaction.response.send_message(
-            prompt, ephemeral=visibility == "private"
-        )
+
+        # Try to send first question to user's DM
+        try:
+            dm_channel = await interaction.user.create_dm()
+            await dm_channel.send(
+                f"{prompt}\n\n回答时直接在私信中回复即可，或在档案频道使用 `/builder_reply answer:你的回答`"
+            )
+            # Post indicator in archive channel
+            await interaction.response.send_message(
+                "🕯️ 建卡访谈已在私信中开始。完成建卡后档案将出现在这里。",
+                ephemeral=False,
+            )
+        except Exception:
+            # DM creation failed (user may have DMs disabled for the server)
+            # Fall back to ephemeral in-channel
+            await interaction.response.send_message(
+                f"无法发送私信（你可能关闭了服务器私信）。建卡访谈将在当前频道以私密方式进行。\n\n{prompt}",
+                ephemeral=True,
+            )
 
     async def builder_reply(self, interaction, *, answer: str) -> None:
         allowed, msg = self.check_channel("builder_reply", interaction)
