@@ -150,7 +150,7 @@ class TestScenarioRunnerOutputs:
                 },
                 {
                     "assert": {
-                        "outputs_contain": "campaign",
+                        "outputs_contain": "绑定",
                     }
                 },
             ],

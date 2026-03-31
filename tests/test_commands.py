@@ -206,7 +206,7 @@ def test_load_adventure_prompts_ready_up_and_records_onboarding_state() -> None:
 
     asyncio.run(commands.load_adventure(interaction, adventure_id="mad_mansion"))
 
-    assert "loaded adventure" in interaction.response.messages[0][0]
+    assert "已加载" in interaction.response.messages[0][0]
     assert interaction.channel.messages
     assert "ready" in interaction.channel.messages[0].lower()
     assert (
