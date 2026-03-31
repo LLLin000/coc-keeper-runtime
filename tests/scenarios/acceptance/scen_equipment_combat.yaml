@@ -1,0 +1,100 @@
+# Equipment Combat E2E Scenario
+# Validates: weapon damage, armor protection in combat
+
+scenario:
+  id: scen_equipment_combat
+  name: "Equipment Combat"
+  description: "Validates combat with weapons and armor"
+  
+actors:
+  - id: kp
+    role: keeper
+  - id: p1
+    role: player
+    name: "武装调查员"
+  - id: enemy
+    role: npc
+    name: "邪教徒"
+
+initial_state:
+  dice_mode: seeded
+  dice_seed: 12345
+  
+steps:
+  # Setup
+  - actor: kp
+    action: command
+    name: bind_campaign
+    args:
+      campaign_id: "equipment_test"
+      
+  - actor: p1
+    action: command
+    name: join
+    args: {}
+    
+  - actor: p1
+    action: command
+    name: ready
+    args: {}
+    
+  - actor: kp
+    action: command
+    name: start_session
+    args: {}
+    
+  # Equip weapon and armor
+  - actor: p1
+    action: command
+    name: equip_weapon
+    args:
+      weapon_id: "pistol_light"
+      
+  - actor: p1
+    action: command
+    name: equip_armor
+    args:
+      armor_id: "leather_jacket"
+      
+  # Spawn enemy with weapon
+  - actor: kp
+    action: command
+    name: spawn_creature
+    args:
+      template_id: "cultist"
+      equipment:
+        weapon: "knife"
+        armor: "none"
+        
+  # Combat with equipment
+  - actor: p1
+    action: message
+    text: "我用手枪射击邪教徒"
+    
+  - actor: system
+    action: assert
+    assertions:
+      combat_resolved:
+        weapon_used: "pistol_light"
+        damage: "> 0"
+        
+  # Enemy attacks (with armor protection)
+  - actor: kp
+    action: command
+    name: npc_attack
+    args:
+      attacker: "enemy"
+      target: "p1"
+      
+  - actor: system
+    action: assert
+    assertions:
+      damage_reduced:
+        base_damage: "> 0"
+        armor_absorbed: ">= 1"  # Leather jacket
+        final_damage: "< base_damage"
+
+expected_outcomes:
+  - weapon_damage_applied: true
+  - armor_protection_applied: true
+  - combat_with_equipment: true

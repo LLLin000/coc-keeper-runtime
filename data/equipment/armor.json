@@ -1,0 +1,47 @@
+{
+  "armor": [
+    {
+      "id": "none",
+      "name": "None",
+      "name_cn": "无护甲",
+      "protection": 0,
+      "coverage": ["torso"],
+      "description": "No armor protection"
+    },
+    {
+      "id": "leather_jacket",
+      "name": "Leather Jacket",
+      "name_cn": "皮夹克",
+      "protection": 1,
+      "coverage": ["torso", "arms"],
+      "description": "Thick leather jacket"
+    },
+    {
+      "id": "heavy_leather",
+      "name": "Heavy Leather",
+      "name_cn": "厚皮甲",
+      "protection": 2,
+      "coverage": ["torso", "arms"],
+      "bulky": true,
+      "description": "Heavy leather armor"
+    },
+    {
+      "id": "riot_gear",
+      "name": "Riot Gear",
+      "name_cn": "防暴装备",
+      "protection": 4,
+      "coverage": ["head", "torso", "arms", "legs"],
+      "bulky": true,
+      "description": "Modern police riot armor"
+    },
+    {
+      "id": "plate_mail",
+      "name": "Plate Mail",
+      "name_cn": "板甲",
+      "protection": 5,
+      "coverage": ["torso", "arms", "legs"],
+      "bulky": true,
+      "description": "Medieval plate armor"
+    }
+  ]
+}

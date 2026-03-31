@@ -941,3 +941,115 @@ def resolve_creature_attack(
             result.rendered += " | 重伤！"
 
     return result, target
+
+
+# =============================================================================
+# Equipment Integration (E85: Equipment System)
+# =============================================================================
+
+
+def resolve_fighting_attack_with_equipment(
+    attacker: CombatantStats,
+    defender: CombatantStats,
+    attacker_roll: int,
+    defender_roll: int,
+    equipment_db: "EquipmentDatabase",
+    attacker_weapon_id: str | None = None,
+    defender_armor_id: str | None = None,
+    attacker_id: str = "",
+    usage_callback: SkillUsageCallback = None,
+) -> CombatCheckResult:
+    """Resolve fighting attack with equipment database lookup.
+
+    Args:
+        attacker: Attacker's combat stats
+        defender: Defender's combat stats
+        attacker_roll: Attacker's roll (1-100)
+        defender_roll: Defender's roll (1-100)
+        equipment_db: Equipment database for weapon/armor lookup
+        attacker_weapon_id: Attacker's weapon ID
+        defender_armor_id: Defender's armor ID
+        attacker_id: Player identifier for skill usage tracking (E79)
+        usage_callback: Callback to record skill usage (E79)
+
+    Returns:
+        CombatCheckResult with equipment-based damage
+    """
+    # Get weapon damage from database
+    weapon = equipment_db.get_weapon(attacker_weapon_id) if attacker_weapon_id else None
+    if weapon:
+        attacker.weapon_damage = weapon.get_damage_expression(attacker.damage_bonus)
+        attacker.weapon_type = WeaponType(weapon.category)
+    else:
+        attacker.weapon_damage = ""
+        attacker.weapon_type = WeaponType.MELEE
+
+    # Get armor protection from database
+    armor = equipment_db.get_armor(defender_armor_id) if defender_armor_id else None
+    if armor:
+        defender.armor = armor.protection
+
+    # Delegate to existing resolve_fighting_attack
+    return resolve_fighting_attack(
+        attacker=attacker,
+        defender=defender,
+        attacker_roll=attacker_roll,
+        defender_roll=defender_roll,
+        attacker_id=attacker_id,
+        usage_callback=usage_callback,
+    )
+
+
+def resolve_shooting_attack_with_equipment(
+    attacker: CombatantStats,
+    defender: CombatantStats,
+    attacker_roll: int,
+    equipment_db: "EquipmentDatabase",
+    attacker_weapon_id: str | None = None,
+    defender_armor_id: str | None = None,
+    range_modifier: int = 0,
+    recoil_modifier: int = 0,
+    attacker_id: str = "",
+    usage_callback: SkillUsageCallback = None,
+) -> CombatCheckResult:
+    """Resolve shooting attack with equipment database lookup.
+
+    Args:
+        attacker: Attacker's combat stats
+        defender: Defender's combat stats
+        attacker_roll: Attacker's roll (1-100)
+        equipment_db: Equipment database for weapon/armor lookup
+        attacker_weapon_id: Attacker's weapon ID
+        defender_armor_id: Defender's armor ID
+        range_modifier: Range penalty (positive = harder)
+        recoil_modifier: Recoil penalty for automatic weapons
+        attacker_id: Player identifier for skill usage tracking (E79)
+        usage_callback: Callback to record skill usage (E79)
+
+    Returns:
+        CombatCheckResult with equipment-based damage
+    """
+    # Get weapon from database
+    weapon = equipment_db.get_weapon(attacker_weapon_id) if attacker_weapon_id else None
+    if weapon:
+        attacker.weapon_damage = weapon.get_damage_expression(attacker.damage_bonus)
+        attacker.weapon_type = WeaponType(weapon.category)
+    else:
+        attacker.weapon_damage = ""
+        attacker.weapon_type = WeaponType.RANGED
+
+    # Get armor protection from database
+    armor = equipment_db.get_armor(defender_armor_id) if defender_armor_id else None
+    if armor:
+        defender.armor = armor.protection
+
+    # Delegate to existing resolve_shooting_attack
+    return resolve_shooting_attack(
+        attacker=attacker,
+        defender=defender,
+        attacker_roll=attacker_roll,
+        range_modifier=range_modifier,
+        recoil_modifier=recoil_modifier,
+        attacker_id=attacker_id,
+        usage_callback=usage_callback,
+    )

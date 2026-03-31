@@ -1,0 +1,160 @@
+{
+  "weapons": [
+    {
+      "id": "unarmed",
+      "name": "Unarmed",
+      "name_cn": "徒手",
+      "category": "melee",
+      "damage": "1d3+DB",
+      "range": "touch",
+      "skill": "brawl",
+      "description": "Fists, feet, or improvised blunt objects"
+    },
+    {
+      "id": "knife",
+      "name": "Knife",
+      "name_cn": "匕首",
+      "category": "melee",
+      "damage": "1d4+DB",
+      "range": "touch",
+      "skill": "fighting",
+      "concealable": true,
+      "description": "Small blade weapon"
+    },
+    {
+      "id": "club",
+      "name": "Club",
+      "name_cn": "棍棒",
+      "category": "melee",
+      "damage": "1d6+DB",
+      "range": "touch",
+      "skill": "fighting",
+      "description": "Baseball bat, truncheon, or similar"
+    },
+    {
+      "id": "sword",
+      "name": "Sword",
+      "name_cn": "剑",
+      "category": "melee",
+      "damage": "1d8+DB",
+      "range": "touch",
+      "skill": "fighting",
+      "concealable": false,
+      "description": "Bladed weapon"
+    },
+    {
+      "id": "axe",
+      "name": "Axe",
+      "name_cn": "斧",
+      "category": "melee",
+      "damage": "1d8+DB",
+      "range": "touch",
+      "skill": "fighting",
+      "description": "Hand axe or hatchet"
+    },
+    {
+      "id": "pistol_light",
+      "name": "Light Pistol",
+      "name_cn": "轻型手枪",
+      "category": "ranged",
+      "damage": "1d6",
+      "range": "15m",
+      "ammo_capacity": 8,
+      "malfunction": 100,
+      "skill": "shooting",
+      "concealable": true,
+      "description": "Small handgun"
+    },
+    {
+      "id": "pistol_heavy",
+      "name": "Heavy Pistol",
+      "name_cn": "重型手枪",
+      "category": "ranged",
+      "damage": "1d8",
+      "range": "15m",
+      "ammo_capacity": 7,
+      "malfunction": 100,
+      "skill": "shooting",
+      "concealable": true,
+      "description": "Large handgun"
+    },
+    {
+      "id": "rifle",
+      "name": "Rifle",
+      "name_cn": "步枪",
+      "category": "ranged",
+      "damage": "2d6",
+      "range": "110m",
+      "ammo_capacity": 5,
+      "malfunction": 100,
+      "skill": "shooting",
+      "two_handed": true,
+      "concealable": false,
+      "description": "Bolt-action or lever-action rifle"
+    },
+    {
+      "id": "shotgun",
+      "name": "Shotgun",
+      "name_cn": "霰弹枪",
+      "category": "ranged",
+      "damage": "4d6",
+      "range": "10m",
+      "ammo_capacity": 2,
+      "malfunction": 100,
+      "skill": "shooting",
+      "two_handed": true,
+      "concealable": false,
+      "description": "Double-barreled shotgun"
+    },
+    {
+      "id": "submachine_gun",
+      "name": "Submachine Gun",
+      "name_cn": "冲锋枪",
+      "category": "ranged",
+      "damage": "1d8",
+      "range": "30m",
+      "ammo_capacity": 32,
+      "malfunction": 96,
+      "skill": "shooting",
+      "attacks_per_round": 2,
+      "two_handed": true,
+      "concealable": false,
+      "description": "Automatic weapon"
+    },
+    {
+      "id": "rifle_assault",
+      "name": "Assault Rifle",
+      "name_cn": "突击步枪",
+      "category": "ranged",
+      "damage": "2d6",
+      "range": "90m",
+      "ammo_capacity": 30,
+      "malfunction": 96,
+      "skill": "shooting",
+      "attacks_per_round": 2,
+      "two_handed": true,
+      "concealable": false,
+      "description": "Military automatic rifle"
+    },
+    {
+      "id": "thrown_knife",
+      "name": "Thrown Knife",
+      "name_cn": "飞刀",
+      "category": "thrown",
+      "damage": "1d4+DB",
+      "range": "STR/5m",
+      "skill": "throw",
+      "description": "Knife thrown at target"
+    },
+    {
+      "id": "thrown_rock",
+      "name": "Thrown Rock",
+      "name_cn": "投掷石块",
+      "category": "thrown",
+      "damage": "1d4+DB",
+      "range": "STR/5m",
+      "skill": "throw",
+      "description": "Rock or similar object"
+    }
+  ]
+}
