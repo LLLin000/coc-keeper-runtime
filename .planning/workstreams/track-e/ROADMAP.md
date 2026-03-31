@@ -685,7 +685,7 @@
 
 **Goal:** Ensure `RuntimeTestDriver` with `db_mode: temp_sqlite` creates all necessary database tables.
 
-**Problem:** `no such table: campaign_sessions` and `no such table: campaign_state` errors in 7+ scenarios.
+**Problem:** `no such table: campaign_sessions` and `no such table: campaign_state` errors in 7+ scenarios. Root cause: `PersistenceStore._connect()` opens a new connection for every operation; for `:memory:` SQLite each connection is a separate database, so tables created in `_init_db()` don't exist when CRUD methods open their own connections.
 
 **Success Criteria:**
 1. `temp_sqlite` mode creates all tables needed by session lifecycle
@@ -693,9 +693,10 @@
 3. `campaign_state` table exists and is queryable
 4. No persistence errors in any scenario run
 
-**Files to modify:**
-- `src/dm_bot/testing/runtime_driver.py` — fix `_init_temp_sqlite()` method
-- `src/dm_bot/persistence/store.py` — ensure table creation is reusable
+**Plans:** `88-01`
+- [x] **E88-01-PLAN.md** — Fix PersistenceStore :memory: connection lifecycle (completed 2026-04-01)
+  - Files: `src/dm_bot/persistence/store.py`, `src/dm_bot/testing/runtime_driver.py`, `tests/test_persistence_store.py`
+  - Tasks: 3 (shared connection for :memory:, wire close() into driver, add table existence tests)
 
 ### Phase E89: Timing + Output Isolation
 
