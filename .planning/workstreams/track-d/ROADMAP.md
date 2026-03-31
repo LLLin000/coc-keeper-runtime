@@ -100,7 +100,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] D42-01-PLAN.md — Polish model prompts, consequence formatting, and system messages
+- [x] D42-01-PLAN.md — Polish model prompts, consequence formatting, and system messages
 
 ---
 
@@ -169,7 +169,7 @@ Plans:
 | **vD.1.1** | | | |
 | D40. Private-First Builder Experience | 1/1 | Complete | D40-01 |
 | D41. Archive Card Redesign | 0/0 | Planned | - |
-| D42. Keeper Prompt Polish | 1/1 | Planned | - |
+| D42. Keeper Prompt Polish | 1/1 | Complete | D42-01 |
 | D43. Activity-Ready Presentation Contracts | 0/0 | Planned | - |
 | **vD.1.2** | | | |
 | D44. Session Board | 0/0 | Queued | - |
