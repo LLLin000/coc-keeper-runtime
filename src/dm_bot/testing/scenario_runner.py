@@ -54,6 +54,11 @@ class ScenarioRunner:
         failure: Failure | None = None
         last_result: StepResult | None = None
 
+        # Capture initial phase before any steps run
+        current_phase = self._driver.get_phase()
+        if current_phase:
+            phase_timeline.append(current_phase)
+
         for idx, step_def in enumerate(steps_def):
             phase_before = self._driver.get_phase()
 
@@ -98,8 +103,9 @@ class ScenarioRunner:
                 break
 
             phase_after = self._driver.get_phase()
-            if phase_after and phase_after not in phase_timeline:
+            if phase_after and phase_after != current_phase:
                 phase_timeline.append(phase_after)
+                current_phase = phase_after
 
             if fail_fast and last_result.error is None and failure is None:
                 if step_def.assert_:
@@ -132,22 +138,12 @@ class ScenarioRunner:
             )
 
         if failure is None:
-            assertion_idx = 0
-            for idx, step_def in enumerate(steps_def):
-                if step_def.action == "assert":
-                    cmd_idx = idx - assertion_idx - 1
-                    if cmd_idx < len(step_results):
-                        ok, msg = _check_assertion(
-                            step_results[cmd_idx], step_def.assert_
-                        )
-                        if not ok:
-                            failure = Failure(
-                                code=FailureCode.ASSERTION_FAILED,
-                                message=msg,
-                                step_index=idx,
-                            )
-                            break
-                    assertion_idx += 1
+            all_outputs: list[OutputRecord] = []
+            for sr in step_results:
+                all_outputs.extend(sr.emitted_outputs)
+            failure = _evaluate_scenario_assertions(
+                scenario, phase_timeline, final_state, all_outputs
+            )
 
         await self._driver.stop()
 
@@ -216,6 +212,93 @@ class ScenarioRunner:
             phase_after=phase_before,
             emitted_outputs=[],
         )
+
+
+def _evaluate_scenario_assertions(
+    scenario: Any,
+    actual_timeline: list[str],
+    final_state: dict[str, Any],
+    all_outputs: list[OutputRecord],
+) -> Failure | None:
+    assertions = scenario.assertions
+    if not assertions:
+        return None
+
+    if assertions.phase_timeline:
+        expected = assertions.phase_timeline
+        if actual_timeline != expected:
+            return Failure(
+                code=FailureCode.PHASE_TRANSITION_MISMATCH,
+                message=f"Phase timeline mismatch.\nExpected: {expected}\nActual: {actual_timeline}",
+                step_index=len(actual_timeline),
+            )
+
+    if assertions.final_phase:
+        expected = assertions.final_phase
+        actual = actual_timeline[-1] if actual_timeline else ""
+        if actual != expected:
+            return Failure(
+                code=FailureCode.PHASE_TRANSITION_MISMATCH,
+                message=f"Final phase mismatch. Expected '{expected}', got '{actual}'",
+                step_index=len(actual_timeline),
+            )
+
+    if assertions.state_campaign_members is not None:
+        sessions = final_state.get("sessions", {})
+        member_count = 0
+        for sess in sessions.values():
+            members = sess.get("members", [])
+            member_count += len(members)
+        if member_count != assertions.state_campaign_members:
+            return Failure(
+                code=FailureCode.SESSION_STATE_MISMATCH,
+                message=f"Expected {assertions.state_campaign_members} campaign members, got {member_count}",
+                step_index=len(actual_timeline),
+            )
+
+    if assertions.state_no_duplicate_members:
+        sessions = final_state.get("sessions", {})
+        for sess in sessions.values():
+            members = sess.get("members", [])
+            user_ids = [m.get("user_id") for m in members]
+            if len(user_ids) != len(set(user_ids)):
+                return Failure(
+                    code=FailureCode.CONCURRENCY_INVARIANT_FAILURE,
+                    message="Duplicate members found in campaign",
+                    step_index=len(actual_timeline),
+                )
+
+    if assertions.visible_public_must_include:
+        public_texts = [o.content for o in all_outputs if o.audience == "public"]
+        for needle in assertions.visible_public_must_include:
+            if not any(needle in t for t in public_texts):
+                return Failure(
+                    code=FailureCode.VISIBILITY_LEAK,
+                    message=f"Expected public output to contain '{needle}', got: {public_texts[:3]}",
+                    step_index=len(actual_timeline),
+                )
+
+    if assertions.visible_kp_must_include:
+        kp_texts = [o.content for o in all_outputs if o.audience in ("kp", "private")]
+        for needle in assertions.visible_kp_must_include:
+            if not any(needle in t for t in kp_texts):
+                return Failure(
+                    code=FailureCode.VISIBILITY_LEAK,
+                    message=f"Expected KP output to contain '{needle}', got: {kp_texts[:3]}",
+                    step_index=len(actual_timeline),
+                )
+
+    if assertions.visible_player_forbidden:
+        public_texts = [o.content for o in all_outputs if o.audience == "public"]
+        for needle in assertions.visible_player_forbidden:
+            if any(needle in t for t in public_texts):
+                return Failure(
+                    code=FailureCode.REVEAL_POLICY_VIOLATION,
+                    message=f"Public output must NOT contain '{needle}', but found it",
+                    step_index=len(actual_timeline),
+                )
+
+    return None
 
 
 def _check_assertion(
