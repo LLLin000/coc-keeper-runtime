@@ -1878,6 +1878,7 @@ class BotCommands:
         guild_id: str,
         user_id: str,
         content: str,
+        is_dm: bool = False,
     ) -> str | None:
         if (
             self._session_store is None
@@ -1885,11 +1886,13 @@ class BotCommands:
             or self._archive_repository is None
         ):
             return None
-        archive_channel = self._session_store.archive_channel_for(guild_id)
-        if archive_channel != channel_id or not self._character_builder.has_session(
-            user_id
-        ):
+        if not self._character_builder.has_session(user_id):
             return None
+        # Accept messages from archive channel OR DM channel (when builder is DM-first)
+        if not is_dm:
+            archive_channel = self._session_store.archive_channel_for(guild_id)
+            if archive_channel != channel_id:
+                return None
         answer = content.strip()
         if not answer:
             return None
