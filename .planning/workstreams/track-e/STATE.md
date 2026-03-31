@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: vE.3.1
 milestone_name: Character Lifecycle E2E
-status: Phase E77 complete — E78 next
-stopped_at: E73-E77 complete (222 COC tests, 676 total), E78 remaining
-last_updated: "2026-03-31T00:00:00.000Z"
+status: in_progress
+stopped_at: E73-E77 complete, E78 remaining
+last_updated: "2026-03-31T08:43:39.783Z"
 progress:
-  total_phases: 6
-completed_phases: 5
-total_plans: 6
-completed_plans: 5
+  total_phases: 20
+  completed_phases: 10
+  total_plans: 14
+  completed_plans: 10
 ---
 
 # Project State
@@ -17,8 +17,8 @@ completed_plans: 5
 ## Current Position
 
 Milestone: vE.3.1 (Character Lifecycle E2E)
-Phase: E77 complete — E78 (Skill Improvement) next
-Plan: 5 of 6
+Phase: 78
+Plan: Not started
 
 ## Progress
 
@@ -32,6 +32,7 @@ Plan: 5 of 6
 **Goal:** 构建角色生命周期端到端测试，覆盖角色创建 → COC 战斗/SAN/技能检定 → 技能提升 → 下一轮的完整流程。整合新合入的 COC 规则引擎（Track A）与现有 RuntimeTestDriver 测试基础设施。
 
 **Planned Phases:**
+
 - E73: COC Derived Attributes 单元测试
 - E74: COC Combat + Insanity 集成测试
 - E75: COC Experience + Skill Catalog 单元测试

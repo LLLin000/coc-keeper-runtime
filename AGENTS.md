@@ -242,11 +242,28 @@ Before claiming any work is complete:
 
 ### Phase Planning Flow
 
+**Two ways to run GSD phases:**
+
+#### 1. Autonomous Mode (Recommended for milestones)
 ```
-1. /gsd-plan-phase E## --prd <roadmap-file>   # Load phase context from roadmap
-2. [Optional] /gsd-discuss-phase              # Clarify scope before planning
-3. /gsd-execute-phase --auto                  # Auto-chain: plan → verify → execute
+/gsd-autonomous                    # Run all remaining phases automatically
+/gsd-autonomous --from E77         # Start from phase E77
 ```
+
+#### 2. Manual Mode (Single phase, interactive)
+```
+/gsd-plan-phase E77 --skip-research   # Plan phase context
+/gsd-execute-phase E77 --auto          # Execute: plan → verify → execute
+```
+
+**Subagent Invocation (for spawning GSD agents directly):**
+```
+Task(subagent_type="gsd-executor", prompt="...", description="...")   # Execute plans
+Task(subagent_type="gsd-planner", prompt="...", description="...")     # Create plans
+Task(subagent_type="gsd-verifier", prompt="...", description="...")    # Verify completion
+```
+
+**⚠️ Common Mistake:** Do NOT use `Task(tool="/gsd-plan-phase")` — this just sends the slash command text to a general agent without triggering the actual workflow.
 
 **Plan-Phase Options:**
 - `--prd <filepath>` — Generate CONTEXT.md directly from PRD file (express path)
@@ -282,6 +299,24 @@ node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" init <subcommand>
 | `init resume` | Initialize resume workflow | `init resume` |
 | `init verify-work <N>` | Initialize verification workflow | `init verify-work 5` |
 | `init todos [area]` | Initialize todo workflow | `init todos api` |
+
+**How `init manager` works:**
+
+1. Reads `.planning/active-workstream` to determine current workstream
+2. Reads `.planning/workstreams/<workstream>/STATE.md` to get current milestone
+3. Reads `.planning/workstreams/<workstream>/ROADMAP.md` to list phases
+4. Returns JSON with phases, status, and recommendations
+
+**⚠️ Important:** `STATE.md` frontmatter must have correct `milestone` field matching ROADMAP:
+```yaml
+---
+milestone: vE.3.1          # Must match milestone name in ROADMAP
+milestone_name: "Character Lifecycle E2E"
+status: in_progress        # or "complete"
+---
+```
+
+If `milestone` is wrong (e.g., `v1.0`), `init manager` will show phases from ALL non-shipped milestones instead of just the current one.
 
 **Other useful commands:**
 
@@ -325,6 +360,33 @@ node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" init plan-phase 5
 **Always use**: `task(subagent_type="general", ...)`  
 **Never use**: `task(subagent_type="task", ...)` (deprecated v1.20.5)
 
+### GSD Subagent Types
+
+When spawning GSD workflow agents directly (not via slash commands), use these specific subagent types:
+
+| Subagent Type | Purpose | When to Use |
+|-------------|---------|-------------|
+| `gsd-planner` | Create phase plans | Planning a phase programmatically |
+| `gsd-executor` | Execute plans | Executing phase plans |
+| `gsd-verifier` | Verify completion | Verifying phase goals |
+| `gsd-debugger` | Debug issues | Investigating bugs |
+
+**Example:**
+```python
+# Correct - spawn planner directly
+Task(
+    description="Plan phase E78",
+    subagent_type="gsd-planner",
+    prompt="Create PLAN.md for phase E78..."
+)
+
+# Incorrect - spawning general agent
+Task(
+    description="Plan phase E78",
+    prompt="You should spawn a gsd-planner..."  # Don't do this!
+)
+```
+
 ### Do NOT
 
 - Make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it
@@ -364,6 +426,8 @@ node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" init plan-phase 5
 ### GSD Subagents
 
 GSD 系统定义了 17 个 subagents，它们通过 GSD 命令和工作流间接调用：
+
+**⚠️ Important:** When using the `/gsd-manager` command or manager workflow, it will automatically spawn the correct subagent types. However, if you need to spawn GSD subagents directly via `Task()`, you must specify the correct `subagent_type` as shown in the table above.
 
 #### Planning & Research
 | Agent | Purpose |
