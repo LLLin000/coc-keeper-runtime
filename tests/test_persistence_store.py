@@ -278,3 +278,74 @@ def test_persistence_legacy_format_reconstructs_members(tmp_path: Path) -> None:
     assert "user-2" in session.members
     assert session.members["user-1"].role == CampaignRole.OWNER
     assert session.members["user-2"].role == CampaignRole.MEMBER
+
+
+# --- :memory: mode tests (E88) ---
+
+
+def test_memory_mode_tables_exist_after_init() -> None:
+    """Prove all four tables are created and queryable in :memory: mode."""
+    store = PersistenceStore(":memory:")
+    conn = store._connect()
+    rows = conn.execute(
+        "select name from sqlite_master where type='table' order by name"
+    ).fetchall()
+    table_names = {row[0] for row in rows}
+    expected = {
+        "archive_profiles",
+        "campaign_events",
+        "campaign_sessions",
+        "campaign_state",
+    }
+    assert expected.issubset(table_names), f"Missing tables: {expected - table_names}"
+    store.close()
+
+
+def test_memory_mode_save_and_load_campaign_state() -> None:
+    """Prove save/load campaign_state works across the same :memory: database."""
+    store = PersistenceStore(":memory:")
+    store.save_campaign_state("camp-1", {"key": "value"})
+    result = store.load_campaign_state("camp-1")
+    assert result == {"key": "value"}
+    store.close()
+
+
+def test_memory_mode_save_and_load_sessions() -> None:
+    """Prove save/load sessions works across the same :memory: database."""
+    store = PersistenceStore(":memory:")
+    store.save_sessions({"s1": {"members": []}})
+    result = store.load_sessions()
+    assert result == {"s1": {"members": []}}
+    store.close()
+
+
+def test_memory_mode_multiple_operations_share_connection() -> None:
+    """Prove all CRUD operations use the same shared database."""
+    store = PersistenceStore(":memory:")
+    store.save_campaign_state("camp-1", {"phase": "onboarding"})
+    store.save_sessions({"chan-1": {"campaign_id": "camp-1", "member_ids": []}})
+    store.append_event(
+        campaign_id="camp-1",
+        trace_id="t1",
+        event_type="session.started",
+        payload={"user": "alice"},
+    )
+
+    state = store.load_campaign_state("camp-1")
+    assert state["phase"] == "onboarding"
+
+    sessions = store.load_sessions()
+    assert sessions["chan-1"]["campaign_id"] == "camp-1"
+
+    events = store.list_events("camp-1")
+    assert len(events) == 1
+    assert events[0]["event_type"] == "session.started"
+    store.close()
+
+
+def test_memory_mode_close_releases_connection() -> None:
+    """Prove close() releases the shared connection."""
+    store = PersistenceStore(":memory:")
+    assert store._conn is not None
+    store.close()
+    assert store._conn is None
