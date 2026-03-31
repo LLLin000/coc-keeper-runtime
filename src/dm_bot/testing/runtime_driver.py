@@ -177,6 +177,7 @@ class RuntimeTestDriver:
 
         phase_before = self._phase_before()
         interaction = self._interaction_for(actor_id)
+        output_start = len(self._output_records)
 
         _capture_response_messages(interaction, self._output_records, actor_id)
 
@@ -201,7 +202,7 @@ class RuntimeTestDriver:
                 return StepResult(
                     phase_before=phase_before,
                     phase_after=self._phase_before(),
-                    emitted_outputs=list(self._output_records),
+                    emitted_outputs=list(self._output_records[output_start:]),
                 )
             cmd = cast(Callable[..., Coroutine[Any, Any, Any]], method)
             import inspect
@@ -216,12 +217,13 @@ class RuntimeTestDriver:
                 phase_before=phase_before,
                 phase_after=self._phase_before(),
                 error=str(exc),
+                emitted_outputs=list(self._output_records[output_start:]),
             )
 
         return StepResult(
             phase_before=phase_before,
             phase_after=self._phase_before(),
-            emitted_outputs=list(self._output_records),
+            emitted_outputs=list(self._output_records[output_start:]),
         )
 
     async def send_message(

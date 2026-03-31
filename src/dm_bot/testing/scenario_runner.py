@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -63,11 +64,15 @@ class ScenarioRunner:
             phase_before = self._driver.get_phase()
 
             if step_def.action == "command":
+                step_start = time.monotonic()
                 result = await self._run_command_step(step_def, actors)
+                result.duration_ms = (time.monotonic() - step_start) * 1000
                 step_results.append(result)
                 last_result = result
             elif step_def.action == "message":
+                step_start = time.monotonic()
                 result = await self._run_message_step(step_def, actors)
+                result.duration_ms = (time.monotonic() - step_start) * 1000
                 step_results.append(result)
                 last_result = result
             elif step_def.action == "assert":
@@ -91,6 +96,7 @@ class ScenarioRunner:
                         phase_before=last_result.phase_after,
                         phase_after=last_result.phase_after,
                         emitted_outputs=list(last_result.emitted_outputs),
+                        duration_ms=0.0,
                     )
                 )
                 continue
@@ -180,6 +186,7 @@ class ScenarioRunner:
             if method is not None and callable(method):
                 import inspect
 
+                output_start = len(self._driver._output_records)
                 sig = inspect.signature(method)
                 if "interaction" in sig.parameters:
                     await method(self._driver._interaction_for(actor_id), **args)
@@ -188,7 +195,7 @@ class ScenarioRunner:
                 return StepResult(
                     phase_before=self._driver.get_phase(),
                     phase_after=self._driver.get_phase(),
-                    emitted_outputs=list(self._driver._output_records),
+                    emitted_outputs=list(self._driver._output_records[output_start:]),
                 )
             return StepResult(
                 phase_before=self._driver.get_phase(),
