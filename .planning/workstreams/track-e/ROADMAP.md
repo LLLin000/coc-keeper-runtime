@@ -336,10 +336,10 @@
   (completed 2026-03-30)
 - [x] **Phase E76: 角色创建端到端 Scenario** — scen_character_creation.yaml: campaign bind → join → ready → start_session lifecycle
   (completed 2026-03-30)
-- [ ] **Phase E77: 战斗 + SAN 端到端 Scenario** — scen_combat_san.yaml: combat encounter → SAN loss → insanity triggers (TEMPORARY/INDEFINITE)
-  (pending)
-- [ ] **Phase E78: 技能提升 + 跨系统 Scenario** — skill improvement + full character lifecycle integration
-  (pending)
+- [x] **Phase E77: 战斗 + SAN 端到端 Scenario** — scen_combat_san.yaml: combat encounter → SAN loss → insanity triggers (TEMPORARY/INDEFINITE)
+  (completed 2026-03-31)
+- [x] **Phase E78: 技能提升 + 跨系统 Scenario** — skill improvement + full character lifecycle integration
+  (completed 2026-03-31)
 
 ### Phase E73: COC Derived Attributes 单元测试
 

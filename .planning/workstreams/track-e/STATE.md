@@ -46,7 +46,7 @@ Plan: Not started
 - [x] E75: Complete — COC Experience + Skill Catalog 单元测试 (91 tests in test_experience_and_skill_catalog.py)
 - [x] E76: Complete — 角色创建端到端 Scenario (scen_character_creation.yaml)
 - [x] E77: Complete — 战斗 + SAN 端到端 Scenario (scen_combat_san.yaml PASSED)
-- [ ] E78: Pending — 技能提升 + 跨系统 Scenario
+- [x] E78: Complete — 技能提升 + 跨系统 Scenario
 
 ## Session Continuity
 
