@@ -3,28 +3,28 @@ gsd_state_version: 1.0
 milestone: vE.3.2
 milestone_name: Gap Closure & Integration
 status: in_progress
-stopped_at: Phase E83 executed - Archive Repository CRUD complete
-last_updated: "2026-03-31T12:57:00.000Z"
+stopped_at: Phase E85 executed - Equipment System complete
+last_updated: "2026-03-31T12:48:00.000Z"
 progress:
   total_phases: 7
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 7
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 83
+Phase: 85
 Plan: 01 (executed, complete)
-Status: E83 complete - archive repository CRUD with persistence
+Status: E85 complete - Equipment system with weapon/armor databases
 
 ## Progress
 
 **Milestones Complete:** 4 (vE.1.1, vE.2.1, vE.2.2, vE.3.1)
-**Phases Complete:** 42 (E40-E43, E60-E79, E81, E82, E83)
-**Total Tests:** 795 passing (12 new archive tests)
+**Phases Complete:** 43 (E40-E43, E60-E79, E81, E82, E83, E85)
+**Total Tests:** 807 passing (12 new equipment tests)
 **Current Milestone:** vE.3.2
 
 ## vE.3.2 Overview
@@ -61,7 +61,7 @@ Status: E83 complete - archive repository CRUD with persistence
 | E82 | Chase Rules Implementation | ✅ Complete | E82-01-PLAN.md |
 | E83 | Archive Repository Completion | ✅ Complete | E83-01-PLAN.md |
 | E84 | Character Builder Integration | Planned | E84-01-PLAN.md |
-| E85 | Equipment System (optional) | Planned | E85-01-PLAN.md |
+| E85 | Equipment System | ✅ Complete | E85-01-PLAN.md |
 
 ### Execution Order
 
@@ -78,7 +78,7 @@ Dependencies:
 
 ## Session Continuity
 
-**Stopped At:** Phase E83 executed - Archive Repository CRUD complete
+**Stopped At:** Phase E85 executed - Equipment System complete
 **Next Step:** Execute Phase E84 — Character Builder Integration (depends on E83 archive)
 **Phase Plans:**
 
@@ -108,6 +108,7 @@ Dependencies:
 - ~~Creature Stats/Bestiary~~ - ✅ E81 Complete
 - ~~Chase Rules~~ - ✅ E82 Complete
 - ~~Archive Repository~~ - ✅ E83 Complete (CRUD + persistence)
+- ~~Equipment System~~ - ✅ E85 Complete (weapon/armor databases)
 - visibility_dispatcher.py has 3 unresolved TODOs
 - Character builder exists but not wired
 
