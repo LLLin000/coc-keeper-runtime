@@ -1,0 +1,94 @@
+# Visibility Leak Contract Test
+# Verifies: gm_only content never reaches player-visible outputs
+
+scenario:
+  id: test_visibility_leak
+  name: "Visibility Leak Prevention Contract"
+  description: "Ensures gm_only consequences never leak to players"
+  
+actors:
+  - id: kp
+    role: keeper
+  - id: p1
+    role: player
+    name: "Player1"
+
+fixtures:
+  adventure: fuzhe
+  dice_seed: 42
+  model_mode: fake_contract
+  db_mode: temp_sqlite
+
+steps:
+  # Setup campaign
+  - actor: kp
+    action: command
+    name: bind_campaign
+    args:
+      campaign_id: "leak_test_campaign"
+      
+  - actor: kp
+    action: command
+    name: load_adventure
+    args:
+      adventure_slug: fuzhe
+       
+  - actor: p1
+    action: command
+    name: join_campaign
+    args:
+      campaign_id: "leak_test_campaign"
+      
+  - actor: kp
+    action: command
+    name: start_session
+    args: {}
+    
+  # Generate consequences with mixed visibility
+  - actor: system
+    action: inject_consequences
+    consequences:
+      - character_id: "p1"
+        visibility: "public"
+        content: "Public consequence visible to all"
+      - character_id: "p1"
+        visibility: "private"
+        content: "Private consequence for player"
+      - character_id: "p1"
+        visibility: "gm_only"
+        content: "SECRET: Hidden keeper info"
+      - character_id: "p1"
+        visibility: "group"
+        content: "Group message for party"
+        
+  # Assertions: Verify visibility isolation
+  - actor: system
+    action: assert
+    assertions:
+      # Public should NOT contain gm_only
+      public_output:
+        contains: ["Public consequence"]
+        excludes: ["SECRET", "Hidden keeper"]
+        
+      # Private should NOT contain gm_only
+      private_output:
+        contains: ["Private consequence"]
+        excludes: ["SECRET", "Hidden keeper"]
+        
+      # Group should NOT contain gm_only
+      group_output:
+        contains: ["Group message"]
+        excludes: ["SECRET", "Hidden keeper"]
+        
+      # Keeper log SHOULD contain gm_only
+      keeper_log:
+        contains: ["SECRET", "Hidden keeper info"]
+        
+      # Player should NEVER see gm_only
+      player_visible_output:
+        excludes: ["SECRET", "Hidden keeper"]
+
+expected_outcomes:
+  - visibility_isolation: true
+  - gm_only_containment: true
+  - no_leak_detected: true
