@@ -1,30 +1,30 @@
 ---
 gsd_state_version: 1.0
-milestone: vE.3.2
-milestone_name: Gap Closure & Integration
-status: in_progress
-stopped_at: Phase E81 executed - Creature Bestiary & Stats complete
-last_updated: "2026-03-31T20:30:00.000Z"
+milestone: v1.0
+milestone_name: milestone
+status: completed
+stopped_at: Phase E82 executed - Chase Rules Implementation complete
+last_updated: "2026-03-31T12:40:30.076Z"
 progress:
-  total_phases: 7
-  completed_phases: 2
-  total_plans: 7
-  completed_plans: 2
+  total_phases: 27
+  completed_phases: 10
+  total_plans: 14
+  completed_plans: 10
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 81
+Phase: 82
 Plan: 01 (executed, complete)
-Status: E81 complete - bestiary system with 10 creatures
+Status: E82 complete - chase mechanics with CON checks, movement, escape/capture
 
 ## Progress
 
 **Milestones Complete:** 4 (vE.1.1, vE.2.1, vE.2.2, vE.3.1)
-**Phases Complete:** 40 (E40-E43, E60-E79, E81)
-**Total Tests:** 746 passing (40 new bestiary tests)
+**Phases Complete:** 41 (E40-E43, E60-E79, E81, E82)
+**Total Tests:** 767 passing (21 new chase tests)
 **Current Milestone:** vE.3.2
 
 ## Progress
@@ -41,16 +41,19 @@ Status: E81 complete - bestiary system with 10 creatures
 **Gaps from Codebase Mapping:**
 
 ### High Priority
+
 1. **Skill Usage Tracking** - Track skills used during combat for post-session improvement
 2. **Visibility Dispatcher** - Complete Discord channel/DM sending (3 TODOs)
 3. **Creature Stats/Bestiary** - Add monster stats for common COC creatures
 
 ### Medium Priority
+
 4. **Chase Rules** - COC 7e chase mechanics
 5. **Archive Repository** - Complete CRUD operations
 6. **Character Builder** - Wire into RuntimeTestDriver
 
 ### Low Priority
+
 7. **Equipment System** - Weapon/armor database
 
 ## vE.3.2 Progress
@@ -62,7 +65,7 @@ Status: E81 complete - bestiary system with 10 creatures
 | E79 | Skill Usage Tracking & Combat Integration | ✅ Complete | E79-01-PLAN.md |
 | E80 | Visibility Dispatcher Completion | Planned | E80-01-PLAN.md |
 | E81 | Creature Bestiary & Stats | ✅ Complete | E81-01-PLAN.md |
-| E82 | Chase Rules Implementation | Planned | E82-01-PLAN.md |
+| E82 | Chase Rules Implementation | ✅ Complete | E82-01-PLAN.md |
 | E83 | Archive Repository Completion | Planned | E83-01-PLAN.md |
 | E84 | Character Builder Integration | Planned | E84-01-PLAN.md |
 | E85 | Equipment System (optional) | Planned | E85-01-PLAN.md |
@@ -74,6 +77,7 @@ Status: E81 complete - bestiary system with 10 creatures
 **Wave 3 (Parallel):** E84, E85
 
 Dependencies:
+
 - E79 → E82 (chase uses skill tracking)
 - E81 → E82 (chase may involve creatures)
 - E83 → E84 (builder uses archive)
@@ -81,9 +85,10 @@ Dependencies:
 
 ## Session Continuity
 
-**Stopped At:** Phase E81 executed - Creature Bestiary & Stats complete
-**Next Step:** Execute Phase E80 — Visibility Dispatcher Completion (parallel with E81 in Wave 1)
+**Stopped At:** Phase E82 executed - Chase Rules Implementation complete
+**Next Step:** Execute Phase E83 — Archive Repository Completion (or E80 in parallel)
 **Phase Plans:**
+
 - `.planning/workstreams/track-e/phases/79-skill-usage-tracking/E79-01-PLAN.md`
 - `.planning/workstreams/track-e/phases/80-visibility-dispatcher/E80-01-PLAN.md`
 - `.planning/workstreams/track-e/phases/81-creature-bestiary/E81-01-PLAN.md`
@@ -98,20 +103,23 @@ Dependencies:
 ## Accumulated Context
 
 ### From vE.3.1 Completion
+
 - COC rules engine fully tested (222 tests)
 - Character lifecycle E2E scenarios complete
 - RuntimeTestDriver infrastructure mature
 - Scenario-driven testing framework operational
 
 ### Critical Gaps Identified (from MAP-CODEBASE-TRACK-E.md)
+
 - ~~Skill Usage Tracking~~ - ✅ E79 Complete
 - ~~Creature Stats/Bestiary~~ - ✅ E81 Complete
+- ~~Chase Rules~~ - ✅ E82 Complete
 - visibility_dispatcher.py has 3 unresolved TODOs
 - Archive repository referenced but not fully implemented
 - Character builder exists but not wired
-- Chase rules not implemented
 
 ### Dependencies
+
 - Track A: COC rules engine (complete)
 - Track B: Character archive/builder (partial)
 - Track C: Discord integration (partial - visibility dispatcher gaps)
