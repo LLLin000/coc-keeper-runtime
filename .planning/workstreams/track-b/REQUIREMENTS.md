@@ -221,6 +221,90 @@ Milestone: Identity Projection And Character Ownership
 
 ---
 
+## vB.1.5 Requirements (Track B)
+
+Milestone: Character Lifecycle And Governance Surface
+
+### Player-Facing Profile Lifecycle
+
+- [ ] **PLC-01**: User can view list of all their archive profiles (active and archived) via `/profiles`
+- [ ] **PLC-02**: User can activate an archived profile to make it available for campaign selection
+- [ ] **PLC-03**: User can archive their active profile (soft-delete) without deleting it permanently
+- [ ] **PLC-04**: User can replace an active profile with a new one, moving the old to archived state
+- [ ] **PLC-05**: User can permanently delete an archived profile (not an active one)
+- [ ] **PLC-06**: User can recover a recently deleted profile within a grace period
+
+### Player-Facing Instance Lifecycle
+
+- [ ] **ILC-01**: User can view their active campaign character instance(s) for joined campaigns
+- [ ] **ILC-02**: User can archive their active campaign character instance (retire from campaign)
+- [ ] **ILC-03**: User can select a different archive profile to project as a new campaign instance
+- [ ] **ILC-04**: User cannot have more than one active campaign instance per campaign (enforced)
+
+### Player-Facing Visibility
+
+- [ ] **PV-01**: `/profiles` command shows each profile's status: active, archived, deleted, or active-instance
+- [ ] **PV-02**: `/profile_detail` shows the selected profile's full archive card
+- [ ] **PV-03**: User sees clear transition messages when activating, archiving, or replacing profiles
+- [ ] **PV-04**: User cannot ready into a campaign without a valid active character instance (enforced)
+
+### Admin-Facing Visibility
+
+- [ ] **AV-01**: Admin can list all player archive profiles in the campaign via `/admin_profiles`
+- [ ] **AV-02**: Admin can view any player's archive profile in detail
+- [ ] **AV-03**: Admin can view ownership chain: Discord user → archive profile → campaign member → campaign instance
+- [ ] **AV-04**: Admin can view all active campaign character instances across all players
+
+### Admin Governance Actions
+
+- [ ] **AV-05**: Admin can force-archive a player's active profile (with audit reason)
+- [ ] **AV-06**: Admin can force-archive a player's campaign character instance (with audit reason)
+- [ ] **AV-07**: Admin can reassign campaign ownership to a different player
+- [ ] **AV-08**: All admin governance actions are logged with timestamp, admin ID, target ID, and reason
+
+### Audit Trail
+
+- [ ] **AUD-01**: All lifecycle operations (activate, archive, replace, delete, recover) are recorded in event log
+- [ ] **AUD-02**: All admin governance actions are recorded with full context
+- [ ] **AUD-03**: `/debug_status` shows recent governance events for a campaign
+
+## vB.1.5 Traceability
+
+| Requirement | Planned Phase |
+|-------------|---------------|
+| PLC-01 | Phase 55 |
+| PLC-02 | Phase 56 |
+| PLC-03 | Phase 56 |
+| PLC-04 | Phase 57 |
+| PLC-05 | Phase 57 |
+| PLC-06 | Phase 57 |
+| ILC-01 | Phase 55 |
+| ILC-02 | Phase 58 |
+| ILC-03 | Phase 58 |
+| ILC-04 | Phase 55 |
+| PV-01 | Phase 55 |
+| PV-02 | Phase 61 |
+| PV-03 | Phase 56 |
+| PV-04 | Phase 61 |
+| AV-01 | Phase 59 |
+| AV-02 | Phase 59 |
+| AV-03 | Phase 59 |
+| AV-04 | Phase 59 |
+| AV-05 | Phase 60 |
+| AV-06 | Phase 60 |
+| AV-07 | Phase 60 |
+| AV-08 | Phase 60 |
+| AUD-01 | Phase 55 |
+| AUD-02 | Phase 56 |
+| AUD-03 | Phase 60 |
+
+**Coverage:**
+- vB.1.5 requirements: 24 total
+- Mapped to phases: 24
+- Unmapped: 0 ✓
+
+---
+
 ## vB.1.6 Requirements (Track B)
 
 Milestone: COC-Legal Character Finalization And New-Player Modes
