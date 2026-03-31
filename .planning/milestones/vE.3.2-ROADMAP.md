@@ -6,7 +6,7 @@
 - ✅ **vE.2.1** — 全流程交互验证框架 (completed)
 - ✅ **vE.2.2** — 统一 Scenario-Driven E2E 验证框架 (complete)
 - ✅ **vE.3.1** — Character Lifecycle E2E (complete)
-- ✅ **vE.3.2** — Gap Closure & Integration (completed)
+- 🔄 **vE.3.2** — Gap Closure & Integration (in progress)
 
 ---
 
@@ -463,20 +463,13 @@
 
 ## vE.3.2 Phases
 
-- [x] **Phase E79: Skill Usage Tracking & Combat Integration** — Track skills used during combat for post-session improvement
-  (completed 2026-03-31)
-- [x] **Phase E80: Visibility Dispatcher Completion** — Complete Discord channel/DM sending (resolve 3 TODOs)
-  (completed 2026-03-31)
-- [x] **Phase E81: Creature Bestiary & Stats** — Add monster stats for common COC creatures
-  (completed 2026-03-31)
-- [x] **Phase E82: Chase Rules Implementation** — COC 7e chase mechanics
-  (completed 2026-03-31)
-- [x] **Phase E83: Archive Repository Completion** — Complete CRUD operations
-  (completed 2026-03-31)
-- [x] **Phase E84: Character Builder Integration** — Wire into RuntimeTestDriver
-  (completed 2026-03-31)
-- [x] **Phase E85: Equipment System** — Weapon/armor database (optional)
-  (completed 2026-03-31)
+- [ ] **Phase E79: Skill Usage Tracking & Combat Integration** — Track skills used during combat for post-session improvement
+- [ ] **Phase E80: Visibility Dispatcher Completion** — Complete Discord channel/DM sending (resolve 3 TODOs)
+- [ ] **Phase E81: Creature Bestiary & Stats** — Add monster stats for common COC creatures
+- [ ] **Phase E82: Chase Rules Implementation** — COC 7e chase mechanics
+- [ ] **Phase E83: Archive Repository Completion** — Complete CRUD operations
+- [ ] **Phase E84: Character Builder Integration** — Wire into RuntimeTestDriver
+- [ ] **Phase E85: Equipment System** — Weapon/armor database (optional)
 
 ### Phase E79: Skill Usage Tracking & Combat Integration
 

@@ -2,30 +2,30 @@
 gsd_state_version: 1.0
 milestone: vE.3.2
 milestone_name: Gap Closure & Integration
-status: in_progress
-stopped_at: Phase E84 executed - Character Builder Integration complete
-last_updated: "2026-03-31T13:15:00.000Z"
+status: completed
+stopped_at: Milestone vE.3.2 complete - All phases executed
+last_updated: "2026-03-31T15:00:00.000Z"
 progress:
-  total_phases: 7
-  completed_phases: 6
-  total_plans: 7
-  completed_plans: 6
+  total_phases: 34
+  completed_phases: 34
+  total_plans: 14
+  completed_plans: 14
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 84
+Phase: 85
 Plan: 01 (executed, complete)
-Status: E84 complete - Character builder wired into RuntimeTestDriver
+Status: vE.3.2 complete - Gap Closure & Integration milestone finished
 
 ## Progress
 
-**Milestones Complete:** 4 (vE.1.1, vE.2.1, vE.2.2, vE.3.1)
-**Phases Complete:** 44 (E40-E43, E60-E79, E81, E82, E83, E84, E85)
-**Total Tests:** 809 passing (7 new builder tests)
-**Current Milestone:** vE.3.2
+**Milestones Complete:** 5 (vE.1.1, vE.2.1, vE.2.2, vE.3.1, vE.3.2)
+**Phases Complete:** 51 (E40-E43, E60-E85)
+**Total Tests:** 808 passing (after vE.3.2 completion)
+**Current Milestone:** vE.3.2 (completed)
 
 ## vE.3.2 Overview
 
@@ -63,6 +63,8 @@ Status: E84 complete - Character builder wired into RuntimeTestDriver
 | E84 | Character Builder Integration | ✅ Complete | E84-01-PLAN.md |
 | E85 | Equipment System | ✅ Complete | E85-01-PLAN.md |
 
+**vE.3.2 Status:** COMPLETE - All 7 phases executed
+
 ### Execution Order
 
 **Wave 1 (Parallel):** E79, E80, E81
@@ -78,8 +80,8 @@ Dependencies:
 
 ## Session Continuity
 
-**Stopped At:** Phase E84 executed - Character Builder Integration complete
-**Next Step:** All vE.3.2 phases complete - milestone ready for completion
+**Stopped At:** Milestone vE.3.2 complete - All 7 phases executed
+**Next Step:** Next milestone (TBD)
 **Phase Plans:**
 
 - `.planning/workstreams/track-e/phases/79-skill-usage-tracking/E79-01-PLAN.md`
@@ -110,7 +112,7 @@ Dependencies:
 - ~~Archive Repository~~ - ✅ E83 Complete (CRUD + persistence)
 - ~~Character Builder~~ - ✅ E84 Complete (wired into RuntimeTestDriver)
 - ~~Equipment System~~ - ✅ E85 Complete (weapon/armor databases)
-- visibility_dispatcher.py has 3 unresolved TODOs
+- ~~Visibility Dispatcher TODOs~~ - ✅ E80 Complete (3 TODOs resolved)
 
 ### Dependencies
 
