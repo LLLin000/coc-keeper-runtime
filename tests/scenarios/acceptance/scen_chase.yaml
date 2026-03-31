@@ -1,0 +1,143 @@
+# Chase E2E Scenario
+# Validates: chase initiation → CON checks → movement → escape
+
+scenario:
+  id: scen_chase
+  name: "Chase Scene"
+  description: "Validates complete chase flow from start to escape"
+
+actors:
+  - id: kp
+    role: keeper
+  - id: p1
+    role: player
+    name: "逃亡者"
+  - id: p2
+    role: player
+    name: "追捕者"
+
+initial_state:
+  dice_mode: seeded
+  dice_seed: 12345
+
+steps:
+  # Setup campaign
+  - actor: kp
+    action: command
+    name: bind_campaign
+    args:
+      campaign_id: "chase_test"
+      
+  - actor: p1
+    action: command
+    name: join
+    args: {}
+    
+  - actor: p2
+    action: command
+    name: join
+    args: {}
+    
+  - actor: p1
+    action: command
+    name: ready
+    args: {}
+    
+  - actor: p2
+    action: command
+    name: ready
+    args: {}
+    
+  - actor: kp
+    action: command
+    name: start_session
+    args: {}
+    
+  # Start chase
+  - actor: kp
+    action: command
+    name: start_chase
+    args:
+      fleeer_ids: ["p1"]
+      pursuer_ids: ["p2"]
+      locations:
+        - name: "Street"
+          name_cn: "街道"
+        - name: "Alley"
+          name_cn: "小巷"
+        - name: "Fence"
+          name_cn: "围墙"
+        - name: "Park"
+          name_cn: "公园"
+        - name: "Escape"
+          name_cn: "逃脱点"
+          
+  # Assertions: Chase started
+  - actor: system
+    action: assert
+    assertions:
+      chase:
+        active: true
+        round: 1
+        participants:
+          p1:
+            role: "fleeer"
+          p2:
+            role: "pursuer"
+            
+  # Resolve rounds until escape
+  - actor: kp
+    action: command
+    name: resolve_chase_round
+    args: {}
+    
+  - actor: system
+    action: assert
+    assertions:
+      chase_round:
+        round: 1
+        con_checks:
+          p1:
+            success: bool
+          p2:
+            success: bool
+        movements:
+          exists: true
+          
+  # Continue until escape
+  - actor: kp
+    action: command
+    name: resolve_chase_round
+    args: {}
+    
+  - actor: kp
+    action: command
+    name: resolve_chase_round
+    args: {}
+    
+  - actor: kp
+    action: command
+    name: resolve_chase_round
+    args: {}
+    
+  # Check final result
+  - actor: system
+    action: assert
+    assertions:
+      chase:
+        active: false
+        ended: true
+        end_reason: "escape"  # or "capture"
+        
+      skill_usage:
+        p1:
+          # Skills used during chase
+          - "climb"
+          - "jump"
+          - "dodge"
+
+expected_outcomes:
+  - chase_completed: true
+  - con_checks_resolved: true
+  - movement_tracked: true
+  - end_condition_met: true

@@ -59,6 +59,7 @@ class RuntimeTestDriver:
         self._started = False
         self._output_records: list[OutputRecord] = []
         self._snapshot_state: dict[str, Any] = {}
+        self._chase_manager: Any = None
 
         self._model_client = self._create_model_client(model_client)
 
@@ -426,6 +427,222 @@ class RuntimeTestDriver:
         for session in self._session_store._sessions.values():
             session.skill_tracker.record_usage(player_id, skill_name, success)
             break  # Only record to first session
+
+    # E82: Chase methods
+    def start_chase(
+        self,
+        fleeer_ids: list[str],
+        pursuer_ids: list[str],
+        locations: list[dict],
+    ) -> dict:
+        """Start a chase encounter.
+
+        Args:
+            fleeer_ids: IDs of characters fleeing
+            pursuer_ids: IDs of characters pursuing
+            locations: List of location definitions
+
+        Returns:
+            Chase status dict
+        """
+        from dm_bot.gameplay.chase import GameplayChaseManager
+
+        self._chase_manager = GameplayChaseManager()
+        chase = self._chase_manager.start_chase(
+            fleeer_ids=fleeer_ids,
+            pursuer_ids=pursuer_ids,
+            locations=locations,
+        )
+        return {
+            "started": True,
+            "fleeers": fleeer_ids,
+            "pursuers": pursuer_ids,
+            "locations": len(locations),
+            "active": chase.active,
+            "round": chase.current_round,
+        }
+
+    def resolve_chase_round(self) -> dict:
+        """Resolve one round of the active chase.
+
+        Returns:
+            Round result dict
+        """
+        if self._chase_manager is None:
+            return {"error": "No active chase"}
+        return self._chase_manager.resolve_round()
+
+    def get_chase_status(self) -> dict:
+        """Get current chase status.
+
+        Returns:
+            Status dict
+        """
+        if self._chase_manager is None:
+            return {"active": False}
+        return self._chase_manager.get_chase_status()
+
+    def end_chase(self) -> dict:
+        """End the active chase.
+
+        Returns:
+            Final result
+        """
+        if self._chase_manager is None:
+            return {"ended": False}
+        result = self._chase_manager.end_chase()
+        self._chase_manager = None
+        return result
+
+    # E83: Archive CRUD methods
+    def set_archive_repository(self, archive_repository) -> None:
+        """Set the archive repository for CRUD operations.
+
+        Args:
+            archive_repository: InvestigatorArchiveRepository instance
+        """
+        self._archive_repository = archive_repository
+
+    def create_test_profile(
+        self,
+        user_id: str,
+        name: str,
+        occupation: str,
+        age: int,
+        **kwargs,
+    ) -> dict:
+        """Create a test character profile.
+
+        Args:
+            user_id: The user ID
+            name: Character name
+            occupation: Character occupation
+            age: Character age
+            **kwargs: Additional profile fields
+
+        Returns:
+            Created profile as dict
+        """
+        repo = getattr(self, "_archive_repository", None)
+        if repo is None:
+            raise RuntimeError(
+                "Archive repository not set. Call set_archive_repository first."
+            )
+
+        # Generate stats
+        generation = kwargs.get("generation", self._generate_test_stats())
+
+        profile = repo.create_profile(
+            user_id=user_id,
+            name=name,
+            occupation=occupation,
+            age=age,
+            background=kwargs.get("background", "Test background"),
+            portrait_summary=kwargs.get(
+                "portrait_summary", f"{occupation} test character"
+            ),
+            concept=kwargs.get("concept", "Test concept"),
+            disposition=kwargs.get("disposition", "冷静"),
+            favored_skills=kwargs.get("favored_skills", ["侦查", "图书馆使用"]),
+            generation=generation,
+        )
+
+        return profile.model_dump()
+
+    def get_profile(self, user_id: str, profile_id: str) -> dict | None:
+        """Get a profile.
+
+        Args:
+            user_id: The user ID
+            profile_id: The profile ID
+
+        Returns:
+            Profile as dict, or None if not found
+        """
+        repo = getattr(self, "_archive_repository", None)
+        if repo is None:
+            return None
+
+        try:
+            profile = repo.get_profile(user_id, profile_id)
+            return profile.model_dump()
+        except KeyError:
+            return None
+
+    def update_profile(
+        self,
+        user_id: str,
+        profile_id: str,
+        **updates,
+    ) -> dict:
+        """Update a profile.
+
+        Args:
+            user_id: The user ID
+            profile_id: The profile ID
+            **updates: Fields to update
+
+        Returns:
+            Updated profile as dict
+        """
+        repo = getattr(self, "_archive_repository", None)
+        if repo is None:
+            raise RuntimeError(
+                "Archive repository not set. Call set_archive_repository first."
+            )
+
+        profile = repo.update_profile(user_id=user_id, profile_id=profile_id, **updates)
+        return profile.model_dump()
+
+    def list_profiles(self, user_id: str) -> list[dict]:
+        """List all profiles for a user.
+
+        Args:
+            user_id: The user ID
+
+        Returns:
+            List of profile dicts
+        """
+        repo = getattr(self, "_archive_repository", None)
+        if repo is None:
+            return []
+
+        profiles = repo.list_profiles(user_id)
+        return [p.model_dump() for p in profiles]
+
+    def delete_profile(self, user_id: str, profile_id: str) -> bool:
+        """Delete a profile.
+
+        Args:
+            user_id: The user ID
+            profile_id: The profile ID
+
+        Returns:
+            True if deleted, False if not found
+        """
+        repo = getattr(self, "_archive_repository", None)
+        if repo is None:
+            return False
+
+        try:
+            repo.delete_profile(user_id=user_id, profile_id=profile_id)
+            return True
+        except KeyError:
+            return False
+
+    def _generate_test_stats(self) -> dict[str, int]:
+        """Generate test character stats."""
+        return {
+            "str": 50,
+            "con": 50,
+            "dex": 50,
+            "app": 50,
+            "pow": 50,
+            "siz": 50,
+            "int": 50,
+            "edu": 50,
+            "luck": 50,
+        }
 
 
 def _build_commands(
