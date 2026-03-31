@@ -36,9 +36,8 @@ steps:
   - actor: p1
     action: command
     name: join_campaign
-    args:
-      campaign_id: "leak_test_campaign"
-      
+    args: {}
+       
   - actor: kp
     action: command
     name: start_session

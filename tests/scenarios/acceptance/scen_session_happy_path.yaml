@@ -32,14 +32,12 @@ steps:
   - actor: p1
     action: command
     name: join_campaign
-    args:
-      campaign_id: camp_happy
+    args: {}
 
   - actor: p2
     action: command
     name: join_campaign
-    args:
-      campaign_id: camp_happy
+    args: {}
 
   - actor: p1
     action: command

@@ -36,8 +36,7 @@ steps:
   - actor: p1
     action: command
     name: join_campaign
-    args:
-      campaign_id: camp_kp_gmonly_test
+    args: {}
 
   - actor: kp
     action: command

@@ -34,8 +34,7 @@ steps:
   - actor: p1
     action: command
     name: join_campaign
-    args:
-      campaign_id: camp_smoke_test
+    args: {}
 
 assertions:
   final_phase: lobby

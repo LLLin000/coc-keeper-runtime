@@ -35,8 +35,7 @@ steps:
   - actor: p1
     action: command
     name: join_campaign
-    args:
-      campaign_id: camp_investigation_before_reveal
+    args: {}
 
   - actor: p1
     action: command

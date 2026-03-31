@@ -42,32 +42,27 @@ steps:
   - actor: p1
     action: command
     name: join_campaign
-    args:
-      campaign_id: camp_chaos
+    args: {}
 
   - actor: p2
     action: command
     name: join_campaign
-    args:
-      campaign_id: camp_chaos
+    args: {}
 
   - actor: p3
     action: command
     name: join_campaign
-    args:
-      campaign_id: camp_chaos
+    args: {}
 
   - actor: p4
     action: command
     name: join_campaign
-    args:
-      campaign_id: camp_chaos
+    args: {}
 
   - actor: p5
     action: command
     name: join_campaign
-    args:
-      campaign_id: camp_chaos
+    args: {}
 
   - actor: p1
     action: command

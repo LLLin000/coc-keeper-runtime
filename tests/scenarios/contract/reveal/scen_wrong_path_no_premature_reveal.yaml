@@ -35,8 +35,7 @@ steps:
   - actor: p1
     action: command
     name: join_campaign
-    args:
-      campaign_id: camp_reveal_wrong_path
+    args: {}
 
   - actor: p1
     action: command
