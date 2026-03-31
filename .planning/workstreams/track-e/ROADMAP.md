@@ -5,6 +5,7 @@
 - ✅ **vE.1.1** — Runtime Control Panel Foundations (completed)
 - ✅ **vE.2.1** — 全流程交互验证框架 (completed)
 - ✅ **vE.2.2** — 统一 Scenario-Driven E2E 验证框架 (complete)
+- 🔄 **vE.3.1** — Character Lifecycle E2E (in progress)
 
 ---
 
@@ -309,4 +310,121 @@
 
 ---
 
-*Last updated: 2026-03-30 for milestone vE.2.2*
+## vE.3.1 Summary
+
+**Goal:** 构建角色生命周期端到端测试，覆盖角色创建 → COC 战斗/SAN/技能检定 → 技能提升 → 下一轮的完整流程。整合新合入的 COC 规则引擎（Track A）与现有 RuntimeTestDriver 测试基础设施。
+
+**Planned Phases:**
+- Phase E73: COC Derived Attributes 单元测试
+- Phase E74: COC Combat + Insanity 集成测试
+- Phase E75: COC Experience + Skill Catalog 单元测试
+- Phase E76: 角色创建端到端 Scenario
+- Phase E77: 战斗 + SAN 端到端 Scenario
+- Phase E78: 技能提升 + 跨系统 Scenario
+
+**Depends on:** vE.2.2 (E69-E72) complete
+
+---
+
+## vE.3.1 Phases
+
+- [x] **Phase E73: COC Derived Attributes 单元测试** — test_derived_attributes.py (75 tests): MOV/Build/DB lookup, age modifiers, sanity functions
+  (completed 2026-03-30)
+- [x] **Phase E74: COC Combat + Insanity 集成测试** — test_combat_and_insanity.py (56 tests): initiative, fighting, shooting, brawl, grapple, armor, sanity triggers
+  (completed 2026-03-30)
+- [x] **Phase E75: COC Experience + Skill Catalog 单元测试** — test_experience_and_skill_catalog.py (91 tests): skill improvement, point allocation, COC_SKILLS/COC_SPELLS catalog validation
+  (completed 2026-03-30)
+- [x] **Phase E76: 角色创建端到端 Scenario** — scen_character_creation.yaml: campaign bind → join → ready → start_session lifecycle
+  (completed 2026-03-30)
+- [ ] **Phase E77: 战斗 + SAN 端到端 Scenario** — scen_combat_san.yaml: combat encounter → SAN loss → insanity triggers (TEMPORARY/INDEFINITE)
+  (pending)
+- [ ] **Phase E78: 技能提升 + 跨系统 Scenario** — skill improvement + full character lifecycle integration
+  (pending)
+
+### Phase E73: COC Derived Attributes 单元测试
+
+**Goal:** Write unit tests for COC derived attributes — MOV, Build, DB lookup tables, age modifiers, sanity system functions.
+
+**Depends on:** E72
+
+**Plans:** E73-01
+
+**Critical deliverables (explicit):**
+- `tests/rules/coc/test_derived_attributes.py` — 75 tests covering:
+  - MOV: 3 base cases × 5 age bands = 15 combinations + minimum floor
+  - Build: 6 lookup bands (-2 to +3)
+  - DB: 6 lookup bands with numeric/string tuple output
+  - Age modifiers: 9 age bands with min(1) enforcement
+  - Sanity functions: critical(1), fumble(100), 3 insanity types
+
+### Phase E74: COC Combat + Insanity 集成测试
+
+**Goal:** Write integration tests for COC combat system and insanity mechanics.
+
+**Depends on:** E73
+
+**Plans:** E74-01
+
+**Critical deliverables (explicit):**
+- `tests/rules/coc/test_combat_and_insanity.py` — 56 tests covering:
+  - Initiative rolls and turn order
+  - Fighting attack (opposed check, critical/fumble, damage, impale)
+  - Shooting attack (skill check, range/recoil modifiers)
+  - Brawl & Grapple (unarmed damage, self-damage fumble)
+  - DB & Armor integration
+  - Insanity triggers (TEMPORARY/INDEFINITE)
+  - Sanity recovery mechanics
+
+### Phase E75: COC Experience + Skill Catalog 单元测试
+
+**Goal:** Write unit tests for COC experience/skill system and validate skill/spell catalogs.
+
+**Depends on:** E74
+
+**Plans:** E75-01
+
+**Critical deliverables (explicit):**
+- `tests/rules/coc/test_experience_and_skill_catalog.py` — 91 tests covering:
+  - Skill improvement roll (1d100 < skill → +1d10)
+  - Occupational/Interest skill point allocation
+  - Credit Rating & INT tables
+  - 80+ skills in COC_SKILLS catalog validation
+  - 20+ spells in COC_SPELLS catalog validation
+  - Spell MP cost validation
+
+### Phase E76: 角色创建端到端 Scenario
+
+**Goal:** Write E2E scenario validating full character creation lifecycle using RuntimeTestDriver.
+
+**Depends on:** E75
+
+**Plans:** E76-01
+
+**Critical deliverables (explicit):**
+- `tests/scenarios/acceptance/scen_character_creation.yaml` — campaign bind → join → ready → start_session flow
+
+### Phase E77: 战斗 + SAN 端到端 Scenario
+
+**Goal:** Write E2E scenario validating combat → SAN → insanity chain.
+
+**Depends on:** E76
+
+**Plans:** E77-01
+
+**Critical deliverables (explicit):**
+- `tests/scenarios/acceptance/scen_combat_san.yaml` — combat encounter → SAN loss → insanity triggers (TEMPORARY/INDEFINITE)
+
+### Phase E78: 技能提升 + 跨系统 Scenario
+
+**Goal:** Write E2E scenario validating skill improvement and full character lifecycle.
+
+**Depends on:** E77
+
+**Plans:** E78-01
+
+**Critical deliverables (explicit):**
+- Skill improvement + full character lifecycle integration scenario
+
+---
+
+*Last updated: 2026-03-31 for milestone vE.3.1*
