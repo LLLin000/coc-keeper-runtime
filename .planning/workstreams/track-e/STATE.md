@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: vE.3.1
 milestone_name: Character Lifecycle E2E
-status: Phase E76 complete — E77 next
-stopped_at: E73-E76 complete (222 COC tests, 676 total), E77-E78 remaining
+status: Phase E77 complete — E78 next
+stopped_at: E73-E77 complete (222 COC tests, 676 total), E78 remaining
 last_updated: "2026-03-31T00:00:00.000Z"
 progress:
   total_phases: 6
-  completed_phases: 4
-  total_plans: 6
-  completed_plans: 4
+completed_phases: 5
+total_plans: 6
+completed_plans: 5
 ---
 
 # Project State
@@ -17,13 +17,13 @@ progress:
 ## Current Position
 
 Milestone: vE.3.1 (Character Lifecycle E2E)
-Phase: E76 complete — E77 (Combat + SAN E2E) next
-Plan: 4 of 6
+Phase: E77 complete — E78 (Skill Improvement) next
+Plan: 5 of 6
 
 ## Progress
 
 **Milestones Complete:** 3 (vE.1.1, vE.2.1, vE.2.2)
-**Phases Complete:** 24 (E40-E43, E60-E72, E73-E76)
+**Phases Complete:** 25 (E40-E43, E60-E72, E73-E77)
 **Total Tests:** 676 passing (222 COC rules tests, 454 other)
 **Current Milestone:** vE.3.1
 
@@ -45,12 +45,12 @@ Plan: 4 of 6
 - [x] E74: Complete — COC Combat + Insanity 集成测试 (56 tests in test_combat_and_insanity.py)
 - [x] E75: Complete — COC Experience + Skill Catalog 单元测试 (91 tests in test_experience_and_skill_catalog.py)
 - [x] E76: Complete — 角色创建端到端 Scenario (scen_character_creation.yaml)
-- [ ] E77: Pending — 战斗 + SAN 端到端 Scenario (scen_combat_san.yaml exists, needs proper phase artifacts)
+- [x] E77: Complete — 战斗 + SAN 端到端 Scenario (scen_combat_san.yaml PASSED)
 - [ ] E78: Pending — 技能提升 + 跨系统 Scenario
 
 ## Session Continuity
 
-**Stopped At:** E73-E76 complete, E77-E78 remaining
-**Next Step:** Phase E77 — 战斗 + SAN 端到端 Scenario
+**Stopped At:** E73-E77 complete, E78 remaining
+**Next Step:** Phase E78 — 技能提升 + 跨系统 Scenario
 **Milestone Roadmap:** .planning/milestones/vE.3.1-ROADMAP.md
 **Track Roadmap:** .planning/workstreams/track-e/ROADMAP.md
