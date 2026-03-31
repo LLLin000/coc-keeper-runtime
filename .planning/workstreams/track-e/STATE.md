@@ -1,56 +1,88 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: vE.3.1 milestone complete
-stopped_at: Completed E78-01 skill improvement lifecycle scenario
-last_updated: "2026-03-31T09:28:16.692Z"
+milestone: vE.3.2
+milestone_name: Gap Closure & Integration
+status: in_progress
+stopped_at: Starting vE.3.2 - Gap Closure & Integration
+last_updated: "2026-03-31T17:30:00.000Z"
 progress:
-  total_phases: 20
-  completed_phases: 10
-  total_plans: 14
-  completed_plans: 10
+  total_phases: 7
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 78
+Phase: 79
 Plan: Not started
+Status: Defining requirements for vE.3.2
 
 ## Progress
 
-**Milestones Complete:** 3 (vE.1.1, vE.2.1, vE.2.2)
-**Phases Complete:** 25 (E40-E43, E60-E72, E73-E77)
-**Total Tests:** 676 passing (222 COC rules tests, 454 other)
-**Current Milestone:** vE.3.1
+**Milestones Complete:** 4 (vE.1.1, vE.2.1, vE.2.2, vE.3.1)
+**Phases Complete:** 39 (E40-E43, E60-E78)
+**Total Tests:** 676+ passing (222 COC rules tests, 454+ other)
+**Current Milestone:** vE.3.2
 
-## vE.3.1 Overview
+## vE.3.2 Overview
 
-**Goal:** 构建角色生命周期端到端测试，覆盖角色创建 → COC 战斗/SAN/技能检定 → 技能提升 → 下一轮的完整流程。整合新合入的 COC 规则引擎（Track A）与现有 RuntimeTestDriver 测试基础设施。
+**Goal:** Fill critical gaps in COC integration and Discord bot functionality
 
-**Planned Phases:**
+**Gaps from Codebase Mapping:**
 
-- E73: COC Derived Attributes 单元测试
-- E74: COC Combat + Insanity 集成测试
-- E75: COC Experience + Skill Catalog 单元测试
-- E76: 角色创建端到端 Scenario
-- E77: 战斗 + SAN 端到端 Scenario
-- E78: 技能提升 + 跨系统 Scenario
+### High Priority
+1. **Skill Usage Tracking** - Track skills used during combat for post-session improvement
+2. **Visibility Dispatcher** - Complete Discord channel/DM sending (3 TODOs)
+3. **Creature Stats/Bestiary** - Add monster stats for common COC creatures
 
-## vE.3.1 Progress
+### Medium Priority
+4. **Chase Rules** - COC 7e chase mechanics
+5. **Archive Repository** - Complete CRUD operations
+6. **Character Builder** - Wire into RuntimeTestDriver
 
-- [x] E73: Complete — COC Derived Attributes 单元测试 (75 tests in test_derived_attributes.py)
-- [x] E74: Complete — COC Combat + Insanity 集成测试 (56 tests in test_combat_and_insanity.py)
-- [x] E75: Complete — COC Experience + Skill Catalog 单元测试 (91 tests in test_experience_and_skill_catalog.py)
-- [x] E76: Complete — 角色创建端到端 Scenario (scen_character_creation.yaml)
-- [x] E77: Complete — 战斗 + SAN 端到端 Scenario (scen_combat_san.yaml PASSED)
-- [x] E78: Complete — 技能提升 + 跨系统 Scenario
+### Low Priority
+7. **Equipment System** - Weapon/armor database
+
+## vE.3.2 Progress
+
+- [ ] E79: Skill Usage Tracking & Combat Integration
+- [ ] E80: Visibility Dispatcher Completion
+- [ ] E81: Creature Bestiary & Stats
+- [ ] E82: Chase Rules Implementation
+- [ ] E83: Archive Repository Completion
+- [ ] E84: Character Builder Integration
+- [ ] E85: Equipment System (optional)
 
 ## Session Continuity
 
-**Stopped At:** Completed E78-01 skill improvement lifecycle scenario
-**Next Step:** Phase E78 — 技能提升 + 跨系统 Scenario
-**Milestone Roadmap:** .planning/milestones/vE.3.1-ROADMAP.md
+**Stopped At:** Starting vE.3.2 milestone planning
+**Next Step:** Phase E79 — Skill Usage Tracking & Combat Integration
+**Milestone Roadmap:** .planning/workstreams/track-e/ROADMAP.md
 **Track Roadmap:** .planning/workstreams/track-e/ROADMAP.md
+
+## Accumulated Context
+
+### From vE.3.1 Completion
+- COC rules engine fully tested (222 tests)
+- Character lifecycle E2E scenarios complete
+- RuntimeTestDriver infrastructure mature
+- Scenario-driven testing framework operational
+
+### Critical Gaps Identified (from MAP-CODEBASE-TRACK-E.md)
+- visibility_dispatcher.py has 3 unresolved TODOs
+- Archive repository referenced but not fully implemented
+- Character builder exists but not wired
+- No skill usage tracking for improvement
+- Missing creature stats for combat scenarios
+- Chase rules not implemented
+
+### Dependencies
+- Track A: COC rules engine (complete)
+- Track B: Character archive/builder (partial)
+- Track C: Discord integration (partial - visibility dispatcher gaps)
+
+---
+*Last updated: 2026-03-31 for vE.3.2*

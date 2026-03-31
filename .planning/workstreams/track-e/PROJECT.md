@@ -125,3 +125,82 @@ Owns runtime operations and operator control:
 
 ---
 *Last updated: 2026-03-28 for milestone vE.1.1 E1 Runtime Control Panel Foundations*
+
+
+---
+
+## Milestone vE.3.1: Character Lifecycle E2E
+
+**Goal:** Build character lifecycle end-to-end tests covering character creation → COC combat/SAN/skill checks → skill improvement → next round. Integrate the newly merged COC rules engine (Track A) with existing RuntimeTestDriver testing infrastructure.
+
+**Target features:**
+- COC Derived Attributes unit tests (75 tests: MOV/Build/DB/age modifiers)
+- COC Combat + Insanity integration tests (56 tests: initiative, fighting, shooting, brawl, grapple, armor)
+- COC Experience + Skill Catalog unit tests (91 tests: skill improvement, point allocation, catalog validation)
+- Character creation E2E scenario (scen_character_creation.yaml)
+- Combat + SAN E2E scenario (scen_combat_san.yaml)
+- Skill improvement + cross-system scenario (scen_skill_improvement_lifecycle.yaml)
+
+**Primary Track:** Track E - 运行控制与运维面板层
+
+**Secondary Impact:**
+- Track A - 模组与规则运行层 (COC rules engine validation)
+- Track B - 人物构建与管理层 (character lifecycle validation)
+
+**Contracts Changed:**
+- COC rules engine contracts validated
+- RuntimeTestDriver integration with COC systems
+
+**Migration Notes:**
+- All tests use SeededDiceRoller for deterministic results
+- Scenarios use YAML DSL format
+- Artifacts written to artifacts/scenarios/ (gitignored)
+
+---
+
+## Milestone vE.3.2: Gap Closure & Integration
+
+**Goal:** Fill critical gaps in COC integration and Discord bot functionality identified in codebase mapping.
+
+**Target features:**
+
+### High Priority
+1. **Skill Usage Tracking** — Track skills used during combat for post-session improvement
+2. **Visibility Dispatcher Completion** — Complete Discord channel/DM sending (resolve 3 TODOs)
+3. **Creature Bestiary & Stats** — Add monster stats for common COC creatures
+
+### Medium Priority
+4. **Chase Rules** — COC 7e chase mechanics (pursuer/fleeer, CON rolls, obstacles)
+5. **Archive Repository Completion** — Full CRUD operations
+6. **Character Builder Integration** — Wire into RuntimeTestDriver
+
+### Low Priority
+7. **Equipment System** — Weapon/armor database
+
+**Not in scope:**
+- Vehicle Combat (Drive Auto, Pilot integration)
+- Poison/Disease mechanics (COC 7e Chapter 8)
+- Book Tomes reading mechanics
+- Expanded Magic System
+- Full Character Sheet UI (Track B responsibility)
+
+**Primary Track:** Track E - 运行控制与运维面板层
+
+**Secondary Impact:**
+- Track A - 模组与规则运行层 (bestiary, chase rules, equipment)
+- Track B - 人物构建与管理层 (archive, builder integration)
+- Track C - Discord 交互层 (visibility dispatcher)
+
+**Contracts Changed:**
+- Visibility dispatcher contracts (Discord channel/DM sending)
+- Archive repository contracts (CRUD operations)
+- Skill tracking contracts (combat → improvement flow)
+- Bestiary data contracts (creature stats)
+
+**Migration Notes:**
+- Visibility dispatcher TODOs must be resolved before production use
+- Archive repository needs migration from stub to full implementation
+- Skill tracking adds new session state fields
+
+---
+*Last updated: 2026-03-31 for milestone vE.3.2*
