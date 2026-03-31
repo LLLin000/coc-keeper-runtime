@@ -7,6 +7,7 @@
 - ✅ **vE.2.2** — 统一 Scenario-Driven E2E 验证框架 (complete)
 - ✅ **vE.3.1** — Character Lifecycle E2E (complete)
 - ✅ **vE.3.2** — Gap Closure & Integration (completed)
+- 🆕 **vE.3.3** — Scenario Runner Reliability (planned)
 
 ---
 
@@ -618,4 +619,101 @@
 
 ---
 
-*Last updated: 2026-03-31 for milestone vE.3.2 - All 7 phases planned*
+## vE.3.3 Summary
+
+**Goal:** Fix critical reliability issues in the scenario runner and test infrastructure so scenarios actually validate what they claim to test.
+
+**Problems Discovered:**
+1. **False-positive assertions** — 14/14 scenarios PASS despite step errors; phase_timeline never advances past `lobby`
+2. **API signature mismatches** — `join_campaign(campaign_id)`, `load_adventure(adventure_slug)`, unknown commands (`get_phase`, `advance_story`, etc.)
+3. **Persistence not initialized** — `no such table: campaign_sessions`, `no such table: campaign_state` in temp_sqlite mode
+4. **Duration always 0ms** — timing measurement not working
+5. **Output records not isolated per step** — cumulative outputs make debugging hard
+
+**Planned Phases:**
+- Phase E86: Scenario Runner Assertion Fix
+- Phase E87: API Signature Alignment
+- Phase E88: Persistence Initialization for Test Driver
+- Phase E89: Timing + Output Isolation
+
+**Depends on:** vE.3.2 (E79-E85) complete
+
+---
+
+## vE.3.3 Phases
+
+### Phase E86: Scenario Runner Assertion Fix
+
+**Goal:** Fix the scenario runner's assertion logic so scenarios actually fail when assertions are not met.
+
+**Problem:** `scenario_runner.py:134-150` has assertion logic that only runs in `fail_fast` mode. Normal assertion checking is broken — phase_timeline assertions in YAML are never evaluated.
+
+**Success Criteria:**
+1. `scen_session_happy_path` FAILS until phase transitions actually happen
+2. Phase timeline assertions are properly evaluated
+3. State assertions (campaign_members, no_duplicate_members) are evaluated
+4. Visibility assertions (public_must_include, kp_must_include) are evaluated
+5. Scenarios with step errors properly report failure
+
+**Files to modify:**
+- `src/dm_bot/testing/scenario_runner.py` — assertion evaluation loop
+- `tests/test_scenarios.py` — add tests for assertion behavior
+
+### Phase E87: API Signature Alignment
+
+**Goal:** Fix API signature mismatches between scenario YAML definitions and actual BotCommands/RuntimeTestDriver methods.
+
+**Mismatches to fix:**
+1. `join_campaign(campaign_id=...)` → actual method signature differs
+2. `load_adventure(adventure_slug=...)` → actual method signature differs
+3. Unknown commands: `get_phase`, `advance_story`, `move_to_location`, `interact`, `trigger_improvement_phase`
+
+**Approach:**
+- Option C: Mix — fix real bugs in API, update YAML for test-specific names
+
+**Files to modify:**
+- `src/dm_bot/discord_bot/commands.py` — add stub adventure methods
+- `src/dm_bot/testing/runtime_driver.py` — resolve driver-level methods in run_command
+- `tests/scenarios/**/*.yaml` — update to match actual API
+
+**Plans:** 1 plan created
+- [ ] **E87-01-PLAN.md** — API signature alignment (driver methods + YAML fixes + stubs)
+  - Files: `src/dm_bot/testing/runtime_driver.py`, `src/dm_bot/discord_bot/commands.py`, `tests/scenarios/**/*.yaml`
+  - Tasks: 5 (driver method resolution, YAML param fixes, stub commands, YAML cleanup, verification)
+
+### Phase E88: Persistence Initialization for Test Driver
+
+**Goal:** Ensure `RuntimeTestDriver` with `db_mode: temp_sqlite` creates all necessary database tables.
+
+**Problem:** `no such table: campaign_sessions` and `no such table: campaign_state` errors in 7+ scenarios.
+
+**Success Criteria:**
+1. `temp_sqlite` mode creates all tables needed by session lifecycle
+2. `campaign_sessions` table exists and is queryable
+3. `campaign_state` table exists and is queryable
+4. No persistence errors in any scenario run
+
+**Files to modify:**
+- `src/dm_bot/testing/runtime_driver.py` — fix `_init_temp_sqlite()` method
+- `src/dm_bot/persistence/store.py` — ensure table creation is reusable
+
+### Phase E89: Timing + Output Isolation
+
+**Goal:** Fix duration measurement and isolate output records per step.
+
+**Problems:**
+1. All scenarios report `Duration: 0ms` — timing not working
+2. Output records are cumulative across steps — step 10 contains outputs from steps 0-9
+
+**Success Criteria:**
+1. Duration accurately reflects step execution time
+2. Each step's outputs only contain outputs emitted during that step
+3. Artifact reports show accurate timing and isolated outputs
+
+**Files to modify:**
+- `src/dm_bot/testing/scenario_runner.py` — fix timing, isolate outputs
+- `src/dm_bot/testing/runtime_driver.py` — clear output buffer per step
+
+---
+
+*Last updated: 2026-03-31 for milestone vE.3.3 - Scenario Runner Reliability*
