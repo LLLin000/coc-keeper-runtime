@@ -634,3 +634,79 @@ def spend_luck_for_sanity(
         )
 
     return luck_spent, new_loss, explanation
+
+
+# =============================================================================
+# Creature Encounter Sanity Loss (E81: Bestiary)
+# =============================================================================
+
+
+def resolve_creature_encounter_sanity(
+    creature_template: "CreatureTemplate",
+    investigator_san: int,
+    has_seen_before: bool = False,
+) -> SanityCheckResult:
+    """Resolve SAN loss from encountering a creature.
+
+    Args:
+        creature_template: The creature's template
+        investigator_san: Current SAN of the investigator
+        has_seen_before: Whether they've seen this creature type before
+
+    Returns:
+        SanityCheckResult with loss amount
+    """
+    from dm_bot.coc.bestiary import CreatureTemplate
+
+    san_loss = creature_template.san_loss.get_loss(not has_seen_before)
+
+    # Check for indefinite insanity
+    indefinite = creature_template.san_loss.indefinite and not has_seen_before
+
+    # Apply SAN loss
+    new_san = max(0, investigator_san - san_loss)
+
+    # Determine if insanity occurs
+    insanity_type = InsanityType.NONE
+    if indefinite:
+        # Creature causes indefinite insanity on first encounter
+        insanity_type = InsanityType.INDEFINITE
+    elif new_san < investigator_san // 5 and investigator_san > 0:
+        # Below threshold - roll for temporary insanity
+        insanity_break = roll_insanity_break(
+            "Investigator",
+            new_san,
+            investigator_san,
+            f"遭遇怪物: {creature_template.name_cn}",
+        )
+        insanity_type = insanity_break.insanity_type
+
+    # Build rendered output
+    rendered = (
+        f"【怪物遭遇】{creature_template.name_cn} ({creature_template.name})\n"
+        f"当前SAN: {investigator_san} | "
+    )
+    if has_seen_before:
+        rendered += f"再次目击理智损失: {san_loss}\n"
+    else:
+        rendered += f"首次目击理智损失: {san_loss}\n"
+
+    rendered += f"剩余SAN: {new_san}"
+
+    if indefinite:
+        rendered += " | 触发不定性疯狂！"
+    elif insanity_type != InsanityType.NONE:
+        rendered += f" | 触发{insanity_type.value}！"
+
+    return SanityCheckResult(
+        actor_name="Investigator",
+        current_san=investigator_san,
+        max_san=investigator_san,  # Original max SAN before loss
+        rolled=0,  # Creature encounters use fixed loss
+        success=True,  # Fixed loss is not a check
+        success_rank="creature_encounter",
+        sanity_loss=san_loss,
+        loss_type=SanityLossType.SEEN,
+        insanity_triggered=insanity_type,
+        rendered=rendered,
+    )

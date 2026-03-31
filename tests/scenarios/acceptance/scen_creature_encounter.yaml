@@ -1,0 +1,88 @@
+# Creature Encounter E2E Scenario
+# Validates: creature spawning → combat → sanity loss
+
+scenario:
+  id: scen_creature_encounter
+  name: "Creature Encounter"
+  description: "Validates creature encounter with combat and sanity"
+  
+actors:
+  - id: kp
+    role: keeper
+  - id: p1
+    role: player
+    name: "调查员"
+
+initial_state:
+  dice_mode: seeded
+  dice_seed: 12345
+  
+steps:
+  # Setup
+  - actor: kp
+    action: command
+    name: bind_campaign
+    args:
+      campaign_id: "creature_test"
+      
+  - actor: p1
+    action: command
+    name: join
+    args: {}
+    
+  - actor: p1
+    action: command
+    name: ready
+    args: {}
+    
+  - actor: kp
+    action: command
+    name: start_session
+    args: {}
+    
+  # Spawn creature
+  - actor: kp
+    action: command
+    name: spawn_creature
+    args:
+      template_id: "ghoul"
+      name: "饥饿的食尸鬼"
+      
+  # Player sees creature (SAN loss)
+  - actor: p1
+    action: message
+    text: "我看看前面是什么"
+    
+  # Assertions: SAN loss recorded
+  - actor: system
+    action: assert
+    assertions:
+      san_loss:
+        p1:
+          amount: 6  # Ghoul first encounter
+          type: "creature_encounter"
+          
+  # Combat
+  - actor: p1
+    action: message
+    text: "我用格斗攻击食尸鬼"
+    
+  # Assertions: Combat resolved
+  - actor: system
+    action: assert
+    assertions:
+      combat:
+        active: true
+        round: 1
+        combatants:
+          contains: ["p1", "ghoul"]
+          
+      skill_usage:
+        p1:
+          fighting: ">= 1"
+
+expected_outcomes:
+  - creature_spawned: true
+  - san_loss_applied: true
+  - combat_initiated: true
+  - skill_tracked: true

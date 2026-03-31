@@ -1,0 +1,406 @@
+{
+  "creatures": [
+    {
+      "id": "deep_one",
+      "name": "Deep One",
+      "name_cn": "深潜者",
+      "category": "mythos",
+      "size": "medium",
+      "attributes": {
+        "str": 100,
+        "con": 80,
+        "siz": 70,
+        "dex": 60,
+        "int": 70,
+        "pow": 80
+      },
+      "hp": 15,
+      "mov": 8,
+      "fighting": 50,
+      "dodge": 30,
+      "armor": 1,
+      "damage_bonus": "+1d4",
+      "attacks": [
+        {"name": "Claw", "damage": "1d6+DB", "skill": "fighting"}
+      ],
+      "san_loss": {
+        "first_encounter": 5,
+        "subsequent": 1,
+        "indefinite": false
+      },
+      "abilities": [
+        {
+          "name": "Amphibious",
+          "name_cn": "两栖",
+          "description": "Can breathe underwater",
+          "effect": "Immune to drowning"
+        }
+      ],
+      "description": "Fish-like humanoids that serve Cthulhu",
+      "tactics": "Attack in groups, prefer underwater combat"
+    },
+    {
+      "id": "shoggoth",
+      "name": "Shoggoth",
+      "name_cn": "修格斯",
+      "category": "mythos",
+      "size": "huge",
+      "attributes": {
+        "str": 150,
+        "con": 150,
+        "siz": 200,
+        "dex": 20,
+        "int": 20,
+        "pow": 100
+      },
+      "hp": 35,
+      "mov": 10,
+      "fighting": 60,
+      "dodge": 0,
+      "armor": 8,
+      "damage_bonus": "+2d6",
+      "attacks": [
+        {"name": "Crush", "damage": "2d6+DB", "skill": "fighting"}
+      ],
+      "san_loss": {
+        "first_encounter": 10,
+        "subsequent": 2,
+        "indefinite": true
+      },
+      "abilities": [
+        {
+          "name": "Regeneration",
+          "name_cn": "再生",
+          "description": "Regenerates 2 HP per round",
+          "effect": "Heal 2 HP each round"
+        }
+      ],
+      "description": "Protoplasmic servants of the Elder Things",
+      "tactics": "Engulf and crush enemies"
+    },
+    {
+      "id": "ghoul",
+      "name": "Ghoul",
+      "name_cn": "食尸鬼",
+      "category": "monster",
+      "size": "medium",
+      "attributes": {
+        "str": 60,
+        "con": 50,
+        "siz": 50,
+        "dex": 70,
+        "int": 40,
+        "pow": 50
+      },
+      "hp": 10,
+      "mov": 9,
+      "fighting": 40,
+      "dodge": 35,
+      "armor": 1,
+      "damage_bonus": "+0",
+      "attacks": [
+        {"name": "Bite", "damage": "1d6", "skill": "fighting"},
+        {"name": "Claw", "damage": "1d4", "skill": "fighting"}
+      ],
+      "san_loss": {
+        "first_encounter": 6,
+        "subsequent": 1,
+        "indefinite": false
+      },
+      "abilities": [
+        {
+          "name": "Paralysis",
+          "name_cn": "麻痹",
+          "description": "Claw attacks may paralyze",
+          "effect": "CON save or paralyzed 1d6 rounds"
+        }
+      ],
+      "description": "Humanoid creatures that feed on corpses",
+      "tactics": "Ambush from shadows, attack in packs"
+    },
+    {
+      "id": "byakhee",
+      "name": "Byakhee",
+      "name_cn": "拜亚基",
+      "category": "mythos",
+      "size": "large",
+      "attributes": {
+        "str": 80,
+        "con": 60,
+        "siz": 90,
+        "dex": 70,
+        "int": 50,
+        "pow": 60
+      },
+      "hp": 15,
+      "mov": 5,
+      "fighting": 45,
+      "dodge": 35,
+      "armor": 2,
+      "damage_bonus": "+1d4",
+      "attacks": [
+        {"name": "Claw", "damage": "1d6+DB", "skill": "fighting"},
+        {"name": "Bite", "damage": "1d4", "skill": "fighting"}
+      ],
+      "san_loss": {
+        "first_encounter": 5,
+        "subsequent": 1,
+        "indefinite": false
+      },
+      "abilities": [
+        {
+          "name": "Flight",
+          "name_cn": "飞行",
+          "description": "Can fly at MOV 12",
+          "effect": "Flying speed 12"
+        }
+      ],
+      "description": "Winged servants of Hastur",
+      "tactics": "Dive attacks, use flight advantage"
+    },
+    {
+      "id": "zombie",
+      "name": "Zombie",
+      "name_cn": "僵尸",
+      "category": "undead",
+      "size": "medium",
+      "attributes": {
+        "str": 60,
+        "con": 100,
+        "siz": 60,
+        "dex": 30,
+        "int": 5,
+        "pow": 5
+      },
+      "hp": 16,
+      "mov": 5,
+      "fighting": 30,
+      "dodge": 0,
+      "armor": 2,
+      "damage_bonus": "+0",
+      "attacks": [
+        {"name": "Fist", "damage": "1d3", "skill": "fighting"}
+      ],
+      "san_loss": {
+        "first_encounter": 2,
+        "subsequent": 0,
+        "indefinite": false
+      },
+      "abilities": [
+        {
+          "name": "Mindless",
+          "name_cn": "无脑",
+          "description": "Immune to mental effects",
+          "effect": "Immune to SAN loss, mind control"
+        }
+      ],
+      "description": "Reanimated corpses",
+      "tactics": "Slowly approach and attack"
+    },
+    {
+      "id": "cultist",
+      "name": "Cultist",
+      "name_cn": "邪教徒",
+      "category": "human",
+      "size": "medium",
+      "attributes": {
+        "str": 50,
+        "con": 50,
+        "siz": 50,
+        "dex": 50,
+        "int": 60,
+        "pow": 60
+      },
+      "hp": 10,
+      "mov": 8,
+      "fighting": 35,
+      "shooting": 30,
+      "dodge": 25,
+      "armor": 0,
+      "damage_bonus": "+0",
+      "attacks": [
+        {"name": "Knife", "damage": "1d4", "skill": "fighting"},
+        {"name": "Pistol", "damage": "1d8", "skill": "shooting"}
+      ],
+      "san_loss": {
+        "first_encounter": 1,
+        "subsequent": 0,
+        "indefinite": false
+      },
+      "abilities": [],
+      "spells": ["Summon Monster", "Contact Mythos"],
+      "description": "Human servants of the Mythos",
+      "tactics": "Use cover, cast spells, fight to the death"
+    },
+    {
+      "id": "dimensional_shambler",
+      "name": "Dimensional Shambler",
+      "name_cn": "维度行者",
+      "category": "mythos",
+      "size": "large",
+      "attributes": {
+        "str": 100,
+        "con": 80,
+        "siz": 80,
+        "dex": 50,
+        "int": 60,
+        "pow": 100
+      },
+      "hp": 16,
+      "mov": 7,
+      "fighting": 50,
+      "dodge": 25,
+      "armor": 4,
+      "damage_bonus": "+1d6",
+      "attacks": [
+        {"name": "Claw", "damage": "1d6+DB", "skill": "fighting"}
+      ],
+      "san_loss": {
+        "first_encounter": 8,
+        "subsequent": 2,
+        "indefinite": true
+      },
+      "abilities": [
+        {
+          "name": "Dimension Walk",
+          "name_cn": "维度行走",
+          "description": "Can teleport short distances",
+          "effect": "Teleport up to 30m once per round"
+        }
+      ],
+      "description": "Interdimensional predators",
+      "tactics": "Teleport to flank, grab victims"
+    },
+    {
+      "id": "hunting_horror",
+      "name": "Hunting Horror",
+      "name_cn": "猎食恐怖",
+      "category": "mythos",
+      "size": "huge",
+      "attributes": {
+        "str": 120,
+        "con": 80,
+        "siz": 100,
+        "dex": 80,
+        "int": 40,
+        "pow": 80
+      },
+      "hp": 18,
+      "mov": 15,
+      "fighting": 60,
+      "dodge": 40,
+      "armor": 4,
+      "damage_bonus": "+1d6",
+      "attacks": [
+        {"name": "Bite", "damage": "2d6", "skill": "fighting"}
+      ],
+      "san_loss": {
+        "first_encounter": 8,
+        "subsequent": 2,
+        "indefinite": true
+      },
+      "abilities": [
+        {
+          "name": "Flight",
+          "name_cn": "飞行",
+          "description": "Can fly at great speed",
+          "effect": "Flying speed 20"
+        },
+        {
+          "name": "Sunlight Vulnerability",
+          "name_cn": "畏光",
+          "description": "Takes damage in sunlight",
+          "effect": "1 HP per round in direct sunlight"
+        }
+      ],
+      "description": "Flying serpentine horrors",
+      "tactics": "Swoop attacks, chase fleeing prey"
+    },
+    {
+      "id": "mi_go",
+      "name": "Mi-Go",
+      "name_cn": "米·戈",
+      "category": "mythos",
+      "size": "medium",
+      "attributes": {
+        "str": 50,
+        "con": 60,
+        "siz": 40,
+        "dex": 80,
+        "int": 100,
+        "pow": 80
+      },
+      "hp": 10,
+      "mov": 7,
+      "fighting": 40,
+      "shooting": 50,
+      "dodge": 40,
+      "armor": 4,
+      "damage_bonus": "+0",
+      "attacks": [
+        {"name": "Claw", "damage": "1d4", "skill": "fighting"},
+        {"name": "Lightning Gun", "damage": "2d8", "skill": "shooting"}
+      ],
+      "san_loss": {
+        "first_encounter": 5,
+        "subsequent": 1,
+        "indefinite": false
+      },
+      "abilities": [
+        {
+          "name": "Technological",
+          "name_cn": "科技",
+          "description": "Uses advanced technology",
+          "effect": "Has lightning guns and other tech"
+        }
+      ],
+      "description": "Fungoid aliens from Yuggoth",
+      "tactics": "Use technology, capture not kill"
+    },
+    {
+      "id": "nightgaunt",
+      "name": "Nightgaunt",
+      "name_cn": "夜魇",
+      "category": "mythos",
+      "size": "large",
+      "attributes": {
+        "str": 70,
+        "con": 60,
+        "siz": 70,
+        "dex": 90,
+        "int": 40,
+        "pow": 60
+      },
+      "hp": 13,
+      "mov": 5,
+      "fighting": 45,
+      "dodge": 45,
+      "armor": 2,
+      "damage_bonus": "+0",
+      "attacks": [
+        {"name": "Claw", "damage": "1d6", "skill": "fighting"}
+      ],
+      "san_loss": {
+        "first_encounter": 6,
+        "subsequent": 1,
+        "indefinite": false
+      },
+      "abilities": [
+        {
+          "name": "Flight",
+          "name_cn": "飞行",
+          "description": "Can fly silently",
+          "effect": "Flying speed 12, silent"
+        },
+        {
+          "name": "Tickle",
+          "name_cn": "挠痒",
+          "description": "Tickles causing helplessness",
+          "effect": "DEX save or drop items"
+        }
+      ],
+      "description": "Faceless flying servants of Nodens",
+      "tactics": "Grab and drop victims, tickle to disarm"
+    }
+  ]
+}
