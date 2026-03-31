@@ -183,7 +183,7 @@ class BotCommands:
         )
         self._persist_sessions()
         await interaction.response.send_message(
-            f"campaign `{campaign_id}` bound to channel `{interaction.channel_id}`",
+            f"战役 `{campaign_id}` 已绑定到频道 `{interaction.channel_id}`",
             ephemeral=True,
         )
 
@@ -235,9 +235,7 @@ class BotCommands:
     async def ops_status(self, interaction, *, mode: str = "overview") -> None:
         """Show KP ops status overview, detailed, or routing history."""
         if self._session_store is None:
-            await interaction.response.send_message(
-                "session store is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("会话系统尚未配置", ephemeral=True)
             return
 
         guild_id = str(interaction.guild_id) if interaction.guild_id else ""
@@ -272,9 +270,7 @@ class BotCommands:
     async def status_overview(self, interaction) -> None:
         """Show player status overview in the player status channel."""
         if self._session_store is None:
-            await interaction.response.send_message(
-                "session store is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("会话系统尚未配置", ephemeral=True)
             return
 
         guild_id = str(interaction.guild_id) if interaction.guild_id else ""
@@ -301,9 +297,7 @@ class BotCommands:
     async def status_me(self, interaction) -> None:
         """Show personal character status privately."""
         if self._session_store is None:
-            await interaction.response.send_message(
-                "session store is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("会话系统尚未配置", ephemeral=True)
             return
 
         channel_id = str(interaction.channel_id) if interaction.channel_id else ""
@@ -381,15 +375,13 @@ class BotCommands:
         )
         self._persist_sessions()
         await interaction.response.send_message(
-            f"left campaign `{session.campaign_id}`",
+            f"已离开战役 `{session.campaign_id}`",
             ephemeral=True,
         )
 
     async def set_role(self, interaction, *, role: str) -> None:
         if self._session_store is None or self._gameplay is None:
-            await interaction.response.send_message(
-                "gameplay is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("游戏系统尚未配置", ephemeral=True)
             return
         self._session_store.bind_role(
             channel_id=str(interaction.channel_id),
@@ -416,9 +408,7 @@ class BotCommands:
             await interaction.response.send_message(msg, ephemeral=True)
             return
         if self._character_builder is None:
-            await interaction.response.send_message(
-                "character builder is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("建卡系统尚未配置", ephemeral=True)
             return
         prompt = self._character_builder.start(
             user_id=str(interaction.user.id), visibility=visibility
@@ -449,9 +439,7 @@ class BotCommands:
             await interaction.response.send_message(msg, ephemeral=True)
             return
         if self._character_builder is None or self._archive_repository is None:
-            await interaction.response.send_message(
-                "character builder is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("建卡系统尚未配置", ephemeral=True)
             return
         prompt, profile = await self._character_builder.answer(
             user_id=str(interaction.user.id), answer=answer
@@ -476,9 +464,7 @@ class BotCommands:
             await interaction.response.send_message(msg, ephemeral=True)
             return
         if self._archive_repository is None:
-            await interaction.response.send_message(
-                "archive repository is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("档案系统尚未配置", ephemeral=True)
             return
         profiles = self._archive_repository.list_profiles(str(interaction.user.id))
         if not profiles:
@@ -495,9 +481,7 @@ class BotCommands:
             await interaction.response.send_message(msg, ephemeral=True)
             return
         if self._archive_repository is None:
-            await interaction.response.send_message(
-                "archive repository is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("档案系统尚未配置", ephemeral=True)
             return
         profile = self._archive_repository.get_profile(
             str(interaction.user.id), profile_id
@@ -517,9 +501,7 @@ class BotCommands:
 
     async def select_profile(self, interaction, *, profile_id: str) -> None:
         if self._session_store is None:
-            await interaction.response.send_message(
-                "session store is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("会话系统尚未配置", ephemeral=True)
             return
 
         channel_id = str(interaction.channel_id)
@@ -570,9 +552,7 @@ class BotCommands:
 
     async def archive_profile(self, interaction, *, profile_id: str) -> None:
         if self._archive_repository is None:
-            await interaction.response.send_message(
-                "archive repository is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("档案系统尚未配置", ephemeral=True)
             return
         profile = self._archive_repository.archive_profile(
             user_id=str(interaction.user.id), profile_id=profile_id
@@ -587,9 +567,7 @@ class BotCommands:
 
     async def activate_profile(self, interaction, *, profile_id: str) -> None:
         if self._archive_repository is None:
-            await interaction.response.send_message(
-                "archive repository is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("档案系统尚未配置", ephemeral=True)
             return
         profile = self._archive_repository.replace_active_with(
             user_id=str(interaction.user.id), profile_id=profile_id
@@ -608,9 +586,7 @@ class BotCommands:
             await interaction.response.send_message(msg, ephemeral=True)
             return
         if self._archive_repository is None:
-            await interaction.response.send_message(
-                "archive repository is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("档案系统尚未配置", ephemeral=True)
             return
         if not self._is_admin(interaction):
             await interaction.response.send_message(
@@ -636,7 +612,7 @@ class BotCommands:
         session = self._session_store.get_by_channel(str(interaction.channel_id))
         if session is None:
             await interaction.response.send_message(
-                "no campaign bound to this channel",
+                "当前频道没有绑定战役",
                 ephemeral=True,
             )
             return
@@ -691,7 +667,7 @@ class BotCommands:
     ) -> None:
         if self._gameplay is None:
             await interaction.response.send_message(
-                "character import is not configured",
+                "角色导入系统尚未配置",
                 ephemeral=True,
             )
             return
@@ -709,41 +685,35 @@ class BotCommands:
             )
             self._persist_sessions()
         await interaction.response.send_message(
-            f"imported `{character.name}` from `{character.source.provider}` ({character.source.label})",
+            f"已导入 `{character.name}`（来源：`{character.source.provider}`）（{character.source.label}）",
             ephemeral=True,
         )
 
     async def enter_scene(self, interaction, *, speakers: str) -> None:
         if self._gameplay is None:
-            await interaction.response.send_message(
-                "gameplay is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("游戏系统尚未配置", ephemeral=True)
             return
         self._load_state_for_channel(str(interaction.channel_id))
         parsed = [item.strip() for item in speakers.split(",") if item.strip()]
         self._gameplay.enter_scene(speakers=parsed)
         self._save_state_for_channel(str(interaction.channel_id))
         await interaction.response.send_message(
-            f"scene mode enabled for {', '.join(parsed)}",
+            f"场景模式已启用，发言者：{', '.join(parsed)}",
             ephemeral=True,
         )
 
     async def end_scene(self, interaction) -> None:
         if self._gameplay is None:
-            await interaction.response.send_message(
-                "gameplay is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("游戏系统尚未配置", ephemeral=True)
             return
         self._load_state_for_channel(str(interaction.channel_id))
         self._gameplay.end_scene()
         self._save_state_for_channel(str(interaction.channel_id))
-        await interaction.response.send_message("returned to DM mode", ephemeral=True)
+        await interaction.response.send_message("已返回常规模式", ephemeral=True)
 
     async def start_combat(self, interaction, *, combatants: str) -> None:
         if self._gameplay is None:
-            await interaction.response.send_message(
-                "gameplay is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("游戏系统尚未配置", ephemeral=True)
             return
         self._load_state_for_channel(str(interaction.channel_id))
         parsed = []
@@ -764,15 +734,13 @@ class BotCommands:
         encounter = self._gameplay.start_combat(combatants=parsed)
         self._save_state_for_channel(str(interaction.channel_id))
         await interaction.response.send_message(
-            f"combat started; active turn: {encounter.active_combatant.name}",
+            f"战斗开始；当前行动者：{encounter.active_combatant.name}",
             ephemeral=True,
         )
 
     async def show_combat(self, interaction) -> None:
         if self._gameplay is None:
-            await interaction.response.send_message(
-                "gameplay is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("游戏系统尚未配置", ephemeral=True)
             return
         self._load_state_for_channel(str(interaction.channel_id))
         await interaction.response.send_message(
@@ -781,14 +749,14 @@ class BotCommands:
 
     async def next_turn(self, interaction) -> None:
         if self._gameplay is None:
-            await interaction.response.send_message(
-                "gameplay is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("游戏系统尚未配置", ephemeral=True)
             return
         self._load_state_for_channel(str(interaction.channel_id))
         encounter = self._gameplay.next_combat_turn()
         if encounter is None:
-            await interaction.response.send_message("combat not active", ephemeral=True)
+            await interaction.response.send_message(
+                "当前没有进行中的战斗", ephemeral=True
+            )
             return
         self._save_state_for_channel(str(interaction.channel_id))
         await interaction.response.send_message(
@@ -802,9 +770,7 @@ class BotCommands:
             await interaction.response.send_message(msg, ephemeral=True)
             return
         if self._gameplay is None:
-            await interaction.response.send_message(
-                "gameplay is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("游戏系统尚未配置", ephemeral=True)
             return
         from dm_bot.adventures.loader import load_adventure
 
@@ -813,7 +779,7 @@ class BotCommands:
         self._gameplay.load_adventure(adventure)
         self._save_state_for_channel(str(interaction.channel_id))
         await interaction.response.send_message(
-            f"loaded adventure `{adventure.title}`",
+            f"模组 `{adventure.title}` 已加载。",
             ephemeral=True,
         )
         await interaction.channel.send(
@@ -822,9 +788,7 @@ class BotCommands:
 
     async def ready(self, interaction) -> None:
         if self._session_store is None:
-            await interaction.response.send_message(
-                "session store is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("会话系统尚未配置", ephemeral=True)
             return
 
         channel_id = str(interaction.channel_id)
@@ -857,15 +821,13 @@ class BotCommands:
             await interaction.response.send_message(msg, ephemeral=True)
             return
         if self._gameplay is None or self._session_store is None:
-            await interaction.response.send_message(
-                "gameplay is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("游戏系统尚未配置", ephemeral=True)
             return
         self._load_state_for_channel(str(interaction.channel_id))
         session = self._session_store.get_by_channel(str(interaction.channel_id))
         if session is None:
             await interaction.response.send_message(
-                "no campaign bound to this channel", ephemeral=True
+                "当前频道没有绑定战役", ephemeral=True
             )
             return
         resolved_name = character_name.strip()
@@ -960,14 +922,12 @@ class BotCommands:
             await interaction.response.send_message(msg, ephemeral=True)
             return
         if self._gameplay is None or self._session_store is None:
-            await interaction.response.send_message(
-                "gameplay is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("游戏系统尚未配置", ephemeral=True)
             return
         session = self._session_store.get_by_channel(str(interaction.channel_id))
         if session is None:
             await interaction.response.send_message(
-                "no campaign bound to this channel", ephemeral=True
+                "当前频道没有绑定战役", ephemeral=True
             )
             return
         if session.session_phase not in (
@@ -1029,15 +989,13 @@ class BotCommands:
             await interaction.response.send_message(msg, ephemeral=True)
             return
         if self._session_store is None:
-            await interaction.response.send_message(
-                "session store is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("会话系统尚未配置", ephemeral=True)
             return
 
         session = self._session_store.get_by_channel(str(interaction.channel_id))
         if session is None:
             await interaction.response.send_message(
-                "no campaign bound to this channel", ephemeral=True
+                "当前频道没有绑定战役", ephemeral=True
             )
             return
 
@@ -1090,14 +1048,12 @@ class BotCommands:
             await interaction.response.send_message(msg, ephemeral=True)
             return
         if self._session_store is None or self._turn_coordinator is None:
-            await interaction.response.send_message(
-                "session store is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("会话系统尚未配置", ephemeral=True)
             return
         session = self._session_store.get_by_channel(str(interaction.channel_id))
         if session is None:
             await interaction.response.send_message(
-                "no campaign bound to this channel", ephemeral=True
+                "当前频道没有绑定战役", ephemeral=True
             )
             return
         if session.session_phase != SessionPhase.SCENE_ROUND_OPEN:
@@ -1136,14 +1092,12 @@ class BotCommands:
             await interaction.response.send_message(msg, ephemeral=True)
             return
         if self._session_store is None:
-            await interaction.response.send_message(
-                "session store is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("会话系统尚未配置", ephemeral=True)
             return
         session = self._session_store.get_by_channel(str(interaction.channel_id))
         if session is None:
             await interaction.response.send_message(
-                "no campaign bound to this channel", ephemeral=True
+                "当前频道没有绑定战役", ephemeral=True
             )
             return
         if session.session_phase != SessionPhase.SCENE_ROUND_RESOLVING:
@@ -1275,9 +1229,7 @@ class BotCommands:
 
     async def debug_status(self, interaction, *, campaign_id: str) -> None:
         if self._diagnostics is None:
-            await interaction.response.send_message(
-                "diagnostics are not configured", ephemeral=True
-            )
+            await interaction.response.send_message("诊断系统尚未配置", ephemeral=True)
             return
         await interaction.response.send_message(
             self._diagnostics.recent_summary(campaign_id),
@@ -1286,9 +1238,7 @@ class BotCommands:
 
     async def coc_assets_summary(self, interaction) -> None:
         if self._coc_assets is None:
-            await interaction.response.send_message(
-                "COC assets are not configured", ephemeral=True
-            )
+            await interaction.response.send_message("COC 资源尚未配置", ephemeral=True)
             return
         summary = self._coc_assets.summary()
         rulebooks = (
@@ -1322,9 +1272,7 @@ class BotCommands:
                 )
                 return
         if self._gameplay is None:
-            await interaction.response.send_message(
-                "gameplay is not configured", ephemeral=True
-            )
+            await interaction.response.send_message("游戏系统尚未配置", ephemeral=True)
             return
         snapshot = self._gameplay.investigator_panel_snapshot(str(interaction.user.id))
         knowledge_titles = [
@@ -1949,7 +1897,7 @@ class BotCommands:
         self, *, channel_id: str, user_id: str, action: str, **kwargs
     ) -> str:
         if self._session_store is None or self._gameplay is None:
-            return "gameplay is not configured"
+            return "游戏系统尚未配置"
         self._load_state_for_channel(channel_id)
         actor_name = (
             self._session_store.active_character_for(
