@@ -1,46 +1,39 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: Milestone complete — ready for vB.1.5
-stopped_at: Phase 54 complete, all plans done, tests passing
-last_updated: "2026-03-29T15:32:49.729Z"
+milestone: vB.1.5
+milestone_name: Character Lifecycle And Governance Surface
+current_plan: 1
+status: Not started (defining requirements)
+stopped_at: vB.1.4 complete, starting vB.1.5
+last_updated: "2026-03-31T00:00:00.000Z"
 progress:
-  total_phases: 15
-  completed_phases: 8
-  total_plans: 9
-  completed_plans: 12
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
-## Current Position
+## Active Milestone
 
-Milestone: vB.1.4 (B4 Identity Projection And Character Ownership) — COMPLETE ✓
-Phase: 54 (character-selection-and-ready-validation) — COMPLETE
-Plan: 54-02 (Discord Command Wiring) — COMPLETE ✓
+**vB.1.5** - Character Lifecycle And Governance Surface
+- **Primary Track:** Track B - 人物构建与管理层
+- **Status:** Not started
+- **Summary:** Defining requirements
 
-## Milestone vB.1.4 Summary
+## Completed Milestones
 
-**Goal:** Strengthen identity chain so multiplayer sessions have deterministic ownership, ready gates, and admin separation
-**Target Features:**
+- vB.1.1 — B1 Archive And Builder Normalization (4 phases)
+- vB.1.2 — B2 Archive Card Schema Expansion (4 phases)
+- vB.1.3 — B3 Interview Planner And Portrait Synthesis (4 phases)
+- vB.1.4 — B4 Identity Projection And Character Ownership (3 phases)
 
-- Explicit contracts for discord_user, archive_profile, campaign_member, campaign_character_instance
-- Require explicit selected profile/instance before player can ready
-- Prevent owner/admin fallbacks from being mistaken as player identity
-- One active campaign instance per player per campaign with clear auditing
+## Next Milestone
 
-**Primary Track:** Track B - 人物构建与管理层
-**Secondary Impact:** Track C - Discord 交互层 (join/ready/session flows)
-
-## Progress
-
-**Phases Complete:** 3/3 (Phase 52, 53, 54)
-**Plans Complete:** 2/2
-**Tests:** 246 passing
+**vB.1.6** — COC-Legal Character Finalization And New-Player Modes
 
 ## Session Continuity
 
-**Stopped At:** Phase 54 complete, all plans done, tests passing
-**Next Step:** Activate vB.1.5 — Character Lifecycle And Governance Surface
-**Queued Milestone:** vB.1.5
+**Stopped At:** vB.1.4 fully complete, ready for vB.1.5
+**Resume File:** .planning/workstreams/track-b/ROADMAP.md
