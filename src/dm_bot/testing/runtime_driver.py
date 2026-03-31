@@ -1,3 +1,4 @@
+import asyncio
 import time
 from typing import Any, Callable, Coroutine, cast
 
@@ -176,6 +177,11 @@ class RuntimeTestDriver:
         _capture_response_messages(interaction, self._output_records, actor_id)
 
         method = getattr(self._commands, command, None)
+        is_driver_method = False
+        if method is None:
+            method = getattr(self, command, None)
+            if method is not None:
+                is_driver_method = True
         if method is None:
             return StepResult(
                 phase_before=phase_before,
@@ -184,6 +190,15 @@ class RuntimeTestDriver:
             )
 
         try:
+            if is_driver_method:
+                result = method(**args)
+                if asyncio.iscoroutine(result):
+                    await result
+                return StepResult(
+                    phase_before=phase_before,
+                    phase_after=self._phase_before(),
+                    emitted_outputs=list(self._output_records),
+                )
             cmd = cast(Callable[..., Coroutine[Any, Any, Any]], method)
             import inspect
 
