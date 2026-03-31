@@ -6,13 +6,18 @@ from pathlib import Path
 class PersistenceStore:
     def __init__(self, path: str | Path) -> None:
         self._path = Path(path)
+        self._conn: sqlite3.Connection | None = None
+        # For :memory: mode, create a single shared connection so tables persist
+        # across all operations. File-based SQLite works fine with per-operation
+        # connections because the database lives on disk.
+        if str(self._path) == ":memory:":
+            self._conn = sqlite3.connect("file::memory:?cache=shared", uri=True)
         self._init_db()
 
     def _connect(self) -> sqlite3.Connection:
-        path_str = str(self._path)
-        if path_str == ":memory:":
-            return sqlite3.connect("file::memory:?cache=shared", uri=True)
-        return sqlite3.connect(path_str)
+        if self._conn is not None:
+            return self._conn
+        return sqlite3.connect(str(self._path))
 
     def _init_db(self) -> None:
         with self._connect() as conn:
@@ -28,6 +33,11 @@ class PersistenceStore:
             conn.execute(
                 "create table if not exists archive_profiles (id integer primary key check (id = 1), profiles_json text not null)"
             )
+
+    def close(self) -> None:
+        if self._conn is not None:
+            self._conn.close()
+            self._conn = None
 
     def save_campaign_state(self, campaign_id: str, state: dict[str, object]) -> None:
         with self._connect() as conn:
