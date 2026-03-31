@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone, timedelta
+from typing import Callable
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
 from dm_bot.characters.models import COCAttributes, COCInvestigatorProfile
+
+GRACE_PERIOD_DAYS = 7
 
 
 class ArchiveFinishingRecommendation(BaseModel):
@@ -47,23 +51,40 @@ class InvestigatorArchiveProfile(BaseModel):
     favored_skills: list[str] = Field(default_factory=list)
     portrait_summary: str = ""
     status: str = "active"
-    finishing: ArchiveFinishingRecommendation = Field(default_factory=ArchiveFinishingRecommendation)
+    deleted_at: datetime | None = None
+    finishing: ArchiveFinishingRecommendation = Field(
+        default_factory=ArchiveFinishingRecommendation
+    )
     coc: COCInvestigatorProfile
 
     def summary_line(self) -> str:
         goal = self.life_goal or "未记录目标"
         goal = goal[:20] + ("…" if len(goal) > 20 else "")
-        return f"{self.profile_id} | {self.name} | {self.coc.occupation} | SAN {self.coc.san} | {self.status} | 目标 {goal}"
+        status_icon = "🔴" if self.status == "deleted" else ""
+        return f"{self.profile_id} | {self.name} | {self.coc.occupation} | SAN {self.coc.san} | {status_icon}{self.status} | 目标 {goal}"
 
     def detail_view(self) -> str:
         favored = "、".join(self.favored_skills) if self.favored_skills else "未记录"
-        occ_skills = "、".join(self.finishing.recommended_occupation_skills) if self.finishing.recommended_occupation_skills else "未记录"
-        interest_skills = "、".join(self.finishing.recommended_interest_skills) if self.finishing.recommended_interest_skills else "未记录"
-        adjustments = "；".join(self.finishing.allowed_adjustments) if self.finishing.allowed_adjustments else "无"
+        occ_skills = (
+            "、".join(self.finishing.recommended_occupation_skills)
+            if self.finishing.recommended_occupation_skills
+            else "未记录"
+        )
+        interest_skills = (
+            "、".join(self.finishing.recommended_interest_skills)
+            if self.finishing.recommended_interest_skills
+            else "未记录"
+        )
+        adjustments = (
+            "；".join(self.finishing.allowed_adjustments)
+            if self.finishing.allowed_adjustments
+            else "无"
+        )
         important_person = self.important_person or self.important_tie or "未记录"
+        status_icon = "🔴 " if self.status == "deleted" else ""
         lines = [
             "【调查员档案】",
-            f"{self.name} / {self.coc.occupation} / {self.age}岁 / {self.status}",
+            f"{status_icon}{self.name} / {self.coc.occupation} / {self.age}岁 / {self.status}",
             "以下内容属于长期档案，不包含当前模组里的临时 SAN、伤势、装备和秘密状态。",
             "",
             "【身份】",
@@ -199,7 +220,8 @@ class InvestigatorArchiveRepository:
             phobias_and_manias=phobias_and_manias,
             disposition=disposition,
             favored_skills=favored,
-            portrait_summary=portrait_summary or f"{occupation}。{background} 性格上{disposition}",
+            portrait_summary=portrait_summary
+            or f"{occupation}。{background} 性格上{disposition}",
             status="active",
             finishing=finishing,
             coc=COCInvestigatorProfile(
@@ -211,7 +233,9 @@ class InvestigatorArchiveRepository:
                 luck=int(generation["luck"]),
                 build=_build_for(attributes.str + attributes.siz),
                 damage_bonus=_damage_bonus_for(attributes.str + attributes.siz),
-                move_rate=_move_rate_for(attributes.str, attributes.dex, attributes.siz, age),
+                move_rate=_move_rate_for(
+                    attributes.str, attributes.dex, attributes.siz, age
+                ),
                 attributes=attributes,
                 skills=skills,
             ),
@@ -224,7 +248,11 @@ class InvestigatorArchiveRepository:
         return sorted(profiles, key=lambda item: (item.status != "active", item.name))
 
     def list_all_profiles(self) -> list[InvestigatorArchiveProfile]:
-        return [profile for profiles in self._profiles.values() for profile in profiles.values()]
+        return [
+            profile
+            for profiles in self._profiles.values()
+            for profile in profiles.values()
+        ]
 
     def get_profile(self, user_id: str, profile_id: str) -> InvestigatorArchiveProfile:
         return self._profiles[user_id][profile_id]
@@ -239,25 +267,83 @@ class InvestigatorArchiveRepository:
                 return profile
         return None
 
-    def archive_profile(self, *, user_id: str, profile_id: str) -> InvestigatorArchiveProfile:
+    def archive_profile(
+        self, *, user_id: str, profile_id: str
+    ) -> InvestigatorArchiveProfile:
         profile = self.get_profile(user_id, profile_id)
         profile.status = "archived"
         return profile
 
-    def replace_active_with(self, *, user_id: str, profile_id: str) -> InvestigatorArchiveProfile:
+    def replace_active_with(
+        self, *, user_id: str, profile_id: str
+    ) -> InvestigatorArchiveProfile:
         active = self.active_profile(user_id)
         if active is not None and active.profile_id != profile_id:
-            active.status = "replaced"
+            active.status = "archived"
         profile = self.get_profile(user_id, profile_id)
         profile.status = "active"
         return profile
 
-    def delete_profile(self, *, user_id: str, profile_id: str) -> None:
-        self._profiles.get(user_id, {}).pop(profile_id, None)
+    def delete_profile(
+        self, *, user_id: str, profile_id: str
+    ) -> InvestigatorArchiveProfile:
+        """Soft-delete a profile. Sets status='deleted' with timestamp. Cannot delete active profiles."""
+        profile = self.get_profile(user_id, profile_id)
+        if profile.status == "active":
+            raise ValueError("Cannot delete an active profile. Archive it first.")
+        if profile.status != "deleted":
+            profile.status = "deleted"
+            profile.deleted_at = datetime.now(timezone.utc)
+        return profile
+
+    def recover_profile(
+        self, *, user_id: str, profile_id: str
+    ) -> InvestigatorArchiveProfile:
+        """Recover a deleted profile within the 7-day grace period."""
+        profile = self.get_profile(user_id, profile_id)
+        if profile.status != "deleted":
+            raise ValueError("Can only recover a deleted profile.")
+        if profile.deleted_at is None:
+            raise ValueError("Deleted profile has no deletion timestamp.")
+        if datetime.now(timezone.utc) - profile.deleted_at > timedelta(
+            days=GRACE_PERIOD_DAYS
+        ):
+            raise ValueError("Grace period expired. Profile cannot be recovered.")
+        profile.status = "active"
+        profile.deleted_at = None
+        return profile
+
+    def purge_expired_deleted(
+        self, *, user_id: str, append_event: Callable | None = None
+    ) -> int:
+        """Permanently remove profiles with expired grace period. Returns count of purged profiles."""
+        purged_count = 0
+        profiles_to_remove = []
+        for profile_id, profile in self._profiles.get(user_id, {}).items():
+            if profile.status == "deleted" and profile.deleted_at is not None:
+                if datetime.now(timezone.utc) - profile.deleted_at > timedelta(
+                    days=GRACE_PERIOD_DAYS
+                ):
+                    profiles_to_remove.append(profile_id)
+                    if append_event:
+                        append_event(
+                            operation="profile_purge",
+                            user_id=user_id,
+                            profile_id=profile_id,
+                            before_state={"status": "deleted"},
+                            after_state={"status": "purged"},
+                        )
+        for profile_id in profiles_to_remove:
+            self._profiles[user_id].pop(profile_id, None)
+            purged_count += 1
+        return purged_count
 
     def export_state(self) -> dict[str, object]:
         return {
-            user_id: {profile_id: profile.model_dump() for profile_id, profile in profiles.items()}
+            user_id: {
+                profile_id: profile.model_dump()
+                for profile_id, profile in profiles.items()
+            }
             for user_id, profiles in self._profiles.items()
         }
 
@@ -278,7 +364,9 @@ def _build_finishing_recommendation(
     specialty: str,
     concept: str,
 ) -> ArchiveFinishingRecommendation:
-    occupation_skills = _occupation_skill_suggestions(occupation=occupation, specialty=specialty)
+    occupation_skills = _occupation_skill_suggestions(
+        occupation=occupation, specialty=specialty
+    )
     interest_skills = list(dict.fromkeys([skill for skill in favored_skills if skill]))
     allowed_adjustments = [
         "按职业与兴趣技能点分配来体现人物采访结果",
@@ -287,7 +375,9 @@ def _build_finishing_recommendation(
     if age >= 40:
         allowed_adjustments.append("按本地规则书应用年龄相关修正")
     if "落魄" in concept or "失意" in concept:
-        allowed_adjustments.append("只通过信用评级、资源叙述和技能倾向体现落魄感，不直接改核心属性")
+        allowed_adjustments.append(
+            "只通过信用评级、资源叙述和技能倾向体现落魄感，不直接改核心属性"
+        )
     return ArchiveFinishingRecommendation(
         recommended_occupation_skills=occupation_skills,
         recommended_interest_skills=interest_skills,
