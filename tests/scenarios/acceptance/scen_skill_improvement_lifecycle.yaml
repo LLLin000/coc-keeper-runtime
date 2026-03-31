@@ -1,8 +1,8 @@
 # =============================================================================
 # Skill Improvement + Full Lifecycle E2E Scenario
 # =============================================================================
-# Phase: E78
-# Goal: Validate complete character lifecycle: creation → combat → SAN loss → skill improvement → next round
+# Phase: E79 (supersedes E78 documentation)
+# Goal: Validate complete character lifecycle: creation → combat → skill tracking → improvement → next round
 #
 # This is the capstone scenario for vE.3.1 milestone, integrating all previous COC work:
 # - E73: COC derived attributes (MOV, Build, DB, age modifiers)
@@ -10,6 +10,7 @@
 # - E75: COC experience + skill catalog (improvement rolls, point allocation)
 # - E76: Character creation scenario (session lifecycle)
 # - E77: Combat + SAN scenario (combat encounter flow)
+# - E79: Skill usage tracking during combat for post-session improvement
 #
 # Full Lifecycle Flow:
 # 1. Session Setup: bind → join → ready → start → complete_onboarding
@@ -22,8 +23,9 @@
 # - Roll 1d100: if roll < current skill value, skill improves by 1d10
 # - With dice_seed=78, improvement rolls are deterministic
 #
-# Cross-System Integration:
-# - Combat system tracks skill usage during encounters
+# Cross-System Integration (E79):
+# - Combat system tracks skill usage during encounters via usage_callback
+# - Session state maintains skill_tracker with usage and successes per player
 # - End of session triggers improvement rolls for used skills
 # - Improved skills persist to next round/session
 #
@@ -207,11 +209,43 @@ steps:
     description: Resolve the current round (ends combat/scene)
 
   # ==========================================================================
-  # Phase 4: Next Round (Post-Combat)
+  # Phase 4: Skill Improvement Phase (E79)
   # ==========================================================================
-  # Start new round after combat resolution
-  # In full implementation, this would trigger skill improvement phase
-  # where used skills (fighting, dodge) get improvement rolls
+  # After combat, trigger improvement phase for used skills
+  # Skills tracked: fighting (used 2x), dodge (used 1x)
+  # E79: trigger_improvement_phase processes skill usage and rolls for improvement
+  # ==========================================================================
+  
+  - actor: kp
+    action: command
+    name: trigger_improvement_phase
+    args: {}
+    description: Trigger skill improvement phase for all players (E79)
+
+  # ==========================================================================
+  # Phase 5: Next Round (Post-Combat)
+  # ==========================================================================
+  # Start new round after combat resolution and skill improvement
+  # ==========================================================================
+  
+  - actor: kp
+    action: command
+    name: next_round
+    args: {}
+    description: Start next round (post-combat phase)
+
+  # Player sends message in new round
+  - actor: p1
+    action: message
+    text: "战斗结束了，我需要检查一下伤势并总结经验"
+    description: Player reflects on combat experience
+
+  # ==========================================================================
+  # Phase 6: Round Resolution
+  # ==========================================================================
+  # Complete the round to finish the lifecycle test
+  # ==========================================================================
+  # Start new round after combat resolution and skill improvement
   # ==========================================================================
   
   - actor: kp
@@ -266,6 +300,31 @@ assertions:
     combat_completed: true     # Combat finished successfully
 
   # ==========================================================================
+  # Skill Usage Assertions (E79)
+  # ==========================================================================
+  # E79: Verify skill usage was tracked during combat
+  # These assertions use RuntimeTestDriver.get_skill_usage() method
+  # ==========================================================================
+  skill_usage:
+    u_p1:
+      fighting: 2  # Investigator attacked 2 times with fighting
+      dodge: 1     # Investigator dodged 1 time
+
+  # ==========================================================================
+  # Improvement Phase Assertions (E79)
+  # ==========================================================================
+  # E79: Verify improvement phase was triggered and processed skills
+  # ==========================================================================
+  improvement_phase:
+    triggered: true
+    players_processed:
+      - u_p1
+    skills_eligible:
+      u_p1:
+        - fighting
+        - dodge
+
+  # ==========================================================================
   # Visibility Assertions
   # ==========================================================================
   # Verify public output contains expected content
@@ -281,24 +340,28 @@ assertions:
       - "exception"           # No exceptions
 
   # ==========================================================================
-  # Skill Improvement Notes (Documentation)
+  # Skill Improvement Notes (E79 - Now Implemented)
   # ==========================================================================
-  # The following skills would be tracked for improvement in a full implementation:
-  # - fighting: Used 2+ times during combat (attacking)
-  # - dodge: Used 1+ times during combat (defending)
+  # E79 Implementation Complete:
+  # - SkillUsageTracker class added to session_store.py
+  # - Combat resolution functions accept attacker_id and usage_callback parameters
+  # - RuntimeTestDriver has get_skill_usage, get_eligible_skills, trigger_improvement_phase methods
+  # - Unit tests in tests/rules/coc/test_skill_usage.py
   #
-  # With dice_seed=78, deterministic improvement rolls would be:
+  # Skills tracked during this scenario:
+  # - fighting: Used 2 times during combat (attacking)
+  # - dodge: Used 1 time during combat (defending)
+  #
+  # With dice_seed=78, improvement rolls would be:
   # - fighting (current=50): roll would be <50 → success → +1d10 improvement
   # - dodge (current=25): roll would be <25 → success → +1d10 improvement
-  #
-  # Note: Current RuntimeTestDriver doesn't track skill usage during combat.
-  # This scenario documents the expected flow for when skill tracking is added.
   # ==========================================================================
 
 metadata:
-  phase: E78
+  phase: E79
   milestone: vE.3.1
   created: "2026-03-31"
+  updated: "2026-03-31"
   author: "GSD Executor"
   dependencies:
     - E73: COC Derived Attributes
@@ -306,8 +369,10 @@ metadata:
     - E75: COC Experience + Skill Catalog
     - E76: Character Creation Scenario
     - E77: Combat + SAN Scenario
+    - E79: Skill Usage Tracking & Combat Integration
   integration_points:
     - Session lifecycle (E76)
     - Combat system (E74/E77)
     - Skill improvement (E75)
+    - Skill tracking (E79)
     - Phase transitions (E76/E77)

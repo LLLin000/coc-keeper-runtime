@@ -4,6 +4,82 @@ from enum import Enum
 from pydantic import BaseModel, Field
 
 
+class SkillUsageTracker(BaseModel):
+    """Tracks skill usage per player per session for COC experience system.
+
+    COC 7e improvement rules: skills used during a session are eligible
+    for improvement rolls at session end. This tracker records which skills
+    were used (and whether they succeeded) to enable the improvement phase.
+
+    Data Structure:
+    - usage: player_id -> skill_name -> count (total uses)
+    - successes: player_id -> skill_name -> count (successful uses only)
+    """
+
+    # Map: player_id -> skill_name -> usage_count
+    usage: dict[str, dict[str, int]] = Field(default_factory=dict)
+
+    # Map: player_id -> skill_name -> success_count
+    successes: dict[str, dict[str, int]] = Field(default_factory=dict)
+
+    def record_usage(
+        self, player_id: str, skill_name: str, success: bool = False
+    ) -> None:
+        """Record that a player used a skill.
+
+        Args:
+            player_id: The player's user ID
+            skill_name: Name of the skill used (e.g., "fighting", "shooting")
+            success: Whether the skill check was successful
+        """
+        if player_id not in self.usage:
+            self.usage[player_id] = {}
+            self.successes[player_id] = {}
+
+        self.usage[player_id][skill_name] = self.usage[player_id].get(skill_name, 0) + 1
+        if success:
+            self.successes[player_id][skill_name] = (
+                self.successes[player_id].get(skill_name, 0) + 1
+            )
+
+    def get_eligible_skills(self, player_id: str) -> list[str]:
+        """Get list of skills eligible for improvement (any usage counts).
+
+        Per COC 7e rules, any skill that was used during the session is
+        eligible for an improvement roll at session end.
+        """
+        return list(self.usage.get(player_id, {}).keys())
+
+    def get_usage_count(self, player_id: str, skill_name: str) -> int:
+        """Get usage count for a specific skill.
+
+        Args:
+            player_id: The player's user ID
+            skill_name: Name of the skill
+
+        Returns:
+            Total number of times the skill was used
+        """
+        return self.usage.get(player_id, {}).get(skill_name, 0)
+
+    def get_success_count(self, player_id: str, skill_name: str) -> int:
+        """Get success count for a specific skill.
+
+        Args:
+            player_id: The player's user ID
+            skill_name: Name of the skill
+
+        Returns:
+            Number of successful uses of the skill
+        """
+        return self.successes.get(player_id, {}).get(skill_name, 0)
+
+    def clear(self) -> None:
+        """Clear all usage data (call at session end/improvement phase)."""
+        self.usage.clear()
+        self.successes.clear()
+
+
 class SelectProfileError(str, Enum):
     NO_SESSION = "no_session"
     NOT_MEMBER = "not_member"
@@ -129,6 +205,9 @@ class CampaignSession(BaseModel):
     action_submitters: set[str] = Field(default_factory=set)
     # Round tracking (Phase 54 - KP Ops Surfaces)
     round_number: int | None = None
+
+    # Skill usage tracking (E79 - Skill Usage Tracking & Combat Integration)
+    skill_tracker: SkillUsageTracker = Field(default_factory=SkillUsageTracker)
 
     def _get_or_create_member(self, user_id: str) -> CampaignMember:
         if user_id not in self.members:

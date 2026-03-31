@@ -12,10 +12,14 @@ Reference: Call of Cthulhu 7th Edition Keeper's Rulebook, Chapter 7
 """
 
 from enum import StrEnum
-from typing import Literal
+from typing import Callable, Literal
 import d20
 
 from pydantic import BaseModel, Field
+
+
+# Type alias for skill usage callback (E79: Skill Usage Tracking)
+SkillUsageCallback = Callable[[str, str, bool], None] | None
 
 
 # =============================================================================
@@ -166,6 +170,8 @@ def resolve_fighting_attack(
     defender: CombatantStats,
     attacker_roll: int,
     defender_roll: int,
+    attacker_id: str = "",  # E79: player identifier for skill tracking
+    usage_callback: SkillUsageCallback = None,  # E79: callback for skill usage recording
 ) -> CombatCheckResult:
     """Resolve a Fighting attack vs Dodge.
 
@@ -178,6 +184,8 @@ def resolve_fighting_attack(
         defender: Defender's combat stats
         attacker_roll: Attacker's roll (1-100)
         defender_roll: Defender's roll (1-100)
+        attacker_id: Player identifier for skill usage tracking (E79)
+        usage_callback: Callback to record skill usage (E79)
 
     Returns:
         CombatCheckResult with full resolution
@@ -295,6 +303,10 @@ def resolve_fighting_attack(
         if major_wound:
             rendered += " | 重伤！"
 
+    # E79: Record skill usage if callback provided
+    if usage_callback and attacker_id:
+        usage_callback(attacker_id, "fighting", success)
+
     return CombatCheckResult(
         action=CombatAction.FIGHT,
         actor_name=attacker.name,
@@ -326,6 +338,8 @@ def resolve_shooting_attack(
     attacker_roll: int,
     range_modifier: int = 0,
     recoil_modifier: int = 0,
+    attacker_id: str = "",  # E79: player identifier for skill tracking
+    usage_callback: SkillUsageCallback = None,  # E79: callback for skill usage recording
 ) -> CombatCheckResult:
     """Resolve a Shooting attack.
 
@@ -335,6 +349,8 @@ def resolve_shooting_attack(
         attacker_roll: Attacker's roll (1-100)
         range_modifier: Range penalty (positive = harder)
         recoil_modifier: Recoil penalty for automatic weapons
+        attacker_id: Player identifier for skill usage tracking (E79)
+        usage_callback: Callback to record skill usage (E79)
 
     Returns:
         CombatCheckResult with full resolution
@@ -415,6 +431,10 @@ def resolve_shooting_attack(
         if major_wound:
             rendered += " | 重伤！"
 
+    # E79: Record skill usage if callback provided
+    if usage_callback and attacker_id:
+        usage_callback(attacker_id, "shooting", success)
+
     return CombatCheckResult(
         action=CombatAction.SHOOT,
         actor_name=attacker.name,
@@ -445,6 +465,8 @@ def resolve_brawl_attack(
     defender: CombatantStats,
     attacker_roll: int,
     defender_roll: int,
+    attacker_id: str = "",  # E79: player identifier for skill tracking
+    usage_callback: SkillUsageCallback = None,  # E79: callback for skill usage recording
 ) -> CombatCheckResult:
     """Resolve a Brawl (unarmed) attack.
 
@@ -457,12 +479,16 @@ def resolve_brawl_attack(
         defender: Defender's combat stats
         attacker_roll: Attacker's roll (1-100)
         defender_roll: Defender's roll (1-100)
+        attacker_id: Player identifier for skill usage tracking (E79)
+        usage_callback: Callback to record skill usage (E79)
 
     Returns:
         CombatCheckResult with full resolution
     """
-    # Same as Fighting but without impale
-    result = resolve_fighting_attack(attacker, defender, attacker_roll, defender_roll)
+    # Same as Fighting but without impale - pass through skill tracking params
+    result = resolve_fighting_attack(
+        attacker, defender, attacker_roll, defender_roll, attacker_id, usage_callback
+    )
     result.action = CombatAction.BRAWL
 
     # Override damage - Brawl is always 1d3 + DB
@@ -489,6 +515,8 @@ def resolve_grapple_attack(
     defender: CombatantStats,
     attacker_roll: int,
     defender_roll: int,
+    attacker_id: str = "",  # E79: player identifier for skill tracking
+    usage_callback: SkillUsageCallback = None,  # E79: callback for skill usage recording
 ) -> CombatCheckResult:
     """Resolve a Grapple attack.
 
@@ -501,6 +529,8 @@ def resolve_grapple_attack(
         defender: Defender's combat stats
         attacker_roll: Attacker's roll (1-100)
         defender_roll: Defender's roll (1-100)
+        attacker_id: Player identifier for skill usage tracking (E79)
+        usage_callback: Callback to record skill usage (E79)
 
     Returns:
         CombatCheckResult with grapple-specific resolution
@@ -571,6 +601,10 @@ def resolve_grapple_attack(
     if attacker_fumble:
         result.damage = self_damage
         result.target_hp_after = attacker.hp - self_damage
+
+    # E79: Record skill usage if callback provided
+    if usage_callback and attacker_id:
+        usage_callback(attacker_id, "grapple", success)
 
     return result
 
@@ -690,3 +724,220 @@ def get_range_modifier(weapon_range: str, actual_distance: int) -> int:
         return RANGE_MODIFIERS["long"]
     else:
         return RANGE_MODIFIERS["extreme"]
+
+
+# =============================================================================
+# Creature Combat Integration
+# =============================================================================
+
+
+def creature_to_combatant(creature: "CreatureInstance") -> CombatantStats:
+    """Convert a creature instance to CombatantStats.
+
+    Args:
+        creature: The creature instance
+
+    Returns:
+        CombatantStats for combat resolution
+    """
+    # Get creature attributes
+    attrs = creature.attributes
+
+    # Calculate build and damage bonus from STR + SIZ
+    str_v = attrs.get("str", 50)
+    siz_v = attrs.get("siz", 50)
+    total = str_v + siz_v
+    if total < 65:
+        build = -2
+        db = -2
+    elif total < 85:
+        build = -1
+        db = -1
+    elif total < 125:
+        build = 0
+        db = 0
+    elif total < 165:
+        build = 1
+        db = 1
+    elif total < 205:
+        build = 2
+        db = 2
+    else:
+        build = 3
+        db = 3
+
+    return CombatantStats(
+        name=creature.name,
+        dex=attrs.get("dex", 50),
+        fighting=attrs.get("fighting", 25),
+        dodge=attrs.get("dodge", 25),
+        hp=creature.hp,
+        hp_max=creature.hp_max,
+        armor=attrs.get("armor", 0),
+        build=build,
+        damage_bonus=db,
+        grapple=attrs.get("grapple", 25),
+        throw=attrs.get("throw", 25),
+    )
+
+
+class CreatureAttackResult(BaseModel):
+    """Result of a creature attack."""
+
+    creature_name: str
+    target_name: str
+    attack_name: str
+    hit: bool
+    damage: int = 0
+    damage_roll: str = ""
+    final_damage: int = 0
+    major_wound: bool = False
+    target_hp_before: int = 0
+    target_hp_after: int = 0
+    rendered: str = ""
+
+
+def resolve_creature_attack(
+    creature: "CreatureInstance",
+    target: CombatantStats,
+    attack_index: int = 0,
+    attacker_roll: int | None = None,
+    defender_roll: int | None = None,
+) -> tuple[CreatureAttackResult, CombatantStats]:
+    """Resolve a creature's attack.
+
+    Args:
+        creature: The attacking creature
+        target: The target combatant
+        attack_index: Which attack to use (from creature's attacks list)
+        attacker_roll: Pre-rolled attack value (optional)
+        defender_roll: Pre-rolled defense value (optional)
+
+    Returns:
+        Tuple of (CreatureAttackResult, updated target CombatantStats)
+    """
+    import random
+    from dm_bot.coc.bestiary import CreatureTemplate, Bestiary
+
+    # Get creature template for attacks
+    bestiary = Bestiary()
+    # Load from creatures.json if available
+    import os
+
+    creatures_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "..",
+        "..",
+        "..",
+        "data",
+        "bestiary",
+        "creatures.json",
+    )
+    if os.path.exists(creatures_path):
+        bestiary = Bestiary.load_from_file(creatures_path)
+
+    template = bestiary.get(creature.template_id)
+
+    # Get attack from template
+    attacks = template.attacks if template else []
+    if attack_index >= len(attacks):
+        attack_name = "Attack"
+        attack_damage = "1d6"
+        attack_skill = "fighting"
+    else:
+        attack_data = attacks[attack_index]
+        attack_name = attack_data.get("name", "Attack")
+        attack_damage = attack_data.get("damage", "1d6")
+        attack_skill = attack_data.get("skill", "fighting")
+
+    # Get creature's skill value
+    if attack_skill == "fighting":
+        creature_skill = creature.attributes.get("fighting", 25)
+    elif attack_skill == "shooting":
+        creature_skill = creature.attributes.get("shooting", 25)
+    else:
+        creature_skill = creature.attributes.get("fighting", 25)
+
+    # Roll attacks
+    if attacker_roll is None:
+        attacker_roll = random.randint(1, 100)
+    if defender_roll is None:
+        defender_roll = random.randint(1, 100)
+
+    # Resolve opposed check (creature Fighting vs target Dodge)
+    hit = attacker_roll < defender_roll
+
+    # Calculate damage
+    damage = 0
+    damage_roll_str = ""
+    final_damage = 0
+    major_wound = False
+
+    if hit:
+        # Parse damage bonus
+        str_v = creature.attributes.get("str", 50)
+        siz_v = creature.attributes.get("siz", 50)
+        total = str_v + siz_v
+        if total < 65:
+            db = -2
+        elif total < 85:
+            db = -1
+        elif total < 125:
+            db = 0
+        elif total < 165:
+            db = 1
+        elif total < 205:
+            db = 2
+        else:
+            db = 3
+
+        # Roll damage
+        damage_expr = attack_damage.replace("DB", str(db))
+        damage_result = d20.roll(damage_expr)
+        damage = damage_result.total
+        damage_roll_str = damage_expr
+
+        # Apply armor
+        penetration = max(0, damage - target.armor)
+        final_damage = penetration
+
+        # Check major wound
+        if target.hp - final_damage <= 0:
+            major_wound = True
+
+    # Build result
+    target_hp_before = target.hp
+    target_hp_after = target.hp - final_damage if hit else target.hp
+
+    # Update target HP
+    target.hp = target_hp_after
+
+    result = CreatureAttackResult(
+        creature_name=creature.name,
+        target_name=target.name,
+        attack_name=attack_name,
+        hit=hit,
+        damage=damage,
+        damage_roll=damage_roll_str,
+        final_damage=final_damage,
+        major_wound=major_wound,
+        target_hp_before=target_hp_before,
+        target_hp_after=target_hp_after,
+        rendered=(
+            f"【生物攻击】{creature.name} → {target.name}\n"
+            f"攻击: {attacker_roll:02d} (技能 {creature_skill}) | "
+            f"防御: {defender_roll:02d} (闪避 {target.dodge})\n"
+            f"结果: {'命中' if hit else '未命中'}\n"
+        ),
+    )
+
+    if hit and final_damage > 0:
+        result.rendered += (
+            f"伤害: {damage} (防具吸收 {damage - final_damage}) → 最终 {final_damage}\n"
+            f"目标HP: {target_hp_before} → {target_hp_after}"
+        )
+        if major_wound:
+            result.rendered += " | 重伤！"
+
+    return result, target

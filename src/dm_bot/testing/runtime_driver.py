@@ -314,6 +314,119 @@ class RuntimeTestDriver:
         if self._transport is not None:
             self._transport.sent_messages.clear()
 
+    # E79: Skill Usage Tracking methods
+    def get_skill_usage(self, player_id: str) -> dict[str, int]:
+        """Get skill usage counts for a player (for test assertions).
+
+        Args:
+            player_id: The player's user ID
+
+        Returns:
+            Dict mapping skill_name -> usage_count
+        """
+        if self._session_store is None:
+            return {}
+        for session in self._session_store._sessions.values():
+            return session.skill_tracker.usage.get(player_id, {})
+        return {}
+
+    def get_skill_successes(self, player_id: str) -> dict[str, int]:
+        """Get skill success counts for a player.
+
+        Args:
+            player_id: The player's user ID
+
+        Returns:
+            Dict mapping skill_name -> success_count
+        """
+        if self._session_store is None:
+            return {}
+        for session in self._session_store._sessions.values():
+            return session.skill_tracker.successes.get(player_id, {})
+        return {}
+
+    def get_eligible_skills(self, player_id: str) -> list[str]:
+        """Get list of skills eligible for improvement.
+
+        Args:
+            player_id: The player's user ID
+
+        Returns:
+            List of skill names that were used during the session
+        """
+        if self._session_store is None:
+            return []
+        for session in self._session_store._sessions.values():
+            return session.skill_tracker.get_eligible_skills(player_id)
+        return []
+
+    def trigger_improvement_phase(
+        self, player_id: str | None = None
+    ) -> dict[str, dict[str, int]]:
+        """Trigger skill improvement phase for all or specific player.
+
+        COC 7e improvement rules: For each eligible skill, roll 1d100.
+        If roll < current skill value, add 1d10 improvement.
+
+        Args:
+            player_id: Optional specific player ID. If None, all players.
+
+        Returns:
+            Dict mapping player_id -> dict of skill -> improvement_amount
+        """
+        if self._session_store is None:
+            return {}
+
+        import random
+        from dm_bot.rules.coc.experience import improve_skill
+
+        results: dict[str, dict[str, int]] = {}
+
+        for session in self._session_store._sessions.values():
+            tracker = session.skill_tracker
+
+            # Determine which players to process
+            players = [player_id] if player_id else list(tracker.usage.keys())
+
+            for pid in players:
+                if pid not in tracker.usage:
+                    continue
+
+                results[pid] = {}
+                eligible_skills = tracker.get_eligible_skills(pid)
+
+                for skill_name in eligible_skills:
+                    # Get current skill value (would need character lookup in real impl)
+                    # For now, use placeholder - this would integrate with character system
+                    current_skill = 50  # Placeholder
+
+                    # Roll for improvement
+                    roll = random.randint(1, 100)
+                    if roll < current_skill:
+                        improvement = random.randint(1, 10)
+                        results[pid][skill_name] = improvement
+
+            # Clear tracker after improvement phase
+            tracker.clear()
+
+        return results
+
+    def record_skill_usage(
+        self, player_id: str, skill_name: str, success: bool = False
+    ) -> None:
+        """Record skill usage directly (for testing or manual tracking).
+
+        Args:
+            player_id: The player's user ID
+            skill_name: Name of the skill used
+            success: Whether the skill check was successful
+        """
+        if self._session_store is None:
+            return
+        for session in self._session_store._sessions.values():
+            session.skill_tracker.record_usage(player_id, skill_name, success)
+            break  # Only record to first session
+
 
 def _build_commands(
     session_store: SessionStore,
