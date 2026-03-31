@@ -466,7 +466,14 @@ class BotCommands:
                 "你还没有长期调查员档案。先用 `/start_builder` 建一张。", ephemeral=True
             )
             return
-        lines = [item.summary_line() for item in profiles]
+
+        lines = []
+        for profile in profiles:
+            status_emoji = "🟢" if profile.status == "active" else "⚪"
+            lines.append(f"{status_emoji} 【{profile.name}】（{profile.status}）")
+            lines.append(profile.detail_view())
+            lines.append("")
+
         await interaction.response.send_message("\n".join(lines), ephemeral=True)
 
     async def profile_detail(self, interaction, *, profile_id: str) -> None:
@@ -483,6 +490,153 @@ class BotCommands:
             str(interaction.user.id), profile_id
         )
         await interaction.response.send_message(profile.detail_view(), ephemeral=True)
+
+    async def my_character(self, interaction) -> None:
+        """Show the user's active campaign character instance."""
+        if self._session_store is None:
+            await interaction.response.send_message(
+                "session store is not configured", ephemeral=True
+            )
+            return
+
+        channel_id = str(interaction.channel_id)
+        user_id = str(interaction.user.id)
+
+        session = self._session_store.get_by_channel(channel_id)
+        if session is None:
+            await interaction.response.send_message(
+                "当前频道没有绑定战役。请先使用 `/bind_campaign` 绑定战役。",
+                ephemeral=True,
+            )
+            return
+
+        member = session.members.get(user_id)
+        if member is None:
+            await interaction.response.send_message(
+                "你还不是这个战役的成员。请先使用 `/join_campaign` 加入。",
+                ephemeral=True,
+            )
+            return
+
+        instance = session.character_instances.get(user_id)
+        if instance is None or not instance.character_name:
+            await interaction.response.send_message(
+                "你还没有活跃的角色实例。请先使用 `/select_profile` 选择调查员档案。",
+                ephemeral=True,
+            )
+            return
+
+        profile_info = ""
+        if instance.archive_profile_id and self._archive_repository:
+            try:
+                profile = self._archive_repository.get_profile(
+                    user_id, instance.archive_profile_id
+                )
+                profile_info = f"\n档案：{profile.name} ({profile.coc.occupation})"
+            except Exception:
+                pass
+
+        lines = [
+            "【当前角色】",
+            f"角色名：{instance.character_name}",
+            f"战役：{session.campaign_id}",
+            f"创建时间：{instance.created_at.strftime('%Y-%m-%d %H:%M')}",
+            f"来源：{instance.source}",
+            profile_info,
+        ]
+
+        await interaction.response.send_message("\n".join(lines), ephemeral=True)
+
+    async def admin_profiles(self, interaction) -> None:
+        """Admin command to list all player profiles in the campaign with ownership chain."""
+        allowed, msg = self.check_channel("admin_profiles", interaction)
+        if not allowed:
+            await interaction.response.send_message(msg, ephemeral=True)
+            return
+
+        if self._session_store is None or self._archive_repository is None:
+            await interaction.response.send_message(
+                "session store or archive repository is not configured", ephemeral=True
+            )
+            return
+
+        channel_id = str(interaction.channel_id)
+        guild_id = str(interaction.guild_id) if interaction.guild_id else ""
+
+        session = self._session_store.get_by_channel(channel_id)
+        if session is None:
+            await interaction.response.send_message(
+                "当前频道没有绑定战役。", ephemeral=True
+            )
+            return
+
+        user_id = str(interaction.user.id)
+        member = session.members.get(user_id)
+        if member is None:
+            await interaction.response.send_message(
+                "你还不是这个战役的成员。", ephemeral=True
+            )
+            return
+
+        if member.role not in {
+            session.members[user_id].__class__.OWNER
+            if hasattr(session.members[user_id].__class__, "OWNER")
+            else None,
+            session.members[user_id].__class__.ADMIN
+            if hasattr(session.members[user_id].__class__, "ADMIN")
+            else None,
+        }:
+            await interaction.response.send_message(
+                "此命令仅限管理员和所有者使用。", ephemeral=True
+            )
+            return
+
+        members = session.list_members(channel_id)
+        if not members:
+            await interaction.response.send_message(
+                "当前战役没有成员。", ephemeral=True
+            )
+            return
+
+        lines = [f"【战役 {session.campaign_id} 成员档案】", ""]
+
+        from dm_bot.orchestrator.session_store import CampaignRole
+
+        for m in members:
+            role_icon = (
+                "👑"
+                if m.role == CampaignRole.OWNER
+                else "⚔️"
+                if m.role == CampaignRole.ADMIN
+                else "🎭"
+            )
+
+            instance = session.character_instances.get(m.user_id)
+            instance_info = "无活跃角色"
+            if instance and instance.character_name:
+                instance_info = f"{instance.character_name}"
+                if instance.archive_profile_id:
+                    instance_info += f" (档案ID: {instance.archive_profile_id[:8]}...)"
+
+            profile_info = "无档案"
+            if m.selected_profile_id and self._archive_repository:
+                try:
+                    profile = self._archive_repository.get_profile(
+                        m.user_id, m.selected_profile_id
+                    )
+                    profile_info = (
+                        f"{profile.name} ({profile.coc.occupation}) - {profile.status}"
+                    )
+                except Exception:
+                    profile_info = f"档案ID: {m.selected_profile_id[:8]}... (无法读取)"
+
+            lines.append(f"{role_icon} <@{m.user_id}>")
+            lines.append(f"   角色实例：{instance_info}")
+            lines.append(f"   档案：{profile_info}")
+            lines.append(f"   就绪状态：{'✓' if m.ready else '✗'}")
+            lines.append("")
+
+        await interaction.response.send_message("\n".join(lines), ephemeral=False)
 
     async def select_profile(self, interaction, *, profile_id: str) -> None:
         if self._session_store is None:
