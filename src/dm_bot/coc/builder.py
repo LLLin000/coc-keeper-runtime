@@ -438,8 +438,8 @@ class SectionNormalizer:
 
 
 class ConversationalCharacterBuilder:
-    INTRO_QUESTION = "先给这位调查员起个名字。"
-    CONCEPT_QUESTION = "用一句短话描述这个人的人物骨架，例如“38岁的落魄临床医生”。"
+    INTRO_QUESTION = "让我先了解一下这位即将踏入黑暗的调查员。请先告诉我他的名字。"
+    CONCEPT_QUESTION = "告诉我，这是个什么样的人？用一句话勾勒他的轮廓——比如'38岁的落魄临床医生'，或者'被过去追逐的退伍老兵'。"
 
     def __init__(
         self,
@@ -506,9 +506,9 @@ class ConversationalCharacterBuilder:
 
     async def _next_question(self, session: BuilderSession) -> BuilderQuestionChoice | None:
         if not session.answers.get("age"):
-            return BuilderQuestionChoice(slot="age", question="他的年龄是多少？")
+            return BuilderQuestionChoice(slot="age", question="这位调查员看起来有多大？岁月在他身上留下了什么痕迹？")
         if not session.answers.get("occupation"):
-            return BuilderQuestionChoice(slot="occupation", question="他的职业是什么？尽量用 COC 里能落地的现实职业描述。")
+            return BuilderQuestionChoice(slot="occupation", question="在成为调查员之前，他以什么为生？")
         missing_dynamic = [slot for slot in REQUIRED_INTERVIEW_SLOTS if not session.answers.get(slot)]
         if not missing_dynamic:
             return None
@@ -789,7 +789,7 @@ def _build_interview_portrait(payload: ArchiveWritebackPayload) -> str:
 def _build_finalization_prompt(session: BuilderSession) -> str:
     return (
         f"{session.portrait_summary}\n\n"
-        "访谈阶段结束。现在进入定卡阶段。\n"
+        "访谈到此告一段落。这就是你即将带入黑暗的调查员。\n"
         "如果这份人物画像没问题，回复 `定卡` 或 `按人物来`。\n"
         "如果你想直接指定这人最擅长的 2-4 项技能，直接回复技能名并用逗号分隔。\n"
         "如果你还想补一笔人物信息，直接回复那一句，我会先更新人物画像。"
