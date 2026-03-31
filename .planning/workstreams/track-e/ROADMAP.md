@@ -711,10 +711,11 @@
 2. Each step's outputs only contain outputs emitted during that step
 3. Artifact reports show accurate timing and isolated outputs
 
-**Files to modify:**
-- `src/dm_bot/testing/scenario_runner.py` — fix timing, isolate outputs
-- `src/dm_bot/testing/runtime_driver.py` — clear output buffer per step
+**Plans:** 1 plan created
+- [ ] **E89-01-PLAN.md** — Duration timing + output isolation fixes
+  - Files: `src/dm_bot/testing/scenario_runner.py`, `src/dm_bot/testing/runtime_driver.py`, `tests/test_scenario_runner.py`
+  - Tasks: 3 (duration measurement, output isolation, new tests)
 
 ---
 
-*Last updated: 2026-03-31 for milestone vE.3.3 - Scenario Runner Reliability*
+*Last updated: 2026-04-01 for milestone vE.3.3 - Scenario Runner Reliability*
