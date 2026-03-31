@@ -5,6 +5,7 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 from dm_bot.characters.models import COCAttributes, COCInvestigatorProfile
+from dm_bot.coc.presentation import CardSection
 
 
 class ArchiveFinishingRecommendation(BaseModel):
@@ -57,24 +58,28 @@ class InvestigatorArchiveProfile(BaseModel):
         goal = goal[:20] + ("…" if len(goal) > 20 else "")
         return f"{self.profile_id} | {self.name} | {self.coc.occupation} | SAN {self.coc.san} | {self.status} | 目标 {goal}"
 
-    def card_view(self) -> list[tuple[str, str]]:
-        """Return archive profile as a list of (section_title, section_content) tuples.
+    def card_view(self) -> list[CardSection]:
+        """Return archive profile as a list of CardSection objects.
 
         Each section is designed to fit within Discord's 1024-character embed field limit.
         Long-lived archive data only — campaign-local state (SAN, HP, MP, Luck from
         InvestigatorPanel) is shown separately.
 
         Returns:
-            List of 6 sections: 档案, 身份, 人物, 塑造, 数值, 技能与收束
+            List of 6 CardSections: 档案, 身份, 人物, 塑造, 数值, 技能与收束
         """
-        sections: list[tuple[str, str]] = []
+        sections: list[CardSection] = []
 
         # Section 1: Header with 长期档案 label
         header = (
             f"**{self.name}** | {self.coc.occupation} | {self.age}岁 | {self.status}\n"
             f"📁 长期档案 — 以下内容属于长期调查员档案，不包含当前模组里的临时状态。"
         )
-        sections.append(("📋 调查员档案", header))
+        sections.append(
+            CardSection(
+                title="📋 调查员档案", content=header, visibility="public", order=0
+            )
+        )
 
         # Section 2: 身份
         identity_lines = [
@@ -84,7 +89,14 @@ class InvestigatorArchiveProfile(BaseModel):
             f"家庭：{self.family or '未记录'}",
             f"教育：{self.education_background or '未记录'}",
         ]
-        sections.append(("🏷️ 身份", "\n".join(identity_lines)))
+        sections.append(
+            CardSection(
+                title="🏷️ 身份",
+                content="\n".join(identity_lines),
+                visibility="public",
+                order=1,
+            )
+        )
 
         # Section 3: 人物
         person_lines = [
@@ -92,7 +104,14 @@ class InvestigatorArchiveProfile(BaseModel):
             f"专长：{self.specialty or '未记录'}",
             f"职业轨迹：{self.career_arc or self.background or '未记录'}",
         ]
-        sections.append(("💼 人物", "\n".join(person_lines)))
+        sections.append(
+            CardSection(
+                title="💼 人物",
+                content="\n".join(person_lines),
+                visibility="public",
+                order=2,
+            )
+        )
 
         # Section 4: 塑造
         important_person = self.important_person or self.important_tie or "未记录"
@@ -111,7 +130,14 @@ class InvestigatorArchiveProfile(BaseModel):
             f"恐惧症/躁狂症：{self.phobias_and_manias or '未记录'}",
             f"处事方式：{self.disposition or '未记录'}",
         ]
-        sections.append(("🎭 塑造", "\n".join(shaping_lines)))
+        sections.append(
+            CardSection(
+                title="🎭 塑造",
+                content="\n".join(shaping_lines),
+                visibility="public",
+                order=3,
+            )
+        )
 
         # Section 5: 数值 with emoji indicators
         attrs = self.coc.attributes
@@ -121,7 +147,14 @@ class InvestigatorArchiveProfile(BaseModel):
             f"🧠 SAN {self.coc.san} / ❤️ HP {self.coc.hp} / 💧 MP {self.coc.mp} / 🍀 LUCK {self.coc.luck}",
             f"MOV {self.coc.move_rate} / 体格 {self.coc.build} / 伤害加值 {self.coc.damage_bonus}",
         ]
-        sections.append(("📊 数值", "\n".join(stats_lines)))
+        sections.append(
+            CardSection(
+                title="📊 数值",
+                content="\n".join(stats_lines),
+                visibility="public",
+                order=4,
+            )
+        )
 
         # Section 6: 技能与收束
         favored = "、".join(self.favored_skills) if self.favored_skills else "未记录"
@@ -147,7 +180,14 @@ class InvestigatorArchiveProfile(BaseModel):
             f"允许的规则内收束：{adjustments}",
             f"规则说明：{self.finishing.rules_note or '未记录'}",
         ]
-        sections.append(("📚 技能与收束", "\n".join(skills_lines)))
+        sections.append(
+            CardSection(
+                title="📚 技能与收束",
+                content="\n".join(skills_lines),
+                visibility="public",
+                order=5,
+            )
+        )
 
         return sections
 
