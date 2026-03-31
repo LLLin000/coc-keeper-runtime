@@ -134,3 +134,12 @@ Each task was committed atomically:
 ---
 *Phase: D42*
 *Completed: 2026-03-31*
+
+## Self-Check: PASSED
+
+- [x] `src/dm_bot/coc/builder.py` — 3 Keeper-voiced system prompts verified
+- [x] `src/dm_bot/orchestrator/consequence_aggregator.py` — narrative formatting verified
+- [x] `src/dm_bot/discord_bot/commands.py` — no English player-facing messages remain
+- [x] `src/dm_bot/narration/service.py` — "Chinese Call of Cthulhu Keeper" intact
+- [x] All commits verified in git log
+- [x] 813 tests pass
