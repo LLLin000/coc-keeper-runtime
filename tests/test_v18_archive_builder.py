@@ -46,10 +46,14 @@ class FakeChannel:
 
 
 class FakeUser:
-    def __init__(self, user_id: str, display_name: str = "Alice", *, administrator: bool = False) -> None:
+    def __init__(
+        self, user_id: str, display_name: str = "Alice", *, administrator: bool = False
+    ) -> None:
         self.id = user_id
         self.display_name = display_name
-        self.guild_permissions = type("GuildPermissions", (), {"administrator": administrator})()
+        self.guild_permissions = type(
+            "GuildPermissions", (), {"administrator": administrator}
+        )()
 
 
 class FakeInteraction:
@@ -105,15 +109,31 @@ class FakeInterviewPlanner:
         concept = session.answers.get("concept", "")
         if "key_past_event" not in session.answers:
             if "落魄" in concept:
-                return FakeQuestionChoice(slot="key_past_event", question="你为什么会落魄到这一步？最近究竟发生了什么？")
-            return FakeQuestionChoice(slot="key_past_event", question="过去究竟发生过什么，才把他推到了今天这一步？")
+                return FakeQuestionChoice(
+                    slot="key_past_event",
+                    question="你为什么会落魄到这一步？最近究竟发生了什么？",
+                )
+            return FakeQuestionChoice(
+                slot="key_past_event",
+                question="过去究竟发生过什么，才把他推到了今天这一步？",
+            )
         if "life_goal" not in session.answers:
-            return FakeQuestionChoice(slot="life_goal", question="如果这一切还没把他压垮，他现在最想达成的人生目标是什么？")
+            return FakeQuestionChoice(
+                slot="life_goal",
+                question="如果这一切还没把他压垮，他现在最想达成的人生目标是什么？",
+            )
         if "weakness" not in session.answers:
-            return FakeQuestionChoice(slot="weakness", question="他最致命的弱点或劣势是什么？")
+            return FakeQuestionChoice(
+                slot="weakness", question="他最致命的弱点或劣势是什么？"
+            )
         if "core_belief" not in session.answers:
-            return FakeQuestionChoice(slot="core_belief", question="如果别人说这一切都是他的错，他会怎么替自己辩护？")
-        return FakeQuestionChoice(slot="important_person", question="在他心里最重要的人是谁？")
+            return FakeQuestionChoice(
+                slot="core_belief",
+                question="如果别人说这一切都是他的错，他会怎么替自己辩护？",
+            )
+        return FakeQuestionChoice(
+            slot="important_person", question="在他心里最重要的人是谁？"
+        )
 
 
 def test_sheet_command_redirects_from_game_hall_to_archive_channel() -> None:
@@ -123,12 +143,16 @@ def test_sheet_command_redirects_from_game_hall_to_archive_channel() -> None:
     from dm_bot.rules.engine import RulesEngine
 
     store = SessionStore()
-    store.bind_campaign(campaign_id="camp-1", channel_id="hall-1", guild_id="guild-1", owner_id="user-1")
+    store.bind_campaign(
+        campaign_id="camp-1", channel_id="hall-1", guild_id="guild-1", owner_id="user-1"
+    )
     store.bind_archive_channel(guild_id="guild-1", channel_id="archive-1")
     gameplay = GameplayOrchestrator(
         importer=None,
         registry=CharacterRegistry(),
-        rules_engine=RulesEngine(compendium=FixtureCompendium(baseline="2014", fixtures={})),
+        rules_engine=RulesEngine(
+            compendium=FixtureCompendium(baseline="2014", fixtures={})
+        ),
     )
     repo = InvestigatorArchiveRepository()
     repo.create_profile(
@@ -140,7 +164,15 @@ def test_sheet_command_redirects_from_game_hall_to_archive_channel() -> None:
         disposition="冷静",
         favored_skills=["图书馆使用", "聆听"],
         generation={
-            "str": 50, "con": 55, "dex": 60, "app": 65, "pow": 70, "siz": 50, "int": 75, "edu": 80, "luck": 45
+            "str": 50,
+            "con": 55,
+            "dex": 60,
+            "app": 65,
+            "pow": 70,
+            "siz": 50,
+            "int": 75,
+            "edu": 80,
+            "luck": 45,
         },
     )
     commands = BotCommands(
@@ -179,10 +211,26 @@ def test_conversational_builder_creates_archive_profile() -> None:
     asyncio.run(commands.start_character_builder(interaction, visibility="private"))
     asyncio.run(commands.builder_reply(interaction, answer="林秋"))
     asyncio.run(commands.builder_reply(interaction, answer="26岁的夜班记者"))
-    asyncio.run(commands.builder_reply(interaction, answer="我总在夜里追新闻，结果因为一篇得罪人的报道被行业封杀。"))
-    asyncio.run(commands.builder_reply(interaction, answer="我想查清那篇报道背后的真相，重新拿回自己的名字。"))
-    asyncio.run(commands.builder_reply(interaction, answer="我太执拗，也太容易因为愧疚把自己逼进死角。"))
-    asyncio.run(commands.builder_reply(interaction, answer="就算所有人都怀疑我，真相也值得追到底。"))
+    asyncio.run(
+        commands.builder_reply(
+            interaction, answer="我总在夜里追新闻，结果因为一篇得罪人的报道被行业封杀。"
+        )
+    )
+    asyncio.run(
+        commands.builder_reply(
+            interaction, answer="我想查清那篇报道背后的真相，重新拿回自己的名字。"
+        )
+    )
+    asyncio.run(
+        commands.builder_reply(
+            interaction, answer="我太执拗，也太容易因为愧疚把自己逼进死角。"
+        )
+    )
+    asyncio.run(
+        commands.builder_reply(
+            interaction, answer="就算所有人都怀疑我，真相也值得追到底。"
+        )
+    )
     asyncio.run(commands.builder_reply(interaction, answer="我姐姐，她还愿意相信我。"))
     asyncio.run(commands.builder_reply(interaction, answer="图书馆使用,聆听,心理学"))
 
@@ -211,12 +259,16 @@ def test_builder_uses_concept_to_ask_a_more_specific_follow_up() -> None:
         interview_planner=FakeInterviewPlanner(),
     )
 
-    assert builder.start(user_id="user-1", visibility="private") == "先给这位调查员起个名字。"
+    assert "让我先了解一下这位即将踏入黑暗的调查员" in builder.start(
+        user_id="user-1", visibility="private"
+    )
     prompt, profile = asyncio.run(builder.answer(user_id="user-1", answer="林钟轩"))
     assert profile is None
-    assert "一句短话" in prompt
+    assert "一句话勾勒" in prompt
 
-    prompt, profile = asyncio.run(builder.answer(user_id="user-1", answer="38岁的落魄临床医生"))
+    prompt, profile = asyncio.run(
+        builder.answer(user_id="user-1", answer="38岁的落魄临床医生")
+    )
 
     assert profile is None
     assert "落魄" in prompt or "发生了什么" in prompt
@@ -232,8 +284,12 @@ def test_answer_normalizer_canonicalizes_age_occupation_and_skills() -> None:
 
     normalizer = AnswerNormalizer()
 
-    assert normalizer.normalize_slot(slot="age", raw=" 38 岁左右 ", current_answers={}) == {"age": "38"}
-    assert normalizer.normalize_slot(slot="occupation", raw="我是一个 临床医生 ", current_answers={}) == {"occupation": "临床医生"}
+    assert normalizer.normalize_slot(
+        slot="age", raw=" 38 岁左右 ", current_answers={}
+    ) == {"age": "38"}
+    assert normalizer.normalize_slot(
+        slot="occupation", raw="我是一个 临床医生 ", current_answers={}
+    ) == {"occupation": "临床医生"}
     assert normalizer.normalize_slot(
         slot="favored_skills",
         raw="医学， 急救、心理学/聆听",
@@ -242,7 +298,11 @@ def test_answer_normalizer_canonicalizes_age_occupation_and_skills() -> None:
 
 
 def test_section_normalizer_preserves_explicit_answers_over_ai_synthesis() -> None:
-    from dm_bot.coc.builder import AnswerNormalizer, CharacterSheetSynthesis, SectionNormalizer
+    from dm_bot.coc.builder import (
+        AnswerNormalizer,
+        CharacterSheetSynthesis,
+        SectionNormalizer,
+    )
 
     answers = {
         "name": "林钟轩",
@@ -303,7 +363,7 @@ def test_archive_channel_plain_messages_advance_builder_session() -> None:
     name_message = FakeMessage(channel_id="archive-1", content="林钟轩")
     asyncio.run(commands.handle_channel_message_stream(message=name_message))
 
-    assert "一句短话" in name_message.channel.messages[-1]
+    assert "一句话勾勒" in name_message.channel.messages[-1]
 
 
 def test_archive_channel_plain_messages_can_finish_builder_session() -> None:
@@ -364,13 +424,21 @@ def test_builder_generates_portrait_before_finalizing_profile() -> None:
         interview_planner=FakeInterviewPlanner(),
     )
 
-    assert builder.start(user_id="user-1", visibility="private") == "先给这位调查员起个名字。"
+    assert "让我先了解一下这位即将踏入黑暗的调查员" in builder.start(
+        user_id="user-1", visibility="private"
+    )
     asyncio.run(builder.answer(user_id="user-1", answer="林钟轩"))
     asyncio.run(builder.answer(user_id="user-1", answer="38岁的落魄临床医生"))
-    asyncio.run(builder.answer(user_id="user-1", answer="一场手术事故让他被赶出了三甲医院。"))
-    asyncio.run(builder.answer(user_id="user-1", answer="他想证明自己依然是最好的医生。"))
+    asyncio.run(
+        builder.answer(user_id="user-1", answer="一场手术事故让他被赶出了三甲医院。")
+    )
+    asyncio.run(
+        builder.answer(user_id="user-1", answer="他想证明自己依然是最好的医生。")
+    )
     asyncio.run(builder.answer(user_id="user-1", answer="过度自信，而且拒绝认错。"))
-    prompt, profile = asyncio.run(builder.answer(user_id="user-1", answer="我不是在犯错，我是在救人。"))
+    prompt, profile = asyncio.run(
+        builder.answer(user_id="user-1", answer="我不是在犯错，我是在救人。")
+    )
 
     assert profile is None
     assert "人物画像" in prompt
@@ -391,12 +459,16 @@ def test_ready_projects_selected_archive_profile_without_mutating_archive() -> N
     from dm_bot.rules.engine import RulesEngine
 
     store = SessionStore()
-    store.bind_campaign(campaign_id="camp-1", channel_id="hall-1", guild_id="guild-1", owner_id="user-1")
+    store.bind_campaign(
+        campaign_id="camp-1", channel_id="hall-1", guild_id="guild-1", owner_id="user-1"
+    )
     store.bind_archive_channel(guild_id="guild-1", channel_id="archive-1")
     gameplay = GameplayOrchestrator(
         importer=None,
         registry=CharacterRegistry(),
-        rules_engine=RulesEngine(compendium=FixtureCompendium(baseline="2014", fixtures={})),
+        rules_engine=RulesEngine(
+            compendium=FixtureCompendium(baseline="2014", fixtures={})
+        ),
     )
     gameplay.load_adventure(load_adventure("mad_mansion"))
     repo = InvestigatorArchiveRepository()
@@ -409,10 +481,20 @@ def test_ready_projects_selected_archive_profile_without_mutating_archive() -> N
         disposition="冷静但固执",
         favored_skills=["图书馆使用", "聆听", "心理学"],
         generation={
-            "str": 50, "con": 55, "dex": 60, "app": 65, "pow": 70, "siz": 50, "int": 75, "edu": 80, "luck": 45
+            "str": 50,
+            "con": 55,
+            "dex": 60,
+            "app": 65,
+            "pow": 70,
+            "siz": 50,
+            "int": 75,
+            "edu": 80,
+            "luck": 45,
         },
     )
-    store.select_archive_profile(channel_id="hall-1", user_id="user-1", profile_id=profile.profile_id)
+    store.select_archive_profile(
+        channel_id="hall-1", user_id="user-1", profile_id=profile.profile_id
+    )
     commands = BotCommands(
         settings=Settings(),
         session_store=store,
@@ -454,7 +536,15 @@ def test_archive_detail_view_surfaces_richer_card_sections() -> None:
         disposition="冷静但固执",
         favored_skills=["图书馆使用", "聆听", "心理学"],
         generation={
-            "str": 50, "con": 55, "dex": 60, "app": 65, "pow": 70, "siz": 50, "int": 75, "edu": 80, "luck": 45
+            "str": 50,
+            "con": 55,
+            "dex": 60,
+            "app": 65,
+            "pow": 70,
+            "siz": 50,
+            "int": 75,
+            "edu": 80,
+            "luck": 45,
         },
     )
 
@@ -474,11 +564,15 @@ def test_select_profile_immediately_syncs_projection_panel() -> None:
     from dm_bot.rules.engine import RulesEngine
 
     store = SessionStore()
-    store.bind_campaign(campaign_id="camp-1", channel_id="hall-1", guild_id="guild-1", owner_id="user-1")
+    store.bind_campaign(
+        campaign_id="camp-1", channel_id="hall-1", guild_id="guild-1", owner_id="user-1"
+    )
     gameplay = GameplayOrchestrator(
         importer=None,
         registry=CharacterRegistry(),
-        rules_engine=RulesEngine(compendium=FixtureCompendium(baseline="2014", fixtures={})),
+        rules_engine=RulesEngine(
+            compendium=FixtureCompendium(baseline="2014", fixtures={})
+        ),
     )
     repo = InvestigatorArchiveRepository()
     profile = repo.create_profile(
@@ -490,7 +584,15 @@ def test_select_profile_immediately_syncs_projection_panel() -> None:
         disposition="冷静但固执",
         favored_skills=["图书馆使用", "聆听", "心理学"],
         generation={
-            "str": 50, "con": 55, "dex": 60, "app": 65, "pow": 70, "siz": 50, "int": 75, "edu": 80, "luck": 45
+            "str": 50,
+            "con": 55,
+            "dex": 60,
+            "app": 65,
+            "pow": 70,
+            "siz": 50,
+            "int": 75,
+            "edu": 80,
+            "luck": 45,
         },
     )
     commands = BotCommands(
@@ -531,7 +633,17 @@ def test_profiles_command_shows_richer_summary_line() -> None:
         core_belief="我不是在犯错，我是在救人。",
         portrait_summary="落魄但不肯认输的临床医生。",
         favored_skills=["医学", "急救", "心理学"],
-        generation={"str": 50, "con": 55, "dex": 60, "app": 65, "pow": 70, "siz": 50, "int": 75, "edu": 80, "luck": 45},
+        generation={
+            "str": 50,
+            "con": 55,
+            "dex": 60,
+            "app": 65,
+            "pow": 70,
+            "siz": 50,
+            "int": 75,
+            "edu": 80,
+            "luck": 45,
+        },
     )
     commands = BotCommands(
         settings=Settings(),
@@ -568,7 +680,17 @@ def test_profile_detail_command_renders_investigator_card_sections() -> None:
         core_belief="我不是在犯错，我是在救人。",
         portrait_summary="落魄但不肯认输的临床医生。",
         favored_skills=["医学", "急救", "心理学"],
-        generation={"str": 50, "con": 55, "dex": 60, "app": 65, "pow": 70, "siz": 50, "int": 75, "edu": 80, "luck": 45},
+        generation={
+            "str": 50,
+            "con": 55,
+            "dex": 60,
+            "app": 65,
+            "pow": 70,
+            "siz": 50,
+            "int": 75,
+            "edu": 80,
+            "luck": 45,
+        },
     )
     commands = BotCommands(
         settings=Settings(),
@@ -588,7 +710,9 @@ def test_profile_detail_command_renders_investigator_card_sections() -> None:
     assert "神经外科" in content
 
 
-def test_builder_does_not_create_second_active_profile_without_explicit_replace() -> None:
+def test_builder_does_not_create_second_active_profile_without_explicit_replace() -> (
+    None
+):
     from dm_bot.coc.archive import InvestigatorArchiveRepository
     from dm_bot.coc.builder import ConversationalCharacterBuilder
 
@@ -601,7 +725,17 @@ def test_builder_does_not_create_second_active_profile_without_explicit_replace(
         background="老档案",
         disposition="冷静",
         favored_skills=["图书馆使用"],
-        generation={"str": 50, "con": 55, "dex": 60, "app": 65, "pow": 70, "siz": 50, "int": 75, "edu": 80, "luck": 45},
+        generation={
+            "str": 50,
+            "con": 55,
+            "dex": 60,
+            "app": 65,
+            "pow": 70,
+            "siz": 50,
+            "int": 75,
+            "edu": 80,
+            "luck": 45,
+        },
     )
     builder = ConversationalCharacterBuilder(
         archive_repository=repo,
@@ -634,7 +768,17 @@ def test_admin_can_list_all_profiles_from_admin_channel() -> None:
         background="医生",
         disposition="冷静",
         favored_skills=["医学"],
-        generation={"str": 50, "con": 55, "dex": 60, "app": 65, "pow": 70, "siz": 50, "int": 75, "edu": 80, "luck": 45},
+        generation={
+            "str": 50,
+            "con": 55,
+            "dex": 60,
+            "app": 65,
+            "pow": 70,
+            "siz": 50,
+            "int": 75,
+            "edu": 80,
+            "luck": 45,
+        },
     )
     repo.create_profile(
         user_id="user-2",
@@ -644,7 +788,17 @@ def test_admin_can_list_all_profiles_from_admin_channel() -> None:
         background="记者",
         disposition="固执",
         favored_skills=["图书馆使用"],
-        generation={"str": 50, "con": 55, "dex": 60, "app": 65, "pow": 70, "siz": 50, "int": 75, "edu": 80, "luck": 45},
+        generation={
+            "str": 50,
+            "con": 55,
+            "dex": 60,
+            "app": 65,
+            "pow": 70,
+            "siz": 50,
+            "int": 75,
+            "edu": 80,
+            "luck": 45,
+        },
     )
     store = SessionStore()
     store.bind_trace_channel(guild_id="guild-1", channel_id="admin-1")
@@ -663,7 +817,9 @@ def test_admin_can_list_all_profiles_from_admin_channel() -> None:
     assert "林秋" in content
 
 
-def test_doctor_profile_finishing_recommendations_stay_within_expected_skill_family() -> None:
+def test_doctor_profile_finishing_recommendations_stay_within_expected_skill_family() -> (
+    None
+):
     from dm_bot.coc.archive import InvestigatorArchiveRepository
 
     repo = InvestigatorArchiveRepository()
@@ -677,7 +833,22 @@ def test_doctor_profile_finishing_recommendations_stay_within_expected_skill_fam
         background="医生",
         disposition="冷静",
         favored_skills=["医学", "急救", "心理学"],
-        generation={"str": 50, "con": 55, "dex": 60, "app": 65, "pow": 70, "siz": 50, "int": 75, "edu": 80, "luck": 45},
+        generation={
+            "str": 50,
+            "con": 55,
+            "dex": 60,
+            "app": 65,
+            "pow": 70,
+            "siz": 50,
+            "int": 75,
+            "edu": 80,
+            "luck": 45,
+        },
     )
 
-    assert profile.finishing.recommended_occupation_skills == ["医学", "急救", "科学(生物学)", "心理学"]
+    assert profile.finishing.recommended_occupation_skills == [
+        "医学",
+        "急救",
+        "科学(生物学)",
+        "心理学",
+    ]
