@@ -1,123 +1,141 @@
-# Milestone vE.3.1: Character Lifecycle E2E
+# Requirements Archive: vE.3.1 Character Lifecycle E2E
 
-**Status:** Planning
-**Primary Track:** Track E - 运行控制与运维面板层
-**Goal:** 覆盖角色构建到跑团全流程的端到端测试，整合 COC 规则引擎与现有测试基础设施。
-**Depends on:** vE.2.2 (E69-E72) complete
+**Archived:** 2026-03-31
+**Status:** SHIPPED
 
----
-
-## Background
-
-vE.2.2 合入了 tanlearner123 的 COC 规则引擎（`rules/coc/skills.py`、`rules/coc/combat.py`、`rules/coc/sanity.py`、`rules/coc/magic.py`、`rules/coc/derived.py`、`rules/coc/experience.py`），但这批代码只有部分集成测试。`GAP_ANALYSIS.md` 识别出以下 HIGH 严重度缺口：
-
-| 模块 | 缺口 |
-|------|------|
-| `rules/coc/derived.py` | 15+ 派生属性函数无单元测试 |
-| `rules/coc/experience.py` | 10+ 经验/技能提升函数无单元测试 |
-| `rules/coc/sanity.py` | 狂气触发（临时/无限狂气）无测试 |
+For current requirements, see `.planning/REQUIREMENTS.md`.
 
 ---
 
-## Scope
+# Requirements: Discord AI Keeper - Track E
 
-### In Scope
-1. **角色创建流程** — 从 rolling characteristics 到 investigator 就绪
-2. **跑团流程** — 战斗 + 调查 + SAN 检定的端到端
-3. **技能提升流程** — post-session 技能提升 + 下一轮
-4. **跨系统集成** — 战斗伤害 → SAN 损失 → 技能提升的完整链条
+**Defined:** 2026-03-28
+**Core Value:** Give operators one reliable place to see whether bot, API, models, sync, and smoke-check are healthy and to restart the system without guessing from Discord behavior.
 
-### Out of Scope
-- 实际 Discord 交互（全部用 RuntimeTestDriver + fake_contract）
-- 实际 LLM 调用（全部用 FastMock）
-- D&D 规则相关（D&D 战斗已经在 tests/test_rules_engine.py 中覆盖）
+## vE.1.1 Requirements (Track E)
+
+Milestone: E1 Runtime Control Panel Foundations
+
+### Unified Runtime State
+
+- [ ] **CTRL-01**: System exposes one aggregated runtime state object for bot, API, model checks, sync, and smoke-check status
+- [ ] **CTRL-02**: Runtime state distinguishes "process exists" from "runtime is actually ready"
+- [ ] **CTRL-03**: Runtime state includes recent READY/SYNC evidence and recent failure summaries
+
+### Unified Actions
+
+- [ ] **ACT-01**: Operators can start, stop, and restart bot from one control layer
+- [ ] **ACT-02**: Operators can start, stop, and restart API from one control layer
+- [ ] **ACT-03**: Operators can restart the whole system from one control layer
+- [ ] **ACT-04**: Operators can trigger smoke-check and command sync from the same control layer
+
+### Panel Surface
+
+- [ ] **PANEL-01**: A local web panel shows the aggregated runtime state
+- [ ] **PANEL-02**: A CLI fallback exists for environments where the web panel is not being used
+- [ ] **PANEL-03**: The panel shows recent log excerpts for startup/restart failures
+
+### Reliability
+
+- [ ] **REL-01**: Existing `smoke-check` behavior remains valid
+- [ ] **REL-02**: Existing `restart-system` behavior remains valid
+- [ ] **REL-03**: Actions return structured success/failure results instead of only shell output
+
+## vE.2.1 Requirements (Track E)
+
+Milestone: E2 全流程交互验证框架
+
+### Test Infrastructure
+
+- [ ] **TEST-01**: FakeInteraction factory produces fully-formed discord.Interaction/Context with nested mocks (Guild, Member, Channel)
+- [ ] **TEST-02**: Model mock fixture supports Instant/Delay/Error modes, switchable per test
+- [ ] **TEST-03**: VCR.py cassette recordings exist for all narration output patterns
+- [ ] **TEST-04**: pytest-bdd Gherkin feature files cover combat and investigation flows
+
+### Layer Coverage
+
+- [ ] **DISC-01**: /bind_campaign, /join, /select_profile, /ready, /load_adventure all return correct session state changes
+- [ ] **DISC-02**: Channel enforcement gates reject unauthorized commands
+- [ ] **SESS-01**: Campaign lifecycle bind→join→ready→load_adventure completes without error across 3 players
+- [ ] **SESS-02**: SessionPhase transitions (LOBBY→SCENE_ROUND_OPEN→COMBAT) correct under multi-user load
+- [ ] **ADV-01**: fuzhe_mini.json loads and returns valid AdventurePackage
+- [ ] **ADV-02**: Trigger chains fire on correct conditions and produce expected state changes
+- [ ] **ADV-03**: Reveal gates correctly hide/show content based on investigation progress
+- [ ] **ADV-04**: Room transitions update location_id and scene_id correctly
+- [ ] **RULES-01**: COC skill checks return correct success levels (critical/success/failure/fumble)
+- [ ] **RULES-02**: SAN damage applies correctly per 7th ed rules
+- [ ] **RULES-03**: Combat round resolution updates HP and handles defeated state
+- [ ] **CHAR-01**: Character creation flow produces valid archive profile
+- [ ] **CHAR-02**: Profile projection into campaign maintains correct visibility
+- [ ] **CHAR-03**: Archive persists across session boundaries
+- [ ] **ROUTER-01**: Intent classification returns correct TurnMode (dm/scene/combat)
+- [ ] **ROUTER-02**: Turn plan generation includes required tool_calls
+- [ ] **ROUTER-03**: Message buffering handles out-of-order delivery correctly
+- [ ] **NARR-01**: Narration prompts contain correct context (scene, characters, state)
+- [ ] **NARR-02**: KP vs player visibility separation is enforced in output
+- [ ] **PERSIST-01**: Session state survives process restart
+- [ ] **PERSIST-02**: Full 15-turn scenario completes with all state persisted correctly
+
+### Scenario Coverage
+
+- [ ] **SCEN-01**: 完整开团流程 — lobby → ready → first scene → ending, all layers wired
+- [ ] **SCEN-02**: 多人协作流程 — 5 concurrent users, race condition handling verified
+- [ ] **SCEN-03**: 边界与错误恢复 — streaming interruption recovery, half-state restart
+- [ ] **SCEN-04**: 模组呈现流程 — multi-path branching, consequence chains, reveal policy
+
+## Traceability
+
+### vE.1.1
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| CTRL-01 | E40 | Done |
+| CTRL-02 | E40 | Done |
+| CTRL-03 | E40 | Done |
+| ACT-01 | E41 | Done |
+| ACT-02 | E41 | Done |
+| ACT-03 | E43 | Done |
+| ACT-04 | E43 | Done |
+| PANEL-01 | E42 | Done |
+| PANEL-02 | E41 | Done |
+| PANEL-03 | E42 | Done |
+| REL-01 | E43 | Done |
+| REL-02 | E43 | Done |
+| REL-03 | E40 | Done |
+
+### vE.2.1
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| TEST-01 | E60 | Planned |
+| TEST-02 | E60 | Planned |
+| TEST-03 | E60 | Planned |
+| TEST-04 | E60 | Planned |
+| DISC-01 | E61 | Planned |
+| DISC-02 | E61 | Planned |
+| SESS-01 | E62 | Planned |
+| SESS-02 | E62 | Planned |
+| ADV-01 | E63 | Planned |
+| ADV-02 | E63 | Planned |
+| ADV-03 | E63 | Planned |
+| ADV-04 | E63 | Planned |
+| RULES-01 | E64 | Planned |
+| RULES-02 | E64 | Planned |
+| RULES-03 | E64 | Planned |
+| CHAR-01 | E65 | Planned |
+| CHAR-02 | E65 | Planned |
+| CHAR-03 | E65 | Planned |
+| ROUTER-01 | E66 | Planned |
+| ROUTER-02 | E66 | Planned |
+| ROUTER-03 | E66 | Planned |
+| NARR-01 | E67 | Planned |
+| NARR-02 | E67 | Planned |
+| PERSIST-01 | E68 | Planned |
+| PERSIST-02 | E68 | Planned |
+| SCEN-01 | E68 | Planned |
+| SCEN-02 | E68 | Planned |
+| SCEN-03 | E68 | Planned |
+| SCEN-04 | E68 | Planned |
 
 ---
-
-## Requirements
-
-### E2E-01: 角色创建端到端
-- 角色创建 → 派生属性计算（HP/MP/SAN/LUCK/MOV/Build/Damage Bonus）
-- 验证 `COCInvestigatorProfile` 与 `CharacterRecord.coc` 的一致性
-
-### E2E-02: COC 战斗端到端
-- initiative → Fighting/Shooting/Brawl 检定 → 伤害结算 → DB 计算 → 护甲吸收
-- 验证 damage bonus 字符串生成正确
-
-### E2E-03: COC SAN 端到端
-- SAN 检定 → 成功/失败 → SAN 损失应用 → Mythos gain
-- 验证 sanity_loss 返回值与规则一致
-
-### E2E-04: COC 技能提升端到端
-- 技能检定成功 → improvement roll → 技能值增加
-- 验证 Credit Rating → occupational points → interest points 的完整链条
-
-### E2E-05: 跨系统集成
-- 战斗伤害触发 SAN 损失
-- SAN 损失触发狂气检定
-- 狂气检定触发临时/无限狂气后果
-
-### E2E-06: 疯狂系统端到端
-- 临时狂气（Acute）和无限狂气（Indefinite）的触发与后果
-
----
-
-## Test Architecture
-
-### 纯函数单元测试（pytest）
-用于：`derived.py`、`experience.py`、`magic.py`、`skill catalog`
-
-这些是纯函数，有确定性输出，适合用 `SeededDiceRoller` 做精确断言。
-
-### 端到端场景测试（scenario DSL + pytest）
-用于：角色创建流程、战斗流程、技能提升流程
-
-用 `RuntimeTestDriver` + `fake_contract` 模式驱动，模拟真人跑团的完整流程。
-
-### 集成测试（pytest）
-用于：跨系统交互、疯狂触发后果
-
-用 `RuntimeTestDriver` 端到端跑，验证系统间的数据流正确。
-
----
-
-## Test Files to Create
-
-| 文件 | 类型 | 内容 |
-|------|------|------|
-| `tests/test_coc_derived.py` | pytest | 15+ 派生属性函数单元测试 |
-| `tests/test_coc_experience.py` | pytest | 10+ 经验/技能提升函数单元测试 |
-| `tests/test_coc_insanity.py` | pytest | 狂气触发后果测试 |
-| `tests/test_coc_skills_catalog.py` | pytest | 80+ 技能定义验证 |
-| `tests/test_coc_magic_catalog.py` | pytest | 10+ 咒语定义验证 |
-| `tests/test_coc_combat_resolution.py` | pytest | DB 计算、护甲吸收测试 |
-| `tests/scenarios/lifecycle/scen_character_creation.yaml` | DSL | 角色创建 E2E |
-| `tests/scenarios/lifecycle/scen_combat_flow.yaml` | DSL | 战斗流程 E2E |
-| `tests/scenarios/lifecycle/scen_skill_improvement.yaml` | DSL | 技能提升 E2E |
-
----
-
-## Dependency Chain
-
-```
-E73 (derived tests)
-    ↓
-E74 (combat + insanity tests)    ← E73 产出被使用
-    ↓
-E75 (experience tests)
-    ↓
-E76 (character creation scenario)
-    ↓
-E77 (combat E2E scenario)
-    ↓
-E78 (skill improvement + cross-system scenario)
-```
-
----
-
-## Key Technical Constraints
-
-- **SeededDiceRoller**: 所有 dice 相关测试必须使用 seeded roller，保证可复现性
-- **fake_contract 模式**: 所有端到端场景使用 FastMock，不调用真实 LLM
-- **无 Discord 依赖**: 全部通过 RuntimeTestDriver 的命令接口驱动
-- **无网络依赖**: 全部本地运行
+*Last updated: 2026-03-29 for vE.2.1*
