@@ -3,28 +3,28 @@ gsd_state_version: 1.0
 milestone: vE.3.2
 milestone_name: Gap Closure & Integration
 status: in_progress
-stopped_at: Phase E85 executed - Equipment System complete
-last_updated: "2026-03-31T12:48:00.000Z"
+stopped_at: Phase E84 executed - Character Builder Integration complete
+last_updated: "2026-03-31T13:15:00.000Z"
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 7
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 85
+Phase: 84
 Plan: 01 (executed, complete)
-Status: E85 complete - Equipment system with weapon/armor databases
+Status: E84 complete - Character builder wired into RuntimeTestDriver
 
 ## Progress
 
 **Milestones Complete:** 4 (vE.1.1, vE.2.1, vE.2.2, vE.3.1)
-**Phases Complete:** 43 (E40-E43, E60-E79, E81, E82, E83, E85)
-**Total Tests:** 807 passing (12 new equipment tests)
+**Phases Complete:** 44 (E40-E43, E60-E79, E81, E82, E83, E84, E85)
+**Total Tests:** 809 passing (7 new builder tests)
 **Current Milestone:** vE.3.2
 
 ## vE.3.2 Overview
@@ -60,7 +60,7 @@ Status: E85 complete - Equipment system with weapon/armor databases
 | E81 | Creature Bestiary & Stats | ✅ Complete | E81-01-PLAN.md |
 | E82 | Chase Rules Implementation | ✅ Complete | E82-01-PLAN.md |
 | E83 | Archive Repository Completion | ✅ Complete | E83-01-PLAN.md |
-| E84 | Character Builder Integration | Planned | E84-01-PLAN.md |
+| E84 | Character Builder Integration | ✅ Complete | E84-01-PLAN.md |
 | E85 | Equipment System | ✅ Complete | E85-01-PLAN.md |
 
 ### Execution Order
@@ -78,8 +78,8 @@ Dependencies:
 
 ## Session Continuity
 
-**Stopped At:** Phase E85 executed - Equipment System complete
-**Next Step:** Execute Phase E84 — Character Builder Integration (depends on E83 archive)
+**Stopped At:** Phase E84 executed - Character Builder Integration complete
+**Next Step:** All vE.3.2 phases complete - milestone ready for completion
 **Phase Plans:**
 
 - `.planning/workstreams/track-e/phases/79-skill-usage-tracking/E79-01-PLAN.md`
@@ -108,9 +108,9 @@ Dependencies:
 - ~~Creature Stats/Bestiary~~ - ✅ E81 Complete
 - ~~Chase Rules~~ - ✅ E82 Complete
 - ~~Archive Repository~~ - ✅ E83 Complete (CRUD + persistence)
+- ~~Character Builder~~ - ✅ E84 Complete (wired into RuntimeTestDriver)
 - ~~Equipment System~~ - ✅ E85 Complete (weapon/armor databases)
 - visibility_dispatcher.py has 3 unresolved TODOs
-- Character builder exists but not wired
 
 ### Dependencies
 
