@@ -485,7 +485,8 @@
 3. Post-session improvement phase can query which skills were used (and succeeded)
 4. E2E scenario validates combat → skill tracking → improvement flow
 
-**Plans:** TBD
+**Plans:** 1 plan created
+- Plan 01: Core skill tracking integration (SkillUsageTracker + combat hooks + tests)
 
 ### Phase E80: Visibility Dispatcher Completion
 
