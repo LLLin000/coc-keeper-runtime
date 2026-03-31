@@ -61,6 +61,7 @@ class RuntimeTestDriver:
         self._output_records: list[OutputRecord] = []
         self._snapshot_state: dict[str, Any] = {}
         self._chase_manager: Any = None
+        self._persistence_store: PersistenceStore | None = None
 
         self._model_client = self._create_model_client(model_client)
 
@@ -119,19 +120,19 @@ class RuntimeTestDriver:
         )
 
         self._session_store = SessionStore()
-        persistence_store = PersistenceStore(self._db_path)
-        self._session_store.load_sessions(persistence_store.load_sessions())
+        self._persistence_store = PersistenceStore(self._db_path)
+        self._session_store.load_sessions(self._persistence_store.load_sessions())
 
         self._turn_coordinator = TurnCoordinator(
             turn_runner=turn_runner,
-            persistence_store=persistence_store,
+            persistence_store=self._persistence_store,
         )
 
         self._commands = _build_commands(
             session_store=self._session_store,
             turn_coordinator=self._turn_coordinator,
             gameplay=self._gameplay,
-            persistence_store=persistence_store,
+            persistence_store=self._persistence_store,
             model_client=model_client,
         )
 
@@ -139,6 +140,9 @@ class RuntimeTestDriver:
         self._started = True
 
     async def stop(self) -> None:
+        if self._persistence_store:
+            self._persistence_store.close()
+            self._persistence_store = None
         self._started = False
         self._commands = None
         self._session_store = None
