@@ -146,32 +146,49 @@ class ConsequenceAggregator:
         return groups
 
     def _format_outcome(self, outcome: dict[str, Any]) -> str:
-        """Format a rule outcome into human-readable text."""
+        """Format a rule outcome into Keeper-style narrative text."""
         action = outcome.get("action", "unknown")
         if action == "coc_skill_check":
             label = outcome.get("label", "技能检定")
             success = outcome.get("success", False)
             roll = outcome.get("roll", "")
-            return f"{label}: {'成功' if success else '失败'} ({roll})"
+            grade = outcome.get("grade", "")
+            if success:
+                if grade == "extreme":
+                    return f"{label}：大成功——你做到了远超预期的事情（{roll}）"
+                elif grade == "hard":
+                    return f"{label}：困难成功——你完成得相当漂亮（{roll}）"
+                else:
+                    return f"{label}：检定通过——你勉强做到了（{roll}）"
+            else:
+                return f"{label}：检定失败——事情没有按你的预期发展（{roll}）"
         elif action == "coc_sanity_check":
             san_loss = outcome.get("san_loss", "0")
             success = outcome.get("success", False)
-            return f"SAN检定: {'成功' if success else '失败'} (损失 {san_loss})"
+            if success:
+                return f"SAN检定：你稳住了心神，但那一幕已刻入记忆（损失 {san_loss}）"
+            else:
+                return f"SAN检定：理智的防线出现裂痕（损失 {san_loss}）"
         elif action == "attack_roll":
             hit = outcome.get("hit", False)
-            weapon = outcome.get("weapon", "weapon")
-            return f"{weapon}攻击: {'命中' if hit else '未命中'}"
+            weapon = outcome.get("weapon", "武器")
+            if hit:
+                return f"{weapon}攻击命中"
+            else:
+                return f"{weapon}攻击落空"
         elif action == "damage_roll":
             total = outcome.get("total", 0)
-            return f"伤害: {total}"
+            if total > 0:
+                return f"造成 {total} 点伤害"
+            return "未造成伤害"
         else:
             return str(outcome)
 
     def _format_trigger_effect(self, effect: Any) -> str:
         """Format a trigger effect into human-readable text."""
         if hasattr(effect, "event_type"):
-            return f"[触发器] {effect.event_type}"
-        return "[触发器事件]"
+            return f"【事件触发】{effect.event_type}"
+        return "【事件触发】"
 
     def _determine_priority(self, outcome: dict[str, Any]) -> int:
         """Determine priority of an outcome for sorting."""
