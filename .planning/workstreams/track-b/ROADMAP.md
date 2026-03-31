@@ -369,6 +369,9 @@
   3. User sees clear transition messages confirming each operation
   4. All operations are logged with full context
 
+**Plans:**
+- [ ] `56-01` — Archive/activate lifecycle ops with event logging and detailed messages
+
 ### Phase 57: Delete And Recovery Operations
 
 **Goal:** Implement permanent delete and grace-period recovery for profiles.
