@@ -12,6 +12,8 @@ Complete derived attribute calculations:
 Reference: Call of Cthulhu 7th Edition Keeper's Rulebook, Chapter 2
 """
 
+import random
+
 from pydantic import BaseModel
 
 from dm_bot.characters.models import COCAttributes
@@ -335,6 +337,7 @@ def apply_age_modifiers(
         pow=max(1, attributes.pow + mods["pow"]),
         int=max(1, attributes.int + mods["int"]),
         edu=max(1, attributes.edu + mods["edu"]),
+        siz=attributes.siz,
     )
 
 

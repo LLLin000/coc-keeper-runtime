@@ -617,6 +617,7 @@ def resolve_spell_cast(
             casting_threshold=threshold,
             rolled=rolled,
             success=False,
+            mp_cost=0,
             rendered=(
                 f"【施法失败】{caster_name} 尝试施放 {spell.name_cn}\n"
                 f"魔法点不足: 需要 {mp_cost}, 拥有 {caster_mp}"

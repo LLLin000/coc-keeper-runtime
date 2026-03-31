@@ -271,7 +271,8 @@ def resolve_fighting_attack(
 
         # Armor penetration
         if attacker.armor_piercing:
-            penetration = 0  # Full armor works
+            penetration = damage  # Bypasses armor
+            armor_absorbed = 0
         else:
             # Reduce damage by armor
             penetration = max(0, damage - defender.armor)
