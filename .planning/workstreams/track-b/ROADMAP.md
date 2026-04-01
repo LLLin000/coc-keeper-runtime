@@ -330,10 +330,10 @@
   (planned)
 - [ ] **Phase 58: Instance Management** — Campaign instance archival, profile re-selection
   (planned)
-- [ ] **Phase 59: Admin Visibility Surfaces** — Admin profile listing, ownership chain, instance overview
-  (planned)
-- [ ] **Phase 60: Admin Governance Actions** — Force-archive, ownership reassignment, governance event display
-  (planned)
+- [x] **Phase 59: Admin Visibility Surfaces** — Admin profile listing, ownership chain, instance overview
+  (completed 2026-04-01)
+- [x] **Phase 60: Admin Governance Actions** — Force-archive, ownership reassignment, governance event display
+  (completed 2026-04-01)
 - [ ] **Phase 61: Integration And Polish** — End-to-end integration, presentation polish, tests
   (planned)
 
@@ -417,7 +417,7 @@
   3. Admin can view all active campaign character instances across all players
 
 **Plans:**
-- [ ] `59-01` — Admin Visibility Commands (AV-02, AV-03, AV-04)
+- [x] `59-01` — Admin Visibility Commands (AV-02, AV-03, AV-04) (completed 2026-04-01)
 
 ### Phase 60: Admin Governance Actions
 
@@ -433,6 +433,9 @@
   3. Admin can reassign campaign ownership to a different player
   4. All admin actions are logged with timestamp, admin ID, target ID, and reason
   5. `/debug_status` shows recent governance events for a campaign
+
+**Plans:**
+- [x] `60-01` — Admin Governance Commands + Persistence (AV-05, AV-06, AV-07, AV-08, AUD-03) (completed 2026-04-01)
 
 ### Phase 61: Integration And Polish
 
@@ -456,7 +459,7 @@
 | 56. Archive Lifecycle Operations | PLC-02, PLC-03, PV-03, AUD-02 | Complete |
 | 57. Delete And Recovery Operations | PLC-04, PLC-05, PLC-06 | Complete |
 | 58. Instance Management | ILC-02, ILC-03 | Complete |
-| 59. Admin Visibility Surfaces | AV-02, AV-03, AV-04 | In Progress |
+| 59. Admin Visibility Surfaces | AV-02, AV-03, AV-04 | Complete |
 | 60. Admin Governance Actions | AV-05, AV-06, AV-07, AV-08, AUD-03 | Planned |
 | 61. Integration And Polish | PV-02, PV-04 | Planned |
 
