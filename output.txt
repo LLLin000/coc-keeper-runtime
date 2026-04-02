@@ -1,0 +1,8 @@
+Found 1 scenario(s)
+
+Running: scen_combat_san
+  Status: FAILED
+  Error: 'gbk' codec can't encode character '\u2705' in position 125: illegal multibyte sequence
+
+========================================
+Results: 0 passed, 2 failed

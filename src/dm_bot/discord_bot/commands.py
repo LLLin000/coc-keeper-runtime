@@ -831,6 +831,16 @@ class BotCommands:
         self._persist_sessions()
 
         char_name = session.active_characters.get(user_id, "调查员")
+
+        transitioned = session.transition_on_all_ready()
+        if transitioned:
+            self._persist_sessions()
+            await interaction.response.send_message(
+                f"**{char_name}** 已就位！所有调查员已就位，等待管理员开始。",
+                ephemeral=False,
+            )
+            return
+
         await interaction.response.send_message(
             f"**{char_name}** 已就位！", ephemeral=False
         )
@@ -934,7 +944,7 @@ class BotCommands:
         self._persist_sessions()
 
     async def start_session(self, interaction) -> None:
-        from dm_bot.orchestrator.session_store import SessionPhase
+        from dm_bot.orchestrator.session_store import CampaignRole, SessionPhase
         from dm_bot.orchestrator.onboarding import get_default_coc7e_onboarding
         from dm_bot.orchestrator.onboarding_controller import OnboardingController
         from dm_bot.discord_bot.onboarding_views import OnboardingView
@@ -961,10 +971,18 @@ class BotCommands:
                 ephemeral=True,
             )
             return
-        ready_count = sum(1 for r in session.player_ready.values() if r)
-        if ready_count < len(session.member_ids):
+        if not session.all_ready():
+            ready_count = sum(1 for r in session.player_ready.values() if r)
+            player_count = len(
+                [
+                    uid
+                    for uid in session.member_ids
+                    if session.members.get(uid)
+                    and session.members[uid].role == CampaignRole.MEMBER
+                ]
+            )
             await interaction.response.send_message(
-                f"无法启动：还有玩家未就位 ({ready_count}/{len(session.member_ids)})。",
+                f"无法启动：还有玩家未就位 ({ready_count}/{player_count})。",
                 ephemeral=True,
             )
             return
@@ -1003,7 +1021,7 @@ class BotCommands:
         )
 
     async def complete_onboarding(self, interaction) -> None:
-        from dm_bot.orchestrator.session_store import SessionPhase
+        from dm_bot.orchestrator.session_store import CampaignRole, SessionPhase
         from dm_bot.orchestrator.onboarding_controller import OnboardingController
 
         allowed, msg = self.check_channel("start_session", interaction)
@@ -1040,8 +1058,12 @@ class BotCommands:
 
         pending = []
         for member_id in session.member_ids:
-            if not session.is_onboarding_complete(member_id):
-                pending.append(member_id)
+            if (
+                session.members.get(member_id)
+                and session.members[member_id].role == CampaignRole.MEMBER
+            ):
+                if not session.is_onboarding_complete(member_id):
+                    pending.append(member_id)
 
         if not pending:
             session.transition_to(SessionPhase.SCENE_ROUND_OPEN)

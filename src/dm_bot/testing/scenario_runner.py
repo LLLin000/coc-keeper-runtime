@@ -254,8 +254,11 @@ def _evaluate_scenario_assertions(
         sessions = final_state.get("sessions", {})
         member_count = 0
         for sess in sessions.values():
-            members = sess.get("members", [])
-            member_count += len(members)
+            members = sess.get("members", {})
+            if isinstance(members, dict):
+                member_count += len(members)
+            else:
+                member_count += len(members)
         if member_count != assertions.state_campaign_members:
             return Failure(
                 code=FailureCode.SESSION_STATE_MISMATCH,
@@ -266,8 +269,11 @@ def _evaluate_scenario_assertions(
     if assertions.state_no_duplicate_members:
         sessions = final_state.get("sessions", {})
         for sess in sessions.values():
-            members = sess.get("members", [])
-            user_ids = [m.get("user_id") for m in members]
+            members = sess.get("members", {})
+            if isinstance(members, dict):
+                user_ids = list(members.keys())
+            else:
+                user_ids = [m.get("user_id") for m in members]
             if len(user_ids) != len(set(user_ids)):
                 return Failure(
                     code=FailureCode.CONCURRENCY_INVARIANT_FAILURE,

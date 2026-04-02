@@ -1,7 +1,8 @@
 # GSD Workflow Issues Debug Report
 
 **Date:** 2026-03-31
-**Status:** Root causes identified, fixes recommended
+**Status:** RESOLVED - AGENTS.md fixed
+**Resolved:** 2026-03-31
 
 ---
 

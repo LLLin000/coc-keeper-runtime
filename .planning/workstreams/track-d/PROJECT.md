@@ -2,127 +2,118 @@
 
 ## Track D: 游戏呈现层
 
-Owns perceived table experience:
+**Owns perceived table experience:**
 - Keeper-style narration boundaries
-- guidance and stall recovery tone
-- clue/history/panel presentation
-- consequence framing
-- player-facing readability and immersion
+- Guidance and stall recovery tone
+- Clue/history/panel presentation
+- Consequence framing
+- Player-facing readability and immersion
+
+**Core Principle:** Track D does NOT define canonical truth. It presents what Tracks A, B, C, E have already resolved in a Keeper-style way.
 
 ### Typical Work
-- prompt shaping
-- player-facing boards and summaries
-- archive/game presentation contracts
-- keeper-feel polish
+- Prompt shaping for Keeper voice
+- Player-facing boards and summaries
+- Archive/game presentation contracts
+- Keeper-feel polish
 
 ### Out of Scope
-- canonical rules truth
-- archive persistence semantics as the main goal
-- Discord command governance as the main goal
+- Canonical rules truth (Track A/E)
+- Archive persistence semantics (Track B)
+- Discord command governance (Track C)
+
+---
 
 ## Active Milestone
 
-- Active milestone: `vD.1.1`
-- Primary track: `Track D - 游戏呈现层`
-- Goal: Redesign archive and builder presentation so character creation feels like a private Keeper-guided interview and player-facing archive output feels like a readable investigator board instead of a plain command transcript
-
-## Milestone vD.1.1: D1 Keeper-Guided Archive Experience
-
-**Goal:** Improve how archive and builder interactions feel to the player, with private-first character creation, clearer archive-channel purpose, and richer player-facing card presentation that prepares for future Discord Activity surfaces.
-
-**Target features:**
-- private-first builder experience with archive channels acting as entry and management surfaces rather than the only interview stage
-- clearer archive channel role and player guidance
-- richer archive/player-facing card summaries and section boards
-- presentation contracts that later Activity work can reuse
-
-**Primary Track**
-- Track D - 游戏呈现层
-
-**Secondary Impact**
-- Track B - 人物构建与管理层: richer card sections and builder staging
-- Track C - Discord 交互层: archive-channel flow and private/ephemeral routing
-
-**Contracts Changed**
-- `NarratorInput` (archive-facing builder guidance usage)
-- player-facing archive/panel summary contract
-- private-first builder presentation contract
-
-**Migration Notes**
-- do not reintroduce rules truth into presentation logic
-- preserve existing archive operations while shifting the perceived experience toward a one-to-one Keeper interview
-- keep the design compatible with future Discord Activity surfaces rather than hardcoding one Discord-message-only presentation forever
-
-## Queued Milestone vD.1.2: D2 Session Boards And Keeper Scene Presentation
-
-**Goal:** Extend presentation work beyond archive channels into live play so players can read current scene, current pressure, recent history, and clue/state summaries as coherent session boards instead of piecemeal bot messages.
-
-**Target features:**
-- player-facing campaign/adventure/session boards
-- clearer scene framing and consequence summaries
-- structured history/clue/current-state boards suitable for future Activity surfaces
-- newcomer-friendly rules boards for:
-  - minimum rules
-  - combat flow
-  - injury flow
-  - SAN flow
-- presentation contracts for multiplayer scene rounds and shared KP resolution
-
-**Primary Track**
-- Track D - 游戏呈现层
-
-**Secondary Impact**
-- Track C - Discord 交互层: command/status surfaces and where boards appear
-- Track A - 模组与规则运行层: structured scene and consequence summaries
-
-**Contracts Changed**
-- player-facing session board contract
-- scene summary and consequence summary presentation contract
-- clue/history/current-state board layout contract
-
-**Migration Notes**
-- queue this after vD.1.1 so archive presentation and private-first builder experience are settled first
-- build on structured state from Tracks A/C rather than inventing presentation-only truth
-- keep all board structures Activity-ready
-
-## Queued Milestone vD.1.3: D3 New-Player Start Pack And Rules Boards
-
-**Goal:** Turn module intro, minimum-rules explanation, and key COC flowcharts into reusable player-facing start packs so new players can begin quickly without reading a full rulebook.
-
-**Target features:**
-- build reusable start-pack sections for:
-  - what COC play is
-  - today's module theme
-  - recommended professions / skills / items
-  - minimum rules the table needs right now
-- build digestible boards/cards for:
-  - attribute meaning
-  - skill allocation guidance
-  - combat flow
-  - damage / injury flow
-  - SAN and insanity flow
-- support different explanation density for:
-  - new-player mode
-  - standard mode
-  - veteran mode
-
-**Primary Track**
-- Track D - 游戏呈现层
-
-**Secondary Impact**
-- Track A - 模组与规则运行层: start packs consume canonical rules summaries and module onboarding metadata
-- Track B - 人物构建与管理层: builder/finalization flows consume profession and skill guidance surfaces
-- Track C - Discord 交互层: onboarding stage and where these boards are surfaced
-
-**Contracts Changed**
-- player-facing onboarding pack contract
-- rules board / flowchart summary contract
-- explanation-density presentation contract
-
-**Migration Notes**
-- start packs summarize canonical rules; they must not become a second source of rules truth
-- prefer reusable presentation sections over module-specific narrated tutorials
-- build for Discord now, but keep all sections Activity-ready
+**vD.1.1** - Keeper-Guided Archive Experience
+- **Status:** Planned (not started)
+- **Goal:** Make archive and builder feel like a Keeper-guided experience
+- **Phases:** D40 → D41 → D42 → D43
 
 ---
-*Last updated: 2026-03-28 for milestone vD.1.1 D1 Keeper-Guided Archive Experience*
+
+## What Track D Consumes From Other Tracks
+
+```
+Track B (Builder/Archive)
+  → ConversationalCharacterBuilder
+  → InvestigatorArchiveProfile
+  → InvestigatorPanel
+
+Track C (Discord Interaction)
+  → VisibilityDispatcher
+  → Slash commands (ephemeral routing)
+  → PlayerStatusRenderer, KPOpsRenderer
+
+Track A (Module & Rules)
+  → Structured modules (sad_carnival.json)
+  → Room graphs, triggers, clue reveals
+  → Scene transitions
+
+Track E (Runtime Control)
+  → COC rules engine
+  → Combat, SAN, chase mechanics
+  → Bestiary, equipment
+```
+
+---
+
+## vD.1.1: Keeper-Guided Archive Experience
+
+**Target features:**
+- Private-first builder with DM interview
+- Archive presented as investigator cards
+- Keeper-voice prompts throughout
+- Activity-ready presentation contracts
+
+**Secondary Impact:**
+- Track B: richer card sections, builder staging
+- Track C: ephemeral/DM routing, archive channel flow
+
+**Contracts Changed:**
+- `ConversationalCharacterBuilder` prompts (Keeper voice)
+- `InvestigatorArchiveProfile.card_view()` (presentation format)
+- Archive channel guidance text
+
+**Migration Notes:**
+- Do not reintroduce rules truth into presentation logic
+- Preserve existing archive operations while shifting perceived experience
+- Keep presentation format Activity-ready
+
+---
+
+## Queued Milestones
+
+### vD.1.2: Session Boards And Keeper Scene Presentation
+
+**Target features:**
+- Session board (campaign/adventure/session identity)
+- Scene framing ("场景：XXX" format)
+- Clue/history board
+- Consequence summary in Keeper voice
+
+**Primary Track:** Track D
+
+**Secondary Impact:**
+- Track C: command/status surfaces
+- Track A: structured scene and consequence summaries
+
+### vD.1.3: New-Player Start Pack And Rules Boards
+
+**Target features:**
+- What-is-COC pack
+- Skill/profession guide
+- Combat flow board
+- SAN/injury flow board
+
+**Primary Track:** Track D
+
+**Secondary Impact:**
+- Track A: rules summaries, module onboarding
+- Track B: profession/skill guidance surfaces
+- Track C: onboarding stage
+
+---
+
+*Last updated: 2026-03-31*

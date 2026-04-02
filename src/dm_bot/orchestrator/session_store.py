@@ -230,6 +230,31 @@ class CampaignSession(BaseModel):
         ready_players = sum(1 for r in self.player_ready.values() if r)
         return ready_players >= len(self.member_ids) and self.admin_started
 
+    def all_ready(self) -> bool:
+        """Check if all PLAYER campaign members have marked themselves ready.
+
+        Excludes owner/admin - only regular MEMBER role players need to ready up.
+        """
+        if not self.member_ids:
+            return True
+        player_ids = [
+            uid
+            for uid in self.member_ids
+            if self.members.get(uid, None)
+            and self.members[uid].role == CampaignRole.MEMBER
+        ]
+        if not player_ids:
+            return True
+        return all(self.player_ready.get(uid, False) for uid in player_ids)
+
+    def transition_on_all_ready(self) -> bool:
+        """If all players are ready and phase is AWAITING_READY, advance to AWAITING_ADMIN_START.
+        Returns True if transition occurred, False otherwise."""
+        if self.session_phase == SessionPhase.AWAITING_READY and self.all_ready():
+            self.transition_to(SessionPhase.AWAITING_ADMIN_START)
+            return True
+        return False
+
     def get_phase_context(self) -> dict[str, object]:
         return {
             "phase": self.session_phase.value,
@@ -249,9 +274,21 @@ class CampaignSession(BaseModel):
         return self.onboarding_completed.get(user_id, False)
 
     def all_onboarding_complete(self) -> bool:
+        """Check if all PLAYER campaign members have completed onboarding.
+
+        Excludes owner/admin - only regular MEMBER role players need to complete onboarding.
+        """
         if not self.member_ids:
             return True
-        return all(self.onboarding_completed.get(uid, False) for uid in self.member_ids)
+        player_ids = [
+            uid
+            for uid in self.member_ids
+            if self.members.get(uid, None)
+            and self.members[uid].role == CampaignRole.MEMBER
+        ]
+        if not player_ids:
+            return True
+        return all(self.onboarding_completed.get(uid, False) for uid in player_ids)
 
     def set_onboarding_content(self, content: dict[str, object]) -> None:
         self.onboarding_content = content
@@ -349,6 +386,10 @@ class SessionStore:
             user_id=user_id,
             character_name="",
         )
+
+        # Auto-transition lobby → awaiting_ready when first non-owner joins
+        if session.session_phase == SessionPhase.LOBBY and user_id != session.owner_id:
+            session.transition_to(SessionPhase.AWAITING_READY)
 
         return session
 

@@ -1,8 +1,9 @@
 ---
 gsd_state_version: 1.0
 slug: gsd-autonomous-workflow-failure
-status: active
+status: resolved
 created: 2026-03-31T15:41:00Z
+resolved: 2026-03-31
 ---
 
 # Debug Session: gsd-autonomous-workflow-failure

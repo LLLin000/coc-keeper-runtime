@@ -107,26 +107,61 @@ class TestScenarioAudienceSplit:
                     "args": {"campaign_id": "c1"},
                 },
                 {
-                    "actor": "u_kp",
+                    "actor": "u_p1",
+                    "action": "command",
+                    "name": "create_test_profile",
+                    "args": {
+                        "user_id": "u_p1",
+                        "name": "Investigator One",
+                        "occupation": "scholar",
+                        "age": 25,
+                    },
+                },
+                {
+                    "actor": "u_p1",
                     "action": "command",
                     "name": "join_campaign",
-                    "args": {"campaign_id": "c1"},
+                    "args": {},
+                },
+                {
+                    "actor": "u_p1",
+                    "action": "command",
+                    "name": "set_role",
+                    "args": {"role": "player"},
+                },
+                {
+                    "actor": "u_p1",
+                    "action": "command",
+                    "name": "select_profile",
+                    "args": {"profile_id": "u_p1"},
+                },
+                {
+                    "actor": "u_p1",
+                    "action": "command",
+                    "name": "ready",
+                    "args": {},
                 },
                 {
                     "actor": "u_kp",
                     "action": "command",
-                    "name": "ready",
-                    "args": {"character_name": "KP"},
+                    "name": "start_session",
+                    "args": {},
                 },
                 {
-                    "actor": "u_kp",
+                    "actor": "u_p1",
+                    "action": "command",
+                    "name": "complete_onboarding",
+                    "args": {},
+                },
+                {
+                    "actor": "u_p1",
                     "action": "message",
                     "text": "hello",
                 },
             ],
             "assertions": {
                 "visible": {
-                    "public_must_include": ["hello"],
+                    "public_must_include": ["游戏开始"],
                 }
             },
         }

@@ -1,13 +1,420 @@
+## OpenCode Agent Contract
+
+这个仓库通过 OpenCode 中安装的 `get-shit-done` 运行。
+
+把这份文件当成执行规约，不要当成资料说明书。它的目标只有三个：
+
+- 先选对 GSD 入口
+- 让 `.planning/` 始终和真实工作一致
+- 禁止绕开 workflow 的随手改仓库行为
+
+### Instruction Priority
+
+1. Direct user request
+2. This `AGENTS.md`
+3. Installed GSD workflow and command files under `C:\Users\Lin\.config\opencode\get-shit-done`
+4. General model defaults
+
+If a user explicitly asks to bypass GSD for a one-off task, obey the user. Otherwise, follow GSD.
+
+### System Boundary
+
+这份文件只约束：
+
+- OpenCode 命令使用方式
+- GSD workflow 选择
+- 本项目自己的交付门槛
+
+不要混入别的 agent 系统。这个仓库只按 OpenCode + GSD 理解。
+
+### Canonical GSD Installation
+
+- Installed runtime: `C:\Users\Lin\.config\opencode\get-shit-done`
+- Local source mirror for inspection: `D:\L\AI\get-shit-done-1.30.0`
+- OpenCode command style: `/gsd-...`
+- Do not use `/gsd:...` in this repository
+
+### `CLAUDE.md` 与 `AGENTS.md` 的对应关系
+
+GSD 源码、官方文档、agent 定义、workflow 提示词中，大量使用的是 `CLAUDE.md` 这个名字。
+
+但在 OpenCode 运行时，这个角色应理解为当前仓库根目录的 `AGENTS.md`。
+
+对本仓库，执行时按下面的映射理解：
+
+- GSD 源码里写的 `./CLAUDE.md`
+- 在 OpenCode 中等价于 `./AGENTS.md`
+
+含义是：
+
+- 当 GSD 官方文档说“读取 `CLAUDE.md` 中的项目约束”
+- 对本仓库的 OpenCode agent 来说，应该读取并遵守 `AGENTS.md`
+
+优先级上：
+
+- OpenCode 运行时，以当前仓库 `AGENTS.md` 为准
+- 不要因为源码里写了 `CLAUDE.md`，就以为这个仓库还需要并行维护第二套说明文件
+
+### Golden Rules
+
+1. Before any repo-changing work, choose and enter a GSD workflow.
+2. In OpenCode, the normal entrypoint is always a slash command like `/gsd-quick` or `/gsd-plan-phase`.
+3. Do not simulate a slash command by sending its text inside a generic `Task(...)`.
+4. Do not treat internal workflow implementation details as user-facing entrypoints.
+5. Keep `.planning/` as the canonical workflow state. Do not improvise parallel state tracking outside it.
+6. Do not claim work is complete before running this project's verification gate.
+
+### GSD 工作流模型
+
+GSD 不是“一个命令直接做完所有事”，而是一个固定分层：
+
+1. 用户调用 `/gsd-...` 命令
+2. 对应 command 文件进入 workflow
+3. workflow 作为薄编排器，只做：
+   - 读取 `gsd-tools.cjs init ...` 上下文
+   - 选择下一个 agent
+   - 等待结果
+   - 更新 `.planning/` 状态
+   - 路由到下一步
+4. 真正的研究、计划、执行、验证由专用 `gsd-*` subagent 完成
+5. 产物落盘到 `.planning/` 后，才进入下一步
+
+要点：
+
+- command 是入口
+- workflow 是编排器
+- `gsd-*` subagent 是执行单元
+- `.planning/` 是状态真相
+
+### Fresh Context 原则
+
+GSD 的核心设计之一是：每个专用 agent 都拿到一份新的上下文窗口。
+
+因此：
+
+- 不要把一个长对话线程硬扛到底
+- 不要让 orchestrator 自己去做本该由 planner 或 executor 做的重活
+- 不要试图在一个普通 agent 里“继续扮演”下一个 GSD 专用 agent
+
+薄编排器负责衔接，专用 agent 负责干活。
+
+### Subagent 边界
+
+这是本文件最重要的补充规则。
+
+#### 正常项目工作时
+
+无论是 `/gsd-quick`、`/gsd-plan-phase`、`/gsd-execute-phase` 还是 `/gsd-debug`：
+
+- 先进入对应 slash command
+- 由 workflow 生成和调用正确的 `gsd-*` subagent
+- subagent 完成自己的职责后，把结果返回给 orchestrator
+- subagent 不再继续 spawn 另一个 subagent
+
+一句话：
+
+- 用户命令可以进入 workflow
+- workflow 可以 spawn 专用 subagent
+- 专用 subagent 默认不得继续 spawn subagent
+
+#### 为什么要这么做
+
+因为 GSD 官方架构就是：
+
+- thin orchestrators
+- fresh context per agent
+- artifacts written to disk
+- orchestrator 再决定下一步
+
+如果让 subagent 再继续 spawn subagent，会破坏：
+
+- 上下文边界
+- 状态可追踪性
+- checkpoint / continuation 机制
+- workflow 的可恢复性
+
+#### 唯一例外
+
+只有你在维护 `get-shit-done` 自己时，才可以讨论或修改内部的 subagent wiring，例如：
+
+- workflow 文件本身
+- command 到 workflow 的路由
+- installer 转换逻辑
+- GSD 内部 agent 定义
+
+那是“维护 GSD 本身”，不是“用 GSD 跑这个项目”。
+
+### Hard Prohibitions
+
+Never do these unless the user explicitly requests a bypass:
+
+- edit repo files directly without first entering a GSD workflow
+- paste `/gsd-plan-phase ...`, `/gsd-execute-phase ...`, `/gsd-quick ...` into a generic spawned agent as plain text
+- use `/gsd:...` colon syntax
+- invent new workflow entrypoints that are not installed in GSD
+- ignore `.planning/active-workstream` and work against the wrong track by default
+- mark a phase or task done without updating the workflow artifacts that GSD expects
+
+### 常见工作流怎么走
+
+#### `/gsd-quick`
+
+默认流程是：
+
+1. 解析任务描述
+2. `init quick`
+3. 必要时进入 discuss 或 research
+4. workflow spawn `gsd-planner`
+5. planner 产出 `.planning/quick/.../PLAN.md`
+6. workflow spawn `gsd-executor`
+7. executor 执行、提交、写 `SUMMARY.md`
+8. workflow 更新 `STATE.md`
+9. 如使用 `--full`，再走 verifier
+
+#### `/gsd-plan-phase <phase>`
+
+默认流程是：
+
+1. `init plan-phase`
+2. 读取 phase、state、requirements、context
+3. 必要时先 research
+4. workflow spawn `gsd-phase-researcher`
+5. workflow spawn `gsd-planner`
+6. planner 产出 `PLAN.md`
+7. workflow spawn `gsd-plan-checker`
+8. 如不通过，回到 planner 修订，最多有限轮次
+9. 通过后由 orchestrator 给出下一步 `/gsd-execute-phase`
+
+#### `/gsd-execute-phase <phase>`
+
+默认流程是：
+
+1. `init execute-phase`
+2. 发现该 phase 下所有 plan
+3. 按依赖分 wave
+4. orchestrator 按 wave spawn `gsd-executor`
+5. executor 各自执行 plan、写 `SUMMARY.md`
+6. wave 完成后，orchestrator 汇总并进入下一 wave
+7. 所有 plan 完成后，workflow spawn `gsd-verifier`
+8. verifier 写 `VERIFICATION.md`
+9. orchestrator 更新 `ROADMAP.md` / `STATE.md` 并给出后续动作
+
+#### `/gsd-debug`
+
+默认流程是：
+
+1. 进入 debug workflow
+2. workflow spawn `gsd-debugger`
+3. debugger 负责收集证据、形成假设、验证、记录
+4. 如遇 checkpoint，由 orchestrator 呈现给用户
+5. continuation 是 orchestrator 生成新的 continuation agent，不是旧 agent 无限续命
+
+### What Counts As The Correct Entry Point
+
+Use this decision table first.
+
+| Situation | Required entrypoint |
+|---|---|
+| Small fix, doc tweak, ad-hoc task, narrow refactor | `/gsd-quick` |
+| Bug investigation, flaky behavior, failing tests, unclear root cause | `/gsd-debug` |
+| New roadmap phase needs planning | `/gsd-plan-phase <phase>` |
+| Planned phase implementation | `/gsd-execute-phase <phase>` |
+| Need to clarify phase scope before planning | `/gsd-discuss-phase <phase>` |
+| Need conversational validation of completed phase behavior | `/gsd-verify-work <phase>` |
+| Need roadmap surgery | `/gsd-add-phase`, `/gsd-insert-phase`, `/gsd-remove-phase`, `/gsd-plan-milestone-gaps` |
+| Need current-state recovery or handoff | `/gsd-pause-work`, `/gsd-resume-work`, `/gsd-progress`, `/gsd-next` |
+| Need codebase understanding before planning | `/gsd-map-codebase` |
+| Need autonomous milestone execution | `/gsd-autonomous` |
+
+### Required Workflow By Task Type
+
+#### 1. Ad-hoc work
+
+Use `/gsd-quick` when the user asks for:
+
+- a focused bugfix
+- a small feature
+- a docs update
+- a test adjustment
+- a contained cleanup
+
+Escalate from `/gsd-quick` to phase workflow if the task is clearly milestone-sized, cross-cutting, or should produce durable planning artifacts for future phases.
+
+#### 2. Planned phase work
+
+Use:
+
+1. `/gsd-discuss-phase <phase>` when scope is ambiguous or contains meaningful tradeoffs
+2. `/gsd-plan-phase <phase>` to create executable plan artifacts
+3. `/gsd-execute-phase <phase>` to implement them
+4. `/gsd-verify-work <phase>` when user-facing or behavioral validation is needed
+
+Do not jump straight to editing files for a numbered phase unless the user explicitly says to bypass GSD.
+
+#### 3. Debugging
+
+Use `/gsd-debug` for:
+
+- failures with unclear cause
+- repeated regressions
+- scenario or integration breakage
+- bugs that need persistent evidence tracking
+
+Do not treat debugging as a normal quick task when the failure mode is still unknown.
+
+#### 4. Resume and continuity
+
+When the user says:
+
+- continue
+- resume
+- what's next
+- where were we
+
+prefer `/gsd-resume-work` or `/gsd-progress` instead of guessing from memory.
+
+### Subagent Rules
+
+这是旧版最容易把 agent 带偏的地方，必须严格执行。
+
+#### 用户态规则
+
+对正常仓库工作，不要手动把第一步写成：
+
+- `gsd-planner`
+- `gsd-executor`
+- `gsd-verifier`
+- `gsd-debugger`
+- 其他 `gsd-*` 专用 subagent
+
+第一步应该是 slash command，不是专用 subagent。
+
+#### 编排规则
+
+允许的调用链只有这类：
+
+- 用户 / 主 agent → `/gsd-...`
+- `/gsd-...` command → workflow orchestrator
+- workflow orchestrator → 一个或多个 `gsd-*` subagent
+- `gsd-*` subagent → 返回结果给 orchestrator
+
+正常项目工作里，不允许：
+
+- 普通 agent 伪装成 workflow
+- subagent 再继续 spawn subagent
+- 把 workflow 内部的 subagent 例子拿来当用户态入口
+
+#### 内部实现例外
+
+只有在维护 GSD 自己时，才允许直接处理 `Task(subagent_type="gsd-*", ...)`：
+
+- 编辑 GSD workflow 文件
+- 修 command wiring
+- 修 installer / runtime conversion
+- 修 agent 定义
+
+那属于 GSD 内部实现，不属于仓库日常开发。
+
+#### 普通 generic task 规则
+
+如果因为非 GSD 原因必须开一个普通 task：
+
+- 用 `subagent_type="general"`
+- 不要用废弃的 `subagent_type="task"`
+- 不要把 slash command 文本丢进去假装命令执行了
+
+### CLI Rules
+
+GSD workflow initialization commands use:
+
+```bash
+node "C:\Users\Lin\.config\opencode\get-shit-done\bin\gsd-tools.cjs" init <subcommand>
+```
+
+Important:
+
+- `init` is required for workflow initialization commands
+- this is workflow plumbing, not the normal user-facing entrypoint
+- prefer slash commands in conversation; use the CLI form only when workflow implementation or low-level inspection actually requires it
+
+Common valid forms:
+
+```bash
+node "C:\Users\Lin\.config\opencode\get-shit-done\bin\gsd-tools.cjs" init quick "fix X"
+node "C:\Users\Lin\.config\opencode\get-shit-done\bin\gsd-tools.cjs" init plan-phase E93
+node "C:\Users\Lin\.config\opencode\get-shit-done\bin\gsd-tools.cjs" init execute-phase E93
+node "C:\Users\Lin\.config\opencode\get-shit-done\bin\gsd-tools.cjs" init resume
+node "C:\Users\Lin\.config\opencode\get-shit-done\bin\gsd-tools.cjs" init verify-work E93
+```
+
+Common invalid forms:
+
+```bash
+node gsd-tools.cjs plan-phase E93
+node gsd-tools.cjs quick "fix X"
+node gsd-tools.cjs new-milestone
+```
+
+### Workstream And Planning State Rules
+
+This project uses multi-track workstreams. Always inspect the active workstream before phase work.
+
+Canonical files:
+
+- active workstream: `.planning/active-workstream`
+- track roadmap: `.planning/workstreams/<track>/ROADMAP.md`
+- track state: `.planning/workstreams/<track>/STATE.md`
+
+Current-state lookup order:
+
+1. Read `.planning/active-workstream`
+2. Read `.planning/workstreams/<active>/STATE.md`
+3. Read `.planning/workstreams/<active>/ROADMAP.md`
+4. Reconcile conflicts before planning or execution
+
+Repository-specific caution:
+
+- if a non-active track's `STATE.md` disagrees with `.planning/active-workstream`, trust the active-workstream pointer first and treat the mismatch as workflow-state drift
+
+Implications:
+
+1. Default to the track named in `.planning/active-workstream` unless the user explicitly switches tracks.
+2. If a phase number or milestone does not match the active workstream, stop and reconcile before planning or executing.
+3. If `STATE.md` frontmatter is inconsistent with the roadmap, treat that as workflow-state drift and repair the state before relying on manager-style logic.
+
+### Delivery Gate
+
+Before claiming implementation work is complete, run all required project checks:
+
+1. `uv run pytest -q`
+2. `uv run python -m dm_bot.main smoke-check`
+
+Required behavior:
+
+- do not say "done" before these pass
+- if they fail, report the failing gate plainly
+- if a failure is unrelated but blocks the claim, say so explicitly
+- if you changed workflow or planning files only, still avoid implying product behavior is verified unless the checks ran
+
+### Git And Commit Conventions
+
+- branch naming: `codex/<feature-name>`
+- commit message format: `type: description`
+- for cross-track changes, explicitly state:
+  - `Primary Track`
+  - `Secondary Impact`
+  - `Contracts Changed`
+  - `Migration Notes`
+
+Do not make workflow state harder to audit:
+
+- do not silently change `.planning/` without explaining why
+- do not leave execution artifacts half-written if a workflow was supposed to own them
+
 <!-- GSD:project-start -->
 ## Project Overview
 
 **Discord AI Keeper** — 本地模型驱动的 Call of Cthulhu 跑团系统
-
-> **Note**: This project uses two distinct systems that are sometimes confused:
-> - **oh-my-opencode (omo)**: OpenCode plugin providing built-in agents (`sisyphus`, `oracle`, `metis`, `librarian`, etc.)
-> - **gsd-opencode (gsd)**: Workflow/project management system (`/gsd-plan-phase`, `/gsd-execute-phase`, `gsd-tools.cjs`, etc.)
->
-> This file focuses on **GSD conventions**. For oh-my-opencode agents, refer to OpenCode's built-in documentation.
 
 核心目标：
 
@@ -19,125 +426,78 @@
 
 **Core Value:** Run real multiplayer Call of Cthulhu sessions in Discord where a local AI Keeper can narrate, roleplay NPCs, and enforce COC rules without constant manual bookkeeping.
 
-### Project Structure
-
-This project uses **multi-track workstreams** for parallel development:
-
-| Workstream | Focus | Current Milestone |
-|------------|-------|------------------|
-| `track-b/` | Track B - 人物构建与管理层 | vB.1.5 (next) |
-| `track-e/` | Track E - 运行控制与运维面板层 | vE.2.2 (in progress) |
-
-**Current active workstream:** `track-b` (see `.planning/active-workstream`)
-
-To check current state:
-```bash
-cat .planning/active-workstream                    # Which track is active
-cat .planning/workstreams/<track>/ROADMAP.md       # Track roadmap
-cat .planning/workstreams/<track>/STATE.md          # Track state
-```
-
 ### Constraints
 
-- **Platform**: Discord-first — the system must work naturally in Discord channels or threads because that is the chosen runtime surface.
-- **Inference**: Local models — narration and control should run through local model infrastructure rather than a hosted LLM dependency.
-- **Target Hardware**: Consumer local machine — the default stack should remain practical on `8GB`-class consumer GPUs with `32GB` system RAM.
-- **Architecture**: Reuse mature projects first — stable existing tools, APIs, and datasets should be integrated before writing custom subsystems.
-- **Rules Scope**: Heavy COC rules support in v1 — percentile checks, SAN, success grades, pushed rolls, and combat resolution are not optional side features.
-- **Delivery**: First release should optimize for campaign-usable reliability over maximal scope — reducing integration and debugging cost is a priority.
+- **Platform:** Discord-first
+- **Inference:** local models
+- **Target Hardware:** consumer local machine, practical for `8GB`-class GPU and `32GB` RAM
+- **Architecture:** prefer mature integrations before custom subsystems
+- **Rules Scope:** COC rules support is required in v1
+- **Delivery:** optimize for campaign-usable reliability, not maximal surface area
 
 ### Product Tracks
 
-项目按 4 条长期 Track 理解：
+- **Track A:** 模组与规则运行层
+- **Track B:** 人物构建与管理层
+- **Track C:** Discord 交互层
+- **Track D:** 游戏呈现层
+- **Track E:** 运行控制与运维面板层
 
-- **Track A: 模组与规则运行层** — COC 规则、模组 schema、room/scene/event graph、trigger、consequence、reveal policy
-- **Track B: 人物构建与管理层** — builder、archive、profile lifecycle、campaign projection、管理员角色治理
-- **Track C: Discord 交互层** — slash commands、频道职责、自然消息、ephemeral/DM、启动与交付检查
-- **Track D: 游戏呈现层** — Keeper 风格呈现、提示边界、线索板/历史板/角色板的可读性和沉浸感
+### Track Context
 
-### Global Rules
+This repository uses workstreams under `.planning/workstreams/`.
 
-1. 每个 milestone 必须有一个主 Track。
-2. 数值真相、规则真相、状态真相不能只靠 prompt，必须来自本地规则书、确定性代码或显式模组特规。
-3. 关键状态变化必须可持久化、可审计。
-4. 宣称"可交付"前，至少要通过：`uv run pytest -q` 和 `uv run python -m dm_bot.main smoke-check`
-5. 新功能优先做成可复用 runtime 能力，而不是单模组硬编码。
+Always derive the current track and phase from:
+
+1. `.planning/active-workstream`
+2. `.planning/workstreams/<active>/STATE.md`
+3. `.planning/workstreams/<active>/ROADMAP.md`
 <!-- GSD:project-end -->
 
 <!-- GSD:architecture-start -->
 ## Architecture
 
-### System Diagram
+### System Layers
 
-```
-Discord Users
-    │
-    ▼
-┌─────────────────────────────────────────────────────────┐
-│  Discord Bot Layer                                      │
-│  (slash commands / normal messages / streaming)        │
-└───────────────────────┬─────────────────────────────────┘
-                        │
-                        ▼
-┌─────────────────────────────────────────────────────────┐
-│  Session Orchestrator                                   │
-│  (campaign binding / channel roles / turn coordination) │
-└───────┬─────────┬─────────┬─────────┬─────────────────┘
-        │         │         │         │
-        ▼         ▼         ▼         ▼
-┌───────────┐ ┌─────────┐ ┌──────────┐ ┌────────────────┐
-│ Adventure  │ │ COC     │ │ Model    │ │ Persistence &  │
-│ Runtime    │ │Character│ │ Layer    │ │ Diagnostics   │
-│            │ │ Layer   │ │          │ │               │
-│(room graph │ │(archive │ │Router    │ │SQLite         │
-│ scene graph│ │ builder │ │qwen3:1.7b│ │event log      │
-│ trigger    │ │ panels) │ │          │ │session recovery│
-│ tree       │ │         │ │Narrator  │ │               │
-│            │ │         │ │qwen3:4b  │ │               │
-└────────────┘ └─────────┘ └──────────┘ └───────────────┘
-```
-
-### Key Layers
-
-- **Discord 层** — slash commands、普通消息监听、分频道职责、流式输出
-- **Session / Orchestrator 层** — campaign 绑定、turn 协调、角色投影、模式切换、消息路由
-- **Adventure Runtime 层** — 模组结构、room graph、scene/event graph、trigger tree、reveal policy、结局条件
-- **Rules 层** — COC 骰子、成功等级、SAN、明确的规则结算
-- **Character / Archive 层** — 长期调查员档案、对话建卡、调查员面板、模组实例投影
-- **Model 层** — `router` 负责结构化判断，`narrator` 负责叙事和角色表演
-- **Persistence / Diagnostics 层** — SQLite、事件日志、状态恢复、调试摘要
+- **Discord layer** — slash commands, normal message intake, streaming output
+- **Session / orchestrator layer** — campaign binding, turn coordination, mode switching, routing
+- **Adventure runtime** — structured modules, room or scene graphs, triggers, reveal policy, ending conditions
+- **Rules layer** — deterministic COC dice, success grades, SAN, combat and checks
+- **Character / archive layer** — long-lived investigator profiles and campaign projections
+- **Model layer** — router for structured decisions, narrator for prose and roleplay
+- **Persistence / diagnostics layer** — SQLite, event log, recovery, debug summaries
 
 ### Local Models
 
-- **Router**: `qwen3:1.7b` — 快、稳定、结构化判断
-- **Narrator**: `qwen3:4b-instruct-2507-q4_K_M` — 中文稳、适合 Keeper 叙事
+- **Router:** `qwen3:1.7b`
+- **Narrator:** `qwen3:4b-instruct-2507-q4_K_M`
 
 ### Project Layout
 
-```
+```text
 src/dm_bot/
-  adventures/      structured modules, graphs, triggers, extraction
-  characters/      import sources and base character models
-  coc/             archive, builder, panels, COC asset handling
-  diagnostics/     runtime summaries and debug output
-  discord_bot/     Discord client, commands, streaming transport
-  gameplay/        combat and scene presentation helpers
-  models/          Ollama/OpenAI-compatible client and model schemas
-  narration/       narrator prompt and response shaping
-  orchestrator/    turn pipeline, session runtime, gameplay integration
-  persistence/     SQLite-backed state store
-  router/          structured turn routing contracts and service
-  rules/           dice, COC checks, deterministic rule resolution
-  runtime/         app health, startup checks, smoke check
+  adventures/
+  characters/
+  coc/
+  diagnostics/
+  discord_bot/
+  gameplay/
+  models/
+  narration/
+  orchestrator/
+  persistence/
+  router/
+  rules/
+  runtime/
 ```
 
 ### Design Principles
 
-- **状态真相不交给模型** — AI 可以说话、提问、总结，但 canonical truth 必须落在结构化状态、规则结算和触发器执行里
-- **模组优先结构化** — 模组应该有 room/scene/event graph、trigger tree、state fields、reveal gates
-- **规则和叙事分离** — 规则层决定能不能、发生了什么；叙事层决定怎么把这件事说得像 Keeper
-- **长期角色和模组实例分离** — 玩家档案是长期资产；模组里的 SAN、秘密、入口身份、临时状态是实例状态
-- **优先复用成熟方案** — 骰子、Discord 调度、TRPG 交互模式优先参考成熟项目
+- canonical state must not live only in prompts
+- rules and narration are separate concerns
+- module content should be structured, not only prompt-authored prose
+- long-lived character truth and module-instance truth must remain separate
+- critical state changes must be persistent and auditable
 <!-- GSD:architecture-end -->
 
 <!-- GSD:conventions-start -->
@@ -145,344 +505,173 @@ src/dm_bot/
 
 ### Code Conventions
 
-- **Python**: Follow `uv` + Pydantic v2 + SQLAlchemy 2.0 stack
-- **Type Safety**: Never suppress type errors with `as any`, `@ts-ignore`, `@ts-expect-error`
-- **Error Handling**: Never use empty catch blocks `catch(e) {}`
-- **Testing**: Never delete failing tests to "pass" — fix root causes instead
-- **Bugfix Rule**: Fix minimally. NEVER refactor while fixing.
+- Python stack: `uv` + Pydantic v2 + SQLAlchemy 2.0
+- Never suppress type errors with `as any`, `@ts-ignore`, `@ts-expect-error`
+- Never use empty catch blocks
+- Never delete failing tests to make the suite pass
+- For bugfixes: fix minimally, do not refactor opportunistically
 
-### Git Conventions
+### Repository Conventions
 
-- Branch naming: `codex/<feature-name>`
-- Commit message format: `type: description` (e.g., `feat: add character archive`)
-- Primary Track must be declared in commit messages for cross-track changes
-- Run `uv run pytest -q` and `uv run python -m dm_bot.main smoke-check` before pushing
+- prefer reusable runtime capabilities over module-specific hardcoding
+- keep rules truth deterministic
+- keep important changes auditable
+- preserve existing track and phase artifacts unless intentionally updating them through workflow
 
-### GSD Workflow Conventions
+### Workflow Conventions
 
-**⚠️ There are TWO types of GSD commands:**
-
-1. **Slash Commands** (for OpenCode conversation):
-   - `/gsd-quick`, `/gsd-debug`, `/gsd-plan-phase`, `/gsd-execute-phase`, etc.
-   - These are invoked WITH the slash prefix in OpenCode
-
-2. **CLI Commands** (for workflow scripts):
-   - `node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" init <subcommand>`
-   - These are used INSIDE workflow files and scripts
-   - **Must use `init` prefix** — see section below for details
-
-**Entry Points** (use these slash commands, not direct file edits):
-  - `/gsd-quick` — small fixes, doc updates, ad-hoc tasks
-  - `/gsd-debug` — investigation and bug fixing
-  - `/gsd-plan-phase` — plan a new phase
-  - `/gsd-execute-phase` — execute a planned phase
-  - `/gsd-discuss-phase` — clarify phase scope and approach
-  - `/gsd-verify-work` — verify completed work
-  - `/gsd-map-codebase` — understand codebase structure
-  - `/gsd-add-phase`, `/gsd-insert-phase`, `/gsd-remove-phase` — manage roadmap
-  - `/gsd-plan-milestone-gaps` — find missing phases
-  - `/gsd-pause-work`, `/gsd-resume-work` — pause/resume work sessions
-  - `/gsd-new-milestone` — create new milestone
-  - `/gsd-audit-milestone`, `/gsd-complete-milestone` — milestone lifecycle
-  - `/gsd-set-profile`, `/gsd-set-model` — agent configuration
-  - `/gsd-settings` — view current settings
-
-- **Subagent Invocation**: Use `task(subagent_type="general", ...)` NOT `subagent_type="task"`
-- **GSD Tools CLI**: `node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs"` (see CLI section above)
-- **Do NOT** spawn `gsd-planner` via Task subagent — use `/gsd-plan-phase` CLI command directly. Nesting Task agents causes runtime hangs.
-
-### Cross-Track Change Convention
-
-When a change impacts multiple tracks, commit/PR descriptions must state:
-- `Primary Track`
-- `Secondary Impact`
-- `Contracts Changed`
-- `Migration Notes`
-
-### Delivery Gate
-
-Before claiming any work is complete:
-1. Run `uv run pytest -q` — all tests must pass
-2. Run `uv run python -m dm_bot.main smoke-check` — must pass
-3. Diagnostics must be clean on all changed files
-4. Evidence before assertions — verify before claiming success
+- slash commands are the default OpenCode interface
+- `gsd-tools.cjs init ...` is workflow plumbing, not the normal conversational interface
+- phase work should leave plan, summary, verification, and state artifacts coherent
 <!-- GSD:conventions-end -->
 
 <!-- GSD:workflow-start -->
-## GSD Workflow Enforcement
+## Workflow Enforcement
 
-**Before using Edit, Write, or other file-changing tools, start work through a GSD command so planning artifacts and execution context stay in sync.**
+Before using any file-changing tool, start with the correct GSD entrypoint unless the user explicitly asks to bypass it.
 
-### Command Reference (gsd-opencode v1.22.1)
+Use these defaults:
 
-| Command | Purpose |
-|---------|---------|
-| `/gsd-quick` | Small fixes, doc updates, ad-hoc tasks |
-| `/gsd-debug` | Investigation and bug fixing |
-| `/gsd-plan-phase` | Plan a new phase (supports `--prd`, `--auto`, `--skip-research`, `--skip-verify`) |
-| `/gsd-execute-phase` | Execute a planned phase (wave-based, checkpoint handling) |
-| `/gsd-discuss-phase` | Clarify phase scope and approach |
-| `/gsd-verify-work` | Verify completed work against phase goals |
-| `/gsd-map-codebase` | Understand codebase structure |
-| `/gsd-add-phase` | Add phase to roadmap |
-| `/gsd-insert-phase` | Insert phase at specific position |
-| `/gsd-remove-phase` | Remove phase from roadmap |
-| `/gsd-plan-milestone-gaps` | Find missing phases in roadmap |
-| `/gsd-pause-work` | Pause current work session |
-| `/gsd-resume-work` | Resume paused work session |
-| `/gsd-new-milestone` | Create new milestone |
-| `/gsd-audit-milestone` | Audit milestone completeness |
-| `/gsd-complete-milestone` | Complete and archive milestone |
-| `/gsd-set-profile` | Set agent developer profile |
-| `/gsd-set-model` | Set agent model |
-| `/gsd-settings` | View current settings |
-| `/gsd-help` | Show available commands |
-| `/gsd-update` | Update gsd-opencode |
-| `/gsd-whats-new` | Show what's new |
+- `/gsd-quick` for small fixes and ad-hoc work
+- `/gsd-debug` for investigation and bug fixing
+- `/gsd-discuss-phase <phase>` when phase scope needs clarification
+- `/gsd-plan-phase <phase>` for planning
+- `/gsd-execute-phase <phase>` for implementation
+- `/gsd-verify-work <phase>` for conversational UAT and follow-up gaps
+- `/gsd-resume-work` or `/gsd-progress` for session recovery
 
-### Phase Planning Flow
+Do not:
 
-**Two ways to run GSD phases:**
-
-#### 1. Autonomous Mode (Recommended for milestones)
-```
-/gsd-autonomous                    # Run all remaining phases automatically
-/gsd-autonomous --from E77         # Start from phase E77
-```
-
-#### 2. Manual Mode (Single phase, interactive)
-```
-/gsd-plan-phase E77 --skip-research   # Plan phase context
-/gsd-execute-phase E77 --auto          # Execute: plan → verify → execute
-```
-
-**Subagent Invocation (for spawning GSD agents directly):**
-```
-Task(subagent_type="gsd-executor", prompt="...", description="...")   # Execute plans
-Task(subagent_type="gsd-planner", prompt="...", description="...")     # Create plans
-Task(subagent_type="gsd-verifier", prompt="...", description="...")    # Verify completion
-```
-
-**⚠️ Common Mistake:** Do NOT use `Task(tool="/gsd-plan-phase")` — this just sends the slash command text to a general agent without triggering the actual workflow.
-
-**Plan-Phase Options:**
-- `--prd <filepath>` — Generate CONTEXT.md directly from PRD file (express path)
-- `--auto` — Chain plan → verify without user input
-- `--skip-research` — Skip research step
-- `--skip-verify` — Skip verification step
-- `--gaps` — Find missing phases in roadmap
-
-**Execute-Phase Options:**
-- `--auto` — Continue executing without prompting between waves
-- `--no-transition` — Skip transition animations (used in auto-chain)
-
-### gsd-tools CLI Usage
-
-**⚠️ IMPORTANT: The `init` prefix is required for workflow commands.**
-
-All workflow initialization commands MUST be prefixed with `init`:
-
-```bash
-node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" init <subcommand>
-```
-
-**Common `init` subcommands:**
-
-| Subcommand | Purpose | Example |
-|------------|---------|---------|
-| `init plan-phase <N>` | Initialize phase planning context | `init plan-phase 5` |
-| `init execute-phase <N>` | Initialize phase execution context | `init execute-phase 5` |
-| `init new-milestone` | Initialize new milestone workflow | `init new-milestone` |
-| `init new-project` | Initialize new project workflow | `init new-project` |
-| `init quick <desc>` | Initialize quick task workflow | `init quick "fix bug"` |
-| `init progress` | Initialize progress check | `init progress` |
-| `init resume` | Initialize resume workflow | `init resume` |
-| `init verify-work <N>` | Initialize verification workflow | `init verify-work 5` |
-| `init todos [area]` | Initialize todo workflow | `init todos api` |
-
-**How `init manager` works:**
-
-1. Reads `.planning/active-workstream` to determine current workstream
-2. Reads `.planning/workstreams/<workstream>/STATE.md` to get current milestone
-3. Reads `.planning/workstreams/<workstream>/ROADMAP.md` to list phases
-4. Returns JSON with phases, status, and recommendations
-
-**⚠️ Important:** `STATE.md` frontmatter must have correct `milestone` field matching ROADMAP:
-```yaml
----
-milestone: vE.3.1          # Must match milestone name in ROADMAP
-milestone_name: "Character Lifecycle E2E"
-status: in_progress        # or "complete"
----
-```
-
-If `milestone` is wrong (e.g., `v1.0`), `init manager` will show phases from ALL non-shipped milestones instead of just the current one.
-
-**Other useful commands:**
-
-```bash
-# Roadmap operations
-node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" roadmap analyze
-node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" roadmap get-phase <N>
-node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" phase-plan-index <N>
-
-# State operations
-node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" state load
-node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" state-snapshot
-
-# Phase operations
-node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" phase complete <N>
-node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" phase add "<description>"
-node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" phase remove <N>
-
-# Commit
-node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" commit "<message>" --files <files>
-```
-
-**Common mistakes to avoid:**
-
-```bash
-# ❌ WRONG - "new-milestone" is not a standalone command
-node gsd-tools.cjs new-milestone "v1.0"
-
-# ✅ CORRECT - must use "init" prefix
-node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" init new-milestone
-
-# ❌ WRONG - "plan-phase" alone is not valid
-node gsd-tools.cjs plan-phase 5
-
-# ✅ CORRECT - must use "init" prefix
-node "$HOME/.config/opencode/get-shit-done/bin/gsd-tools.cjs" init plan-phase 5
-```
-
-### Subagent Type
-
-**Always use**: `task(subagent_type="general", ...)`  
-**Never use**: `task(subagent_type="task", ...)` (deprecated v1.20.5)
-
-### GSD Subagent Types
-
-When spawning GSD workflow agents directly (not via slash commands), use these specific subagent types:
-
-| Subagent Type | Purpose | When to Use |
-|-------------|---------|-------------|
-| `gsd-planner` | Create phase plans | Planning a phase programmatically |
-| `gsd-executor` | Execute plans | Executing phase plans |
-| `gsd-verifier` | Verify completion | Verifying phase goals |
-| `gsd-debugger` | Debug issues | Investigating bugs |
-
-**Example:**
-```python
-# Correct - spawn planner directly
-Task(
-    description="Plan phase E78",
-    subagent_type="gsd-planner",
-    prompt="Create PLAN.md for phase E78..."
-)
-
-# Incorrect - spawning general agent
-Task(
-    description="Plan phase E78",
-    prompt="You should spawn a gsd-planner..."  # Don't do this!
-)
-```
-
-### Do NOT
-
-- Make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it
-- Use colon prefix `/gsd:` — use hyphen prefix `/gsd-` instead
-- Suppress type errors with `as any` or `@ts-ignore`
-- Use empty catch blocks
-- Delete failing tests to "pass"
-- Leave code in broken state after failures
+- make direct repo edits outside a GSD workflow by default
+- use `/gsd:...` syntax
+- send slash commands into generic tasks
+- use internal GSD subagent examples as the first user-facing action
 <!-- GSD:workflow-end -->
 
 <!-- GSD:profile-start -->
-
-## System Clarification
-
-| System | What It Is | When to Use |
-|--------|------------|-------------|
-| **oh-my-opencode (omo)** | OpenCode plugin providing built-in agents | Use when you need: `sisyphus`, `oracle`, `metis`, `momus`, `explore`, `librarian` agents |
-| **gsd-opencode (gsd)** | Workflow/project management system | Use for: `/gsd-plan-phase`, `/gsd-execute-phase`, `/gsd-quick`, milestone planning, roadmap management |
-
-### Key Differences
-
-**oh-my-opencode Agents:**
-- `sisyphus` — Main orchestrating agent (this project's primary agent)
-- `oracle` — Architecture and deep technical consultation
-- `metis` — Pre-planning analysis and requirements clarification
-- `momus` — Work plan review and evaluation
-- `explore` — Codebase search and pattern finding
-- `librarian` — External documentation and reference lookup
-
-**gsd Commands:**
-- `/gsd-plan-phase` — Create execution plans for a roadmap phase
-- `/gsd-execute-phase` — Execute plans in wave-based parallelization
-- `/gsd-quick` — Execute small, ad-hoc tasks with GSD guarantees
-- `/gsd-discuss-phase` — Clarify phase scope before planning
-- `/gsd-verify-work` — Validate built features through UAT
-
-### GSD Subagents
-
-GSD 系统定义了 17 个 subagents，它们通过 GSD 命令和工作流间接调用：
-
-**⚠️ Important:** When using the `/gsd-manager` command or manager workflow, it will automatically spawn the correct subagent types. However, if you need to spawn GSD subagents directly via `Task()`, you must specify the correct `subagent_type` as shown in the table above.
-
-#### Planning & Research
-| Agent | Purpose |
-|-------|---------|
-| `gsd-planner` | Creates executable phase plans with task breakdown, dependency analysis, goal-backward verification |
-| `gsd-plan-checker` | Verifies plans will achieve phase goal before execution (goal-backward analysis) |
-| `gsd-phase-researcher` | Researches how to implement a phase before planning (produces RESEARCH.md) |
-| `gsd-project-researcher` | Researches domain ecosystem before roadmap creation (4 dimensions: stack, features, architecture, pitfalls) |
-| `gsd-research-synthesizer` | Synthesizes outputs from 4 parallel researcher agents into SUMMARY.md |
-
-#### Execution & Verification
-| Agent | Purpose |
-|-------|---------|
-| `gsd-executor` | Executes GSD plans with atomic commits, deviation handling, checkpoint protocols |
-| `gsd-verifier` | Verifies phase goal achievement through goal-backward analysis (creates VERIFICATION.md) |
-| `gsd-integration-checker` | Verifies cross-phase integration and E2E flows |
-| `gsd-nyquist-auditor` | Fills Nyquist validation gaps by generating tests and verifying coverage |
-
-#### Roadmap & Discussion
-| Agent | Purpose |
-|-------|---------|
-| `gsd-roadmapper` | Creates project roadmaps with phase breakdown, requirement mapping, success criteria |
-| `gsd-assumptions-analyzer` | Deeply analyzes codebase for a phase, returns structured assumptions with evidence |
-| `gsd-advisor-researcher` | Researches a single gray area decision, returns comparison table with rationale |
-
-#### UI/Frontend (Frontend phases only)
-| Agent | Purpose |
-|-------|---------|
-| `gsd-ui-researcher` | Produces UI-SPEC.md design contract for frontend phases |
-| `gsd-ui-checker` | Validates UI-SPEC.md against 6 quality dimensions (BLOCK/FLAG/PASS verdicts) |
-| `gsd-ui-auditor` | Retroactive 6-pillar visual audit of implemented frontend code |
-
-#### Utilities
-| Agent | Purpose |
-|-------|---------|
-| `gsd-codebase-mapper` | Explores codebase and writes structured analysis documents (STACK, ARCHITECTURE, CONVENTIONS, CONCERNS) |
-| `gsd-debugger` | Investigates bugs using scientific method, manages debug sessions, handles checkpoints |
-| `gsd-user-profiler` | Analyzes session messages across 8 behavioral dimensions to produce developer profile |
-
-**Note:** 这些 agents 通过 GSD 命令（如 `/gsd-plan-phase`）和工作流间接调用，不是直接通过 `task(subagent_type="...")` 调用。
-
-### Common Mistakes
-
-```bash
-# ❌ WRONG - mixing up systems
-task(subagent_type="sisyphus", ...)  # sisyphus is not a category!
-task(subagent_type="gsd-planner", ...)  # Don't call GSD agents directly!
-
-# ✅ CORRECT - use GSD slash commands
-/gsd-plan-phase 5    # Plans phase through the full GSD workflow
-/gsd-execute-phase 5  # Executes through the GSD orchestrator
-```
-
 ## Developer Profile
 
-> Profile not yet configured. Run `/gsd-set-profile` to generate your developer profile.
-> This section is managed by `generate-claude-profile` — do not edit manually.
+> Profile not yet configured. Run `/gsd-set-profile` or `/gsd-profile-user` if you want GSD-managed interaction preferences.
+> This section is intentionally lightweight here; workflow compliance matters more than personalization.
 <!-- GSD:profile-end -->
+
+## Common Failure Modes
+
+These are the mistakes this file is specifically trying to prevent.
+
+### 1. Fake workflow execution
+
+Wrong:
+
+```python
+Task(subagent_type="general", prompt="/gsd-plan-phase E93")
+```
+
+Why wrong:
+
+- the command text is not actually executed as a slash command
+- planning artifacts may never be created
+- the agent will often hallucinate workflow progress
+
+Correct:
+
+- run `/gsd-plan-phase E93` in OpenCode
+
+### 2. Mixing internal and external interfaces
+
+Wrong:
+
+- seeing `gsd-planner` in GSD source code and deciding to call it directly for normal project work
+
+Correct:
+
+- use `/gsd-plan-phase E93`
+- let the workflow decide whether to spawn `gsd-planner`
+
+### 2.5. Subagent 继续套娃
+
+Wrong:
+
+- workflow 已经 spawn 了 `gsd-planner`
+- `gsd-planner` 里又继续手动 spawn `gsd-plan-checker` 或别的 `gsd-*`
+
+Why wrong:
+
+- 破坏 GSD 的薄编排器模型
+- 让状态更新和 checkpoint 脱离 workflow
+- 破坏 fresh-context 分层
+
+Correct:
+
+- planner 只完成 planner 自己的职责
+- checker 由 workflow orchestrator 再决定是否生成
+
+### 3. Wrong command syntax
+
+Wrong:
+
+- `/gsd:quick`
+- `/gsd:plan-phase`
+
+Correct:
+
+- `/gsd-quick`
+- `/gsd-plan-phase`
+
+### 4. Trusting stale track state over active-workstream
+
+Wrong:
+
+- reading a stale `track-b` milestone value and planning there by default
+
+Correct:
+
+- honor `.planning/active-workstream`
+- reconcile state drift before phase execution
+
+### 5. Declaring success without the repo gate
+
+Wrong:
+
+- "done" after edits
+- "tests look fine" without running them
+
+Correct:
+
+- run `uv run pytest -q`
+- run `uv run python -m dm_bot.main smoke-check`
+- then report the actual result
+
+## Canonical Command Reference
+
+Use these exact forms in OpenCode:
+
+```text
+/gsd-quick <task>
+/gsd-debug <problem>
+/gsd-discuss-phase <phase>
+/gsd-plan-phase <phase>
+/gsd-execute-phase <phase>
+/gsd-verify-work <phase>
+/gsd-map-codebase
+/gsd-progress
+/gsd-resume-work
+/gsd-add-phase
+/gsd-insert-phase <phase>
+/gsd-remove-phase <phase>
+/gsd-plan-milestone-gaps
+/gsd-autonomous
+/gsd-settings
+```
+
+If uncertain which workflow to use, prefer:
+
+1. `/gsd-progress` to inspect state
+2. `/gsd-discuss-phase <phase>` if the work is a numbered phase but still ambiguous
+3. `/gsd-quick` if the task is truly narrow and ad-hoc
+
+## Final Rule
+
+When in doubt, optimize for workflow integrity over speed.
+
+This repository is not harmed most by slow planning. It is harmed most by agents bypassing GSD, editing directly, and leaving `.planning/` in a state that no longer matches the real work.
