@@ -87,18 +87,18 @@ flowchart TD
 
 ## Product Tracks
 
-为了让协作者和 GSD 类 AI 在 fork 仓库后也能快速判断“下一步该做什么”，项目现在按 4 条长期 Track 理解：
+2026-04-02 的 planning reset 之后，项目不再按旧的 5-track 模型推进，而是按 4 条 ownership 更清晰的长期 workstream 理解：
 
-- **Track A: 模组与规则运行层**
-  - 负责 COC 规则、模组 schema、room/scene/event graph、trigger、consequence、reveal policy。
-- **Track B: 人物构建与管理层**
-  - 负责 builder、archive、profile lifecycle、campaign projection、管理员角色治理。
-- **Track C: Discord 交互层**
-  - 负责 slash commands、频道职责、自然消息、ephemeral/DM、启动与交付检查。
-- **Track D: 游戏呈现层**
-  - 负责 Keeper 风格呈现、提示边界、线索板/历史板/角色板的可读性和沉浸感。
+- **track-runtime**
+  - 负责 session lifecycle、gameplay orchestration、module runtime、trigger/consequence、multiplayer shared-state。
+- **track-identity**
+  - 负责 builder、archive、profile lifecycle、campaign projection、identity governance。
+- **track-surface**
+  - 负责 Discord commands、频道职责、DM/ephemeral/public surface、cards/boards、keeper-feel UX。
+- **track-ops**
+  - 负责 runtime control、scenario runner、smoke-check、restart/recovery、diagnostics、delivery gates。
 
-新 milestone 应该优先归属到其中一条 Track，而不是混成一个宽而散的 feature 包。
+这样拆的目的，是把 canonical runtime truth、identity truth、interaction surface、operability proof 分开，减少并行开发时的 ownership 重叠。
 
 ## Global Rules
 
@@ -116,7 +116,7 @@ flowchart TD
 
 这个项目允许为了整合、实验或调试而跨 Track 修改，但不允许“悄悄改了别的层却不说明”。
 
-如果一个改动影响了别的 Track，提交说明、PR 说明或 milestone 说明里至少应写清：
+如果一个改动影响了别的 workstream，提交说明、PR 说明或 milestone 说明里至少应写清：
 
 - `Primary Track`
 - `Secondary Impact`
@@ -381,10 +381,10 @@ uv run python -m dm_bot.main run-control-panel
 
 这个仓库之后会上 GitHub 供多人协作，所以推荐协作者先理解这几点：
 
-- 先看 `.planning/PROJECT.md` 里的 Track 和 Global Rules，再决定当前工作属于哪一层
-- 再看 `.planning/ROADMAP.md` 选择该 Track 的下一个 milestone
-- 用 `.planning/STATE.md` 判断当前激活的是哪条 Track，避免多人同时改同一层
-- 如果改动跨了多个 Track，必须在说明里写明 `Primary Track / Secondary Impact / Contracts Changed / Migration Notes`
+- 先看 `.planning/PROJECT.md` 里的 workstream 和 Global Rules，再决定当前工作属于哪一层
+- 再看 `.planning/active-workstream`、`.planning/workstreams/<track>/ROADMAP.md` 和 `.planning/workstreams/<track>/STATE.md` 选择该 workstream 的下一个 milestone
+- 用 `.planning/active-workstream` 判断当前默认激活的是哪条 workstream，避免多人同时改同一层
+- 如果改动跨了多个 workstream，必须在说明里写明 `Primary Track / Secondary Impact / Contracts Changed / Migration Notes`
 - 不要把 prompt 当真相来源，真相在结构化状态里
 - 规则变化要先看本地 COC 规则边界，不要直接让模型自由发挥
 - 优先补通用 runtime，不要急着对单个模组打大量专属补丁
@@ -402,9 +402,10 @@ uv run python -m dm_bot.main smoke-check
 1. **先看 planning 文档**
    - 先读：
      - `.planning/PROJECT.md`
-     - `.planning/ROADMAP.md`
+     - `.planning/active-workstream`
+     - `.planning/workstreams/<track>/ROADMAP.md`
      - `.planning/STATE.md`
-   - 先理解当前有哪些 Track、当前 active milestone 是什么、各 Track 的下一步候选是什么。
+   - 先理解当前有哪些 Track、当前 active workstream 是什么、各 Track 的下一步候选是什么。
 
 2. **先跑 codebase 全局映射**
    - 推荐先执行：
@@ -415,19 +416,19 @@ $gsd-map-codebase
 
    - 目的不是立刻写代码，而是先让 AI 了解当前代码结构、核心模块和边界。
 
-3. **再选一条 Track**
+3. **再选一条 workstream**
    - 不要一上来做一个跨所有层的大改动。
    - 先决定你当前工作属于：
-     - `Track A` 模组与规则运行层
-     - `Track B` 人物构建与管理层
-     - `Track C` Discord 交互层
-     - `Track D` 游戏呈现层
+     - `track-runtime`
+     - `track-identity`
+     - `track-surface`
+     - `track-ops`
 
 4. **然后再开具体 milestone**
-   - 按 `.planning/ROADMAP.md` 找到该 Track 的下一 milestone。
+   - 按 `.planning/workstreams/<track>/ROADMAP.md` 找到该 workstream 的下一 milestone。
    - 如果要新开 milestone，优先遵守：
      - 一个 milestone 只有一个 `Primary Track`
-     - 如果影响别的 Track，要显式写 `Secondary Impact`
+     - 如果影响别的 workstream，要显式写 `Secondary Impact`
 
 5. **推进过程中保持说明清楚**
    - 如果你的改动影响了别的板块，请在说明里写：
@@ -445,7 +446,7 @@ uv run pytest -q
 uv run python -m dm_bot.main smoke-check
 ```
 
-   - 如果要发起协作审查，优先把变更说明写成“改了哪条 Track、影响了哪些接口”，这样后续 AI 和人都能更快接手。
+   - 如果要发起协作审查，优先把变更说明写成“改了哪条 workstream、影响了哪些接口”，这样后续 AI 和人都能更快接手。
 
 ## GitHub 协作流程（新手版）
 
@@ -523,7 +524,8 @@ git checkout -b codex/track-b-archive-polish
 
 1. 读：
    - `.planning/PROJECT.md`
-   - `.planning/ROADMAP.md`
+   - `.planning/active-workstream`
+   - `.planning/workstreams/<track>/ROADMAP.md`
    - `.planning/STATE.md`
 2. 跑：
 
@@ -609,7 +611,7 @@ git push origin master
 4. 同步主仓库最新代码
 5. 新开功能分支
 6. 先看 planning，再跑 `$gsd-map-codebase`
-7. 选 Track，推进 milestone
+7. 选 workstream，推进 milestone
 8. 本地测试和 smoke-check
 9. 推送到 fork
 10. 发 PR
@@ -641,3 +643,13 @@ uv run python -m dm_bot.main run-api
 - 提高协作可维护性
 - 提高模块化和治理能力
 - 提高真实多人跑团的稳定性和可控性
+
+## Planning Truth
+
+当前 planning 的真相来源应该按这个顺序读，不要再把旧的根级 `ROADMAP` 当主索引：
+
+1. `.planning/PROJECT.md`
+2. `.planning/active-workstream`
+3. `.planning/workstreams/<track>/ROADMAP.md`
+4. `.planning/workstreams/<track>/STATE.md`
+5. `.planning/MILESTONES.md`

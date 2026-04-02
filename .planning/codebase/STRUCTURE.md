@@ -5,12 +5,12 @@
 ### Directory Layout
 
 ```
-C:\Users\tan\coc-keeper-runtime\
+C:\Users\Lin\Documents\Playground\
 ├── pyproject.toml                  # Package definition, dependencies
 ├── .env.example                    # Environment variable template
 ├── README.md                        # Project overview
 ├── AGENTS.md                        # GSD workflow documentation
-├── src/dm_bot/                     # Main package (97 Python files)
+├── src/dm_bot/                     # Main package (105 Python files as of 2026-04-02)
 │   ├── __init__.py
 │   ├── main.py                     # CLI entry: preflight, run-bot, smoke-check, etc.
 │   ├── config.py                   # Settings via pydantic-settings
@@ -120,7 +120,7 @@ C:\Users\tan\coc-keeper-runtime\
 │   │       ├── experience.py
 │   │       └── derived.py
 │   │
-│   ├── runtime/             # App lifecycle
+│   ├── runtime/             # App lifecycle / local operator tooling
 │   │   ├── __init__.py
 │   │   ├── app.py          # FastAPI app (create_app)
 │   │   ├── health.py       # Health checks
@@ -141,7 +141,7 @@ C:\Users\tan\coc-keeper-runtime\
 │       ├── cassette.py
 │       └── test_trigger_chains.py
 │
-├── tests/                   # Test suite (68+ files)
+├── tests/                   # Test suite (77 test modules)
 │   ├── conftest.py         # Pytest fixtures
 │   ├── fakes/              # Fake implementations
 │   │   ├── discord.py
@@ -151,11 +151,13 @@ C:\Users\tan\coc-keeper-runtime\
 │   ├── bdd/               # BDD-style tests
 │   └── test_*.py         # Unit/integration tests
 │
-└── .planning/             # GSD workflow artifacts
+└── .planning/              # GSD workflow artifacts
     ├── codebase/          # Codebase maps
-    ├── milestones/        # Milestone reports
-    ├── phases/           # Phase plans
-    └── workstreams/      # Track-specific planning
+    ├── milestones/        # Archived phase directories by milestone
+    ├── quick/             # Quick-task plans and summaries
+    ├── reports/           # Project-level milestone summaries/reports
+    ├── workstreams/       # Track-specific roadmap/state truth
+    └── active-workstream  # Default workstream pointer
 ```
 
 ### Naming Conventions

@@ -44,9 +44,10 @@ tests/
 | Unit | `tests/test_*.py` | Individual component tests |
 | Integration | `tests/test_*_integration.py` | Cross-component flow tests |
 | BDD | `tests/bdd/test_*.py` | Scenario-based behavior tests |
+| Scenario | `tests/scenarios/*.yaml` + `src/dm_bot/testing/` | DSL-driven end-to-end flow validation |
 | Smoke | Via `smoke-check` CLI | Runtime health validation |
 
-### Key Test Files (68 total)
+### Key Test Files (77 test modules as of 2026-04-02)
 
 **Core Flows**:
 - `test_router_service_flow.py` — Intent routing
@@ -79,6 +80,7 @@ tests/
 - `test_scenario_runner.py` — Scenario execution
 - `test_scenario_dsl.py` — DSL parsing
 - `test_smoke_check.py` — Smoke check validation
+- `test_chaos_lobby_stress.py` — concurrency/ready-gate stress validation
 
 ### Fixtures (conftest.py)
 
@@ -115,3 +117,9 @@ Validates:
 - Ollama connectivity
 - Model availability
 - Asset paths
+
+### Current Gate Status
+
+Latest verified repository gate before this map refresh:
+- `uv run pytest -q` → `923 passed`
+- `uv run python -m dm_bot.main smoke-check` → `923 passed`

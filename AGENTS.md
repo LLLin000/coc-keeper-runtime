@@ -437,11 +437,10 @@ Do not make workflow state harder to audit:
 
 ### Product Tracks
 
-- **Track A:** 模组与规则运行层
-- **Track B:** 人物构建与管理层
-- **Track C:** Discord 交互层
-- **Track D:** 游戏呈现层
-- **Track E:** 运行控制与运维面板层
+- **track-runtime:** gameplay/runtime canonical truth
+- **track-identity:** archive/builder/governance canonical identity truth
+- **track-surface:** Discord and presentation surface
+- **track-ops:** verification, diagnostics, and runtime operations
 
 ### Track Context
 
@@ -622,7 +621,7 @@ Correct:
 
 Wrong:
 
-- reading a stale `track-b` milestone value and planning there by default
+- reading a stale non-active workstream state and planning there by default
 
 Correct:
 

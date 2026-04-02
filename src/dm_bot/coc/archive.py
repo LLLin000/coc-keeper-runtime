@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -50,6 +51,7 @@ class InvestigatorArchiveProfile(BaseModel):
     favored_skills: list[str] = Field(default_factory=list)
     portrait_summary: str = ""
     status: str = "active"
+    deleted_at: datetime | None = None
     finishing: ArchiveFinishingRecommendation = Field(
         default_factory=ArchiveFinishingRecommendation
     )
@@ -58,7 +60,8 @@ class InvestigatorArchiveProfile(BaseModel):
     def summary_line(self) -> str:
         goal = self.life_goal or "未记录目标"
         goal = goal[:20] + ("…" if len(goal) > 20 else "")
-        return f"{self.profile_id} | {self.name} | {self.coc.occupation} | SAN {self.coc.san} | {self.status} | 目标 {goal}"
+        status_marker = "🔴" if self.status == "deleted" else ""
+        return f"{self.profile_id} | {self.name} | {self.coc.occupation} | SAN {self.coc.san} | {status_marker}{self.status} | 目标 {goal}"
 
     def card_view(self) -> list[CardSection]:
         """Return archive profile as a list of CardSection objects.
@@ -211,9 +214,10 @@ class InvestigatorArchiveProfile(BaseModel):
             else "无"
         )
         important_person = self.important_person or self.important_tie or "未记录"
+        status_marker = "🔴" if self.status == "deleted" else ""
         lines = [
             "【调查员档案】",
-            f"{self.name} / {self.coc.occupation} / {self.age}岁 / {self.status}",
+            f"{self.name} / {self.coc.occupation} / {self.age}岁 / {status_marker}{self.status}",
             "以下内容属于长期档案，不包含当前模组里的临时 SAN、伤势、装备和秘密状态。",
             "",
             "【身份】",
@@ -409,7 +413,7 @@ class InvestigatorArchiveRepository:
     ) -> InvestigatorArchiveProfile:
         active = self.active_profile(user_id)
         if active is not None and active.profile_id != profile_id:
-            active.status = "replaced"
+            active.status = "archived"
         profile = self.get_profile(user_id, profile_id)
         profile.status = "active"
         return profile
@@ -510,8 +514,57 @@ class InvestigatorArchiveRepository:
         self._profiles[user_id][profile_id] = profile
         return profile
 
-    def delete_profile(self, *, user_id: str, profile_id: str) -> None:
-        self._profiles.get(user_id, {}).pop(profile_id, None)
+    def delete_profile(
+        self, *, user_id: str, profile_id: str
+    ) -> InvestigatorArchiveProfile:
+        profile = self.get_profile(user_id, profile_id)
+        if profile.status == "active":
+            raise ValueError("Cannot delete an active profile")
+        if profile.status == "deleted":
+            return profile
+        profile.status = "deleted"
+        profile.deleted_at = datetime.now(timezone.utc)
+        self._profiles[user_id][profile_id] = profile
+        return profile
+
+    def recover_profile(
+        self, *, user_id: str, profile_id: str
+    ) -> InvestigatorArchiveProfile:
+        profile = self.get_profile(user_id, profile_id)
+        if profile.status != "deleted":
+            raise ValueError("Can only recover a deleted profile")
+        if profile.deleted_at is None:
+            profile.status = "active"
+            profile.deleted_at = None
+            self._profiles[user_id][profile_id] = profile
+            return profile
+        elapsed = datetime.now(timezone.utc) - profile.deleted_at
+        if elapsed.days > GRACE_PERIOD_DAYS:
+            raise ValueError("Grace period expired")
+        profile.status = "active"
+        profile.deleted_at = None
+        self._profiles[user_id][profile_id] = profile
+        return profile
+
+    def purge_expired_deleted(self, *, user_id: str, append_event=None) -> int:
+        purged = 0
+        profiles = self._profiles.get(user_id, {})
+        expired_ids = []
+        for pid, profile in list(profiles.items()):
+            if profile.status == "deleted" and profile.deleted_at is not None:
+                elapsed = datetime.now(timezone.utc) - profile.deleted_at
+                if elapsed.days > GRACE_PERIOD_DAYS:
+                    expired_ids.append(pid)
+        for pid in expired_ids:
+            del profiles[pid]
+            purged += 1
+            if append_event:
+                append_event(
+                    operation="profile_purge",
+                    user_id=user_id,
+                    profile_id=pid,
+                )
+        return purged
 
     def export_state(self) -> dict[str, object]:
         return {

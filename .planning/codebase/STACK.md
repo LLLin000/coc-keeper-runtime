@@ -44,14 +44,15 @@
 - **Database**: SQLite (`dm_bot.sqlite3`)
 - **Persistence**: File-based + SQLite (see `src/dm_bot/persistence/store.py`)
 - **Configuration**: Environment variables via `pydantic-settings` with `DM_BOT_` prefix
+- **Runtime Control**: FastAPI + local process/restart tooling under `src/dm_bot/runtime/`
 
 ### Project Structure
 
 ```
 pyproject.toml          # Package definition, dependencies
 .env.example             # Environment template
-src/dm_bot/              # Main package (97 Python files)
-tests/                   # Test suite (68+ test files)
+src/dm_bot/              # Main package (105 Python files as of 2026-04-02)
+tests/                   # Test suite (77 test modules as of 2026-04-02)
 ```
 
 ### Python Path Configuration

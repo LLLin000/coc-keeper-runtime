@@ -8,14 +8,14 @@ Track D owns the perceived table experience — Keeper-style narration, guidance
 
 ## Completed Milestones
 
-(None yet - Track D is starting)
+- ✅ **vD.1.1** — Keeper-Guided Archive Experience (completed 2026-03-31)
 
-## Active Milestone
+## Latest Completed Milestone
 
 **vD.1.1** - Keeper-Guided Archive Experience
 - **Primary Track:** Track D - 游戏呈现层
 - **Goal:** Make archive and builder feel like a Keeper-guided experience, not a bot interface
-- **Status:** In progress (D40 complete)
+- **Status:** Completed
 
 **4 Planned Phases:**
 - D40: Private-First Builder Experience
@@ -78,7 +78,10 @@ Plans:
 
 **Depends on:** D40
 
-**Plans:** Not yet created
+**Plans:** 1 completed plan
+
+Plans:
+- [x] D41-01-PLAN.md — Redesign archive detail output into sectioned investigator cards reusable beyond Discord-only formatting
 
 ---
 
@@ -120,33 +123,29 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] D43-01-PLAN.md — Create CardSection/CardRenderer contracts, refactor card_view(), wire DiscordCardRenderer
+- [x] D43-01-PLAN.md — Create CardSection/CardRenderer contracts, refactor card_view(), wire DiscordCardRenderer
+
+**Delivered outcomes:**
+- `/start_builder` defaults to DM-first builder flow with clearer archive-channel guidance
+- `/profile_detail` now renders sectioned investigator cards instead of dense dumps
+- archive presentation is split from archive truth via `CardSection` and `DiscordCardRenderer`
+- Keeper voice and Chinese player-facing system messages are more consistent across builder and consequence surfaces
 
 ---
 
-## Queued Milestone
+## Next Milestone
 
 ### vD.1.2: Session Boards And Keeper Scene Presentation
 
-**Goal:** Present session state, scene context, and consequences in Keeper-style boards.
+**Goal:** Present session state, scene context, and consequences in Keeper-style boards once Track A's shared scene resolution contracts are stable.
 
-**4 Planned Phases:**
-- D44: Session Board (campaign/adventure/session identity)
-- D45: Scene Framing (Keeper-style "场景：XXX" format)
-- D46: Clue/History Board
-- D47: Consequence Summary
+**Status:** Queued behind `track-a / vA.1.2`
 
-**What This Consumes:**
-- Track C: VisibilityDispatcher, PlayerStatusRenderer, session state
-- Track A: Module triggers, scene transitions, clue reveals
-- Track E: COC rules resolution outcomes
-
-**What This Does NOT Include:**
-- New session lifecycle logic (Track C)
-- New module structure (Track A)
-- New rule resolution (Track E)
+**Recommendation:** Do not start this milestone until Track A finalizes shared scene batching/consequence contracts, otherwise Track D will end up reworking presentation contracts around moving runtime semantics.
 
 ---
+
+## Queued Milestones
 
 ### vD.1.3: New-Player Start Pack And Rules Boards
 
@@ -171,9 +170,9 @@ Plans:
 |-------|-------|--------|-----------|
 | **vD.1.1** | | | |
 | D40. Private-First Builder Experience | 1/1 | Complete | D40-01 |
-| D41. Archive Card Redesign | 0/0 | Planned | - |
+| D41. Archive Card Redesign | 1/1 | Complete | D41-01 |
 | D42. Keeper Prompt Polish | 1/1 | Complete | D42-01 |
-| D43. Activity-Ready Presentation Contracts | 1/1 | Planned | - |
+| D43. Activity-Ready Presentation Contracts | 1/1 | Complete | D43-01 |
 | **vD.1.2** | | | |
 | D44. Session Board | 0/0 | Queued | - |
 | D45. Scene Framing | 0/0 | Queued | - |
@@ -208,4 +207,4 @@ Track E ───────────►│
 
 ---
 
-*Last updated: 2026-03-31 - Research completed, vD.1.1 ready to plan*
+*Last updated: 2026-04-02 after workstream boundary reconciliation and vD.1.1 completion normalization*

@@ -126,13 +126,16 @@ class TestArchiveCRUD:
         assert len(profiles) == 2
 
     def test_delete_profile(self, repo, test_profile_data):
-        """Test profile deletion."""
+        """Test profile soft deletion after archival."""
         created = repo.create_profile(**test_profile_data)
+        repo.archive_profile(user_id="user1", profile_id=created.profile_id)
 
-        repo.delete_profile(user_id="user1", profile_id=created.profile_id)
+        deleted = repo.delete_profile(user_id="user1", profile_id=created.profile_id)
+        retrieved = repo.get_profile("user1", created.profile_id)
 
-        with pytest.raises(KeyError):
-            repo.get_profile("user1", created.profile_id)
+        assert deleted.status == "deleted"
+        assert deleted.deleted_at is not None
+        assert retrieved.status == "deleted"
 
     def test_archive_profile(self, repo, test_profile_data):
         """Test archiving a profile."""

@@ -1,40 +1,30 @@
 ---
 gsd_state_version: 1.0
-milestone: vB.1.5
-milestone_name: B5 Character Lifecycle And Governance Surface
-current_plan: 1
-status: Milestone vB.1.5 complete
-stopped_at: vB.1.5 shipped 2026-04-01
-last_updated: "2026-04-01T00:00:00.000Z"
+milestone: reset-baseline
+milestone_name: Post-Archive Planning Reset
+status: planning baseline initialized
+stopped_at: pre-reset archive created; new workstream structure ready for milestone definition
+last_updated: "2026-04-02T00:00:00.000Z"
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 10
-  completed_plans: 10
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
-## Active Milestone
+## Active Baseline
 
-**vB.1.5** - B5 Character Lifecycle And Governance Surface
-- **Primary Track:** Track B - 人物构建与管理层
-- **Status:** ✓ Complete (shipped 2026-04-01)
-- **Archive:** `.planning/milestones/vB.1.5-ROADMAP.md`
+**Status:** New planning baseline initialized
+**Archive Snapshot:** `.planning/archives/pre-reset-2026-04-02/`
+**Default Workstream:** `track-runtime`
 
-## Completed Milestones
+## Next Action
 
-- vB.1.5 — B5 Character Lifecycle And Governance Surface (7 phases) ← SHIPPED 2026-04-01
-- vB.1.4 — B4 Identity Projection And Character Ownership (3 phases)
-- vB.1.3 — B3 Interview Planner And Portrait Synthesis (4 phases)
-- vB.1.2 — B2 Archive Card Schema Expansion (4 phases)
-- vB.1.1 — B1 Archive And Builder Normalization (4 phases)
-
-## Next Milestone
-
-**vB.1.6** — COC-Legal Character Finalization And New-Player Modes
+Define the first milestone in the new 4-track structure, starting from `track-runtime`.
 
 ## Session Continuity
 
-**Stopped At:** vB.1.5 shipped
-**Archive:** `.planning/milestones/vB.1.5-ROADMAP.md`, `.planning/milestones/vB.1.5-REQUIREMENTS.md`
+**Stopped At:** planning reset complete; ready to define the next milestone from a clean baseline
+**Resume File:** `.planning/workstreams/track-runtime/ROADMAP.md`

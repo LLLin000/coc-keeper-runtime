@@ -3,6 +3,8 @@ from datetime import datetime
 from enum import Enum
 from pydantic import BaseModel, Field
 
+from dm_bot.orchestrator.governance_event_log import GovernanceEventLog, GovernanceEvent
+
 
 class SkillUsageTracker(BaseModel):
     """Tracks skill usage per player per session for COC experience system.
@@ -138,6 +140,7 @@ class CampaignCharacterInstance(BaseModel):
     campaign_id: str
     user_id: str
     character_name: str
+    status: str = "active"
     archive_profile_id: str | None = None
     panel_id: str | None = None
     created_at: datetime = Field(default_factory=datetime.now)
@@ -227,8 +230,20 @@ class CampaignSession(BaseModel):
             self.members[user_id].ready = ready
 
     def can_start_session(self) -> bool:
-        ready_players = sum(1 for r in self.player_ready.values() if r)
-        return ready_players >= len(self.member_ids) and self.admin_started
+        if not self.member_ids:
+            return False
+        player_ids = [
+            uid
+            for uid in self.member_ids
+            if self.members.get(uid, None)
+            and self.members[uid].role == CampaignRole.MEMBER
+        ]
+        if not player_ids:
+            return True
+        ready_players = sum(
+            1 for uid in player_ids if self.player_ready.get(uid, False)
+        )
+        return ready_players >= len(player_ids) and self.admin_started
 
     def all_ready(self) -> bool:
         """Check if all PLAYER campaign members have marked themselves ready.
@@ -346,6 +361,7 @@ class SessionStore:
         self._game_channels: dict[str, str] = {}
         self._player_status_channels: dict[str, str] = {}
         self._ops_channels: dict[str, str] = {}
+        self.event_log = GovernanceEventLog()
 
     def bind_campaign(
         self, *, campaign_id: str, channel_id: str, guild_id: str, owner_id: str
@@ -409,6 +425,9 @@ class SessionStore:
         session.active_characters[user_id] = character_name
         if user_id in session.members:
             session.members[user_id].active_character_name = character_name
+        if user_id in session.character_instances:
+            session.character_instances[user_id].character_name = character_name
+            session.character_instances[user_id].status = "active"
         return session
 
     def bind_role(self, *, channel_id: str, user_id: str, role: str) -> CampaignSession:
@@ -471,6 +490,18 @@ class SessionStore:
         session.selected_profiles[user_id] = profile_id
         if user_id in session.members:
             session.members[user_id].selected_profile_id = profile_id
+        if user_id in session.character_instances:
+            profile_name = profile_id
+            if profiles is not None:
+                p = profiles.get(profile_id)
+                if p is not None:
+                    if isinstance(p, dict):
+                        profile_name = p.get("name", profile_id)
+                    else:
+                        profile_name = getattr(p, "name", profile_id)
+            session.character_instances[user_id].archive_profile_id = profile_id
+            session.character_instances[user_id].character_name = profile_name
+            session.character_instances[user_id].status = "active"
         return ValidationResult(success=True)
 
     def validate_ready(self, *, channel_id: str, user_id: str) -> ValidationResult:
@@ -488,7 +519,8 @@ class SessionStore:
                 error=ReadyGateError.NOT_MEMBER.value,
                 error_message="你还不是这个战役的成员。请先使用 /join_campaign 加入。",
             )
-        if not member.selected_profile_id and not member.active_character_name:
+        instance = session.character_instances.get(user_id)
+        if not instance or instance.status != "active" or not instance.character_name:
             return ValidationResult(
                 success=False,
                 error=ReadyGateError.NO_PROFILE_SELECTED.value,
@@ -572,6 +604,155 @@ class SessionStore:
         if session is None:
             return None
         return session.character_instances.get(user_id)
+
+    def get_active_instances_for_user(
+        self, user_id: str
+    ) -> list[tuple[str, CampaignCharacterInstance]]:
+        results = []
+        for session in self._sessions.values():
+            instance = session.character_instances.get(user_id)
+            if instance and instance.status == "active" and instance.character_name:
+                results.append((session.channel_id, instance))
+        return results
+
+    def retire_instance(
+        self, *, channel_id: str, user_id: str
+    ) -> CampaignCharacterInstance:
+        session = self._sessions.get(channel_id)
+        if session is None:
+            raise ValueError("No campaign bound")
+        instance = session.character_instances.get(user_id)
+        if instance is None:
+            raise ValueError("User has no campaign character instance")
+        if instance.status == "retired":
+            return instance
+        instance.status = "retired"
+        instance.character_name = ""
+        instance.archive_profile_id = None
+        self.event_log.append_event(
+            GovernanceEvent(
+                operation="instance_retire",
+                user_id=user_id,
+                campaign_id=session.campaign_id,
+                operator_id=user_id,
+                before_state={"status": "active"},
+                after_state={"status": "retired"},
+            )
+        )
+        return instance
+
+    def select_instance_profile(
+        self,
+        *,
+        channel_id: str,
+        user_id: str,
+        profile_id: str,
+        archive_repo=None,
+    ) -> CampaignCharacterInstance:
+        session = self._sessions.get(channel_id)
+        if session is None:
+            raise ValueError("No campaign bound")
+        instance = session.character_instances.get(user_id)
+        if instance is None:
+            raise ValueError("User has no campaign character instance")
+        profile_name = profile_id
+        if archive_repo is not None:
+            profile = archive_repo.get_profile(user_id, profile_id)
+            if profile is None:
+                raise ValueError(f"Profile {profile_id} does not exist")
+            if profile.status != "active":
+                raise ValueError(f"Profile {profile_id} is 已归档")
+            profile_name = profile.name
+        instance.archive_profile_id = profile_id
+        instance.character_name = profile_name
+        instance.status = "active"
+        self.event_log.append_event(
+            GovernanceEvent(
+                operation="instance_select",
+                user_id=user_id,
+                profile_id=profile_id,
+                campaign_id=session.campaign_id,
+                operator_id=user_id,
+            )
+        )
+        return instance
+
+    def force_archive_instance(
+        self,
+        *,
+        channel_id: str,
+        admin_id: str,
+        target_user_id: str,
+        reason: str,
+    ) -> CampaignCharacterInstance:
+        session = self._sessions.get(channel_id)
+        if session is None:
+            raise ValueError("No campaign bound")
+        member = session.members.get(target_user_id)
+        if member is None:
+            raise ValueError(f"User {target_user_id} is not a member")
+        if session.owner_id != admin_id:
+            raise PermissionError("Only campaign owner can force archive")
+        instance = session.character_instances.get(target_user_id)
+        if instance is None:
+            raise ValueError("Target user has no campaign character instance")
+        before_state = instance.model_dump()
+        instance.status = "retired"
+        instance.character_name = ""
+        instance.archive_profile_id = None
+        self.event_log.append_event(
+            GovernanceEvent(
+                operation="instance_force_archive",
+                user_id=target_user_id,
+                campaign_id=session.campaign_id,
+                operator_id=admin_id,
+                before_state=before_state,
+                after_state=instance.model_dump(),
+                reason=reason,
+            )
+        )
+        return instance
+
+    def reassign_ownership(
+        self,
+        *,
+        channel_id: str,
+        current_owner_id: str,
+        new_owner_id: str,
+        reason: str,
+    ) -> tuple[CampaignMember, CampaignMember]:
+        session = self._sessions.get(channel_id)
+        if session is None:
+            raise ValueError("No campaign bound")
+        if current_owner_id != session.owner_id:
+            raise PermissionError("Only the current owner can reassign ownership")
+        if current_owner_id == new_owner_id:
+            raise ValueError("Cannot reassign ownership to yourself")
+        old_owner = session.members.get(current_owner_id)
+        new_owner = session.members.get(new_owner_id)
+        if old_owner is None or new_owner is None:
+            raise ValueError(f"User {new_owner_id} is not a member")
+        old_owner.role = CampaignRole.ADMIN
+        new_owner.role = CampaignRole.OWNER
+        session.owner_id = new_owner_id
+        self.event_log.append_event(
+            GovernanceEvent(
+                operation="ownership_reassign",
+                user_id=new_owner_id,
+                campaign_id=session.campaign_id,
+                operator_id=current_owner_id,
+                before_state={
+                    "role": CampaignRole.OWNER.value,
+                    "owner_id": current_owner_id,
+                },
+                after_state={
+                    "role": CampaignRole.ADMIN.value,
+                    "owner_id": new_owner_id,
+                },
+                reason=reason,
+            )
+        )
+        return new_owner, old_owner
 
     def list_members(self, channel_id: str) -> list[CampaignMember]:
         session = self._sessions.get(channel_id)

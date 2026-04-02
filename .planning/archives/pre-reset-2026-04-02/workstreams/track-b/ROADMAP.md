@@ -68,8 +68,10 @@ Full details: `.planning/milestones/vB.1.5-ROADMAP.md`
 
 ## vB.1.6 Phases
 
-vB.1.6 phases not yet planned. See `.planning/milestones/vB.1.6-REQUIREMENTS.md` for requirements.
+- [x] Phase 62: vB.1.5 Regression Repair And Contract Reconciliation (1/1 plans) — completed 2026-04-02
+  - Scope: repair merged lifecycle/governance regressions across archive repository, session store, command surfaces, and scenario contracts
+  - Outputs: restored Track B lifecycle contracts, aligned legacy contract tests, and returned the full repository gate to green (`923 passed` for both `pytest` and `smoke-check`)
 
 ---
 
-*Last updated: 2026-04-01 after vB.1.5 Character Lifecycle And Governance Surface shipped*
+*Last updated: 2026-04-02 after Phase 62 execution - regression contracts restored*

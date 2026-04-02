@@ -37,7 +37,13 @@ def test_five_concurrent_users_bind_join_ready(chaos_store: SessionStore) -> Non
     """5 concurrent users bind/join/ready without race conditions."""
     store = chaos_store
     channel_id = "chaos-ch1"
-    users = ["owner", "p1", "p2", "p3", "p4"]
+    store.bind_campaign(
+        campaign_id="chaos-c1",
+        channel_id=channel_id,
+        guild_id="g1",
+        owner_id="owner",
+    )
+    users = ["p1", "p2", "p3", "p4"]
 
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures = [
@@ -53,7 +59,8 @@ def test_five_concurrent_users_bind_join_ready(chaos_store: SessionStore) -> Non
 
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures = [
-            executor.submit(session.set_player_ready, uid, True) for uid in users
+            executor.submit(session.set_player_ready, uid, True)
+            for uid in ["owner"] + users
         ]
         [f.result() for f in as_completed(futures)]
 

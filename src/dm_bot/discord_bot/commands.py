@@ -179,7 +179,7 @@ class BotCommands:
         )
         self._persist_sessions()
         await interaction.response.send_message(
-            f"campaign `{campaign_id}` bound to channel `{interaction.channel_id}`",
+            f"已绑定战役 `{campaign_id}` 到频道 `{interaction.channel_id}`。",
             ephemeral=True,
         )
 
@@ -506,9 +506,7 @@ class BotCommands:
             return
         user_id = str(interaction.user.id)
         profile = self._archive_repository.get_profile(user_id, profile_id)
-
-        # Build response with instance context (PV-02)
-        lines = [profile.detail_view()]
+        context_lines: list[str] = []
 
         if self._session_store is not None:
             channel_id = str(interaction.channel_id)
@@ -519,13 +517,36 @@ class BotCommands:
                     status_text = (
                         "🟢 活跃" if instance.status == "active" else "⚪ 已退役"
                     )
-                    lines.append("")
-                    lines.append("【战役状态】")
-                    lines.append(f"战役：{session.campaign_id}")
-                    lines.append(f"状态：{status_text}")
+                    context_lines.extend(
+                        [
+                            "【战役状态】",
+                            f"战役：{session.campaign_id}",
+                            f"状态：{status_text}",
+                        ]
+                    )
                     if instance.character_name:
-                        lines.append(f"当前角色名：{instance.character_name}")
+                        context_lines.append(f"当前角色名：{instance.character_name}")
 
+        if hasattr(profile, "card_view"):
+            sections = profile.card_view()
+            if sections:
+                first, *rest = sections
+                await interaction.response.send_message(
+                    f"{first.title}\n{first.content}", ephemeral=True
+                )
+                for section in rest:
+                    await interaction.followup.send(
+                        f"{section.title}\n{section.content}", ephemeral=True
+                    )
+                if context_lines:
+                    await interaction.followup.send(
+                        "\n".join(context_lines), ephemeral=True
+                    )
+                return
+
+        lines = [profile.detail_view()]
+        if context_lines:
+            lines.extend(["", *context_lines])
         await interaction.response.send_message("\n".join(lines), ephemeral=True)
 
     async def my_character(self, interaction) -> None:
@@ -1620,7 +1641,7 @@ class BotCommands:
         self._gameplay.load_adventure(adventure)
         self._save_state_for_channel(str(interaction.channel_id))
         await interaction.response.send_message(
-            f"loaded adventure `{adventure.title}`",
+            f"已加载模组 `{adventure.title}`。",
             ephemeral=True,
         )
         await interaction.channel.send(
@@ -1649,6 +1670,7 @@ class BotCommands:
 
         session = self._session_store.get_by_channel(channel_id)
         session.set_player_ready(user_id, True)
+        session.transition_on_all_ready()
         self._persist_sessions()
 
         char_name = session.active_characters.get(user_id, "调查员")
@@ -1786,14 +1808,22 @@ class BotCommands:
                 ephemeral=True,
             )
             return
-        ready_count = sum(1 for r in session.player_ready.values() if r)
-        if ready_count < len(session.member_ids):
+        session.admin_started = True
+        if not session.can_start_session():
+            player_ids = [
+                uid
+                for uid in session.member_ids
+                if session.members.get(uid, None)
+                and session.members[uid].role.value == "member"
+            ]
+            ready_count = sum(
+                1 for uid in player_ids if session.player_ready.get(uid, False)
+            )
             await interaction.response.send_message(
-                f"无法启动：还有玩家未就位 ({ready_count}/{len(session.member_ids)})。",
+                f"无法启动：还有玩家未就位 ({ready_count}/{len(player_ids)})。",
                 ephemeral=True,
             )
             return
-        session.admin_started = True
 
         session.transition_to(SessionPhase.ONBOARDING)
         for member_id in session.member_ids:
@@ -1865,10 +1895,13 @@ class BotCommands:
         session.set_onboarding_complete(user_id_str, True)
         self._persist_sessions()
 
-        pending = []
-        for member_id in session.member_ids:
-            if not session.is_onboarding_complete(member_id):
-                pending.append(member_id)
+        player_ids = [
+            uid
+            for uid in session.member_ids
+            if session.members.get(uid, None)
+            and session.members[uid].role.value == "member"
+        ]
+        pending = [uid for uid in player_ids if not session.is_onboarding_complete(uid)]
 
         if not pending:
             session.transition_to(SessionPhase.SCENE_ROUND_OPEN)

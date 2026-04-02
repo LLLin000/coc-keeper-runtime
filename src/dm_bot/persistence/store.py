@@ -207,3 +207,24 @@ class PersistenceStore:
             )
             conn.commit()
             return cursor.rowcount > 0
+
+    def save_governance_events(self, events_state: dict) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS governance_events (id INTEGER PRIMARY KEY CHECK (id = 1), events_json TEXT NOT NULL)"
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO governance_events(id, events_json) VALUES(1, ?) ",
+                (json.dumps(events_state, ensure_ascii=False),),
+            )
+            conn.commit()
+
+    def load_governance_events(self) -> dict:
+        with self._connect() as conn:
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS governance_events (id INTEGER PRIMARY KEY CHECK (id = 1), events_json TEXT NOT NULL)"
+            )
+            row = conn.execute(
+                "SELECT events_json FROM governance_events WHERE id = 1"
+            ).fetchone()
+        return json.loads(row[0]) if row else {"events": []}

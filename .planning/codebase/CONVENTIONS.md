@@ -82,21 +82,31 @@ Commit/PR descriptions must state:
 **Workflow Entry Points** (use slash commands):
 - `/gsd-quick` — small fixes, ad-hoc tasks
 - `/gsd-debug` — investigation
+- `/gsd-map-codebase` — refresh repository map after significant changes
+- `/gsd-discuss-phase` — clarify numbered phase scope
 - `/gsd-plan-phase` — plan a new phase
 - `/gsd-execute-phase` — execute a planned phase
 - `/gsd-verify-work` — validate features through UAT
 
-**Phase Planning Flow**:
+**Repository Planning Truth**:
 ```
-1. /gsd-plan-phase E## --prd <roadmap-file>   # Load phase context
-2. [Optional] /gsd-discuss-phase              # Clarify scope
-3. /gsd-execute-phase --auto                 # Plan → verify → execute
+1. .planning/PROJECT.md
+2. .planning/active-workstream
+3. .planning/workstreams/<track>/ROADMAP.md
+4. .planning/workstreams/<track>/STATE.md
 ```
 
 **Delivery Gate** (before claiming complete):
 1. `uv run pytest -q` — all tests pass
 2. `uv run python -m dm_bot.main smoke-check` — must pass
-3. Diagnostics clean on all changed files
+
+**Phase Flow**:
+```
+1. /gsd-discuss-phase <phase>    # optional when scope/tradeoffs are unclear
+2. /gsd-plan-phase <phase>       # produce plan artifacts
+3. /gsd-execute-phase <phase>    # implement and verify
+4. /gsd-verify-work <phase>      # conversational UAT when needed
+```
 
 ### Test Conventions
 
