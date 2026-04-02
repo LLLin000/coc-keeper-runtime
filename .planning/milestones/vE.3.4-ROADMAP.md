@@ -2,7 +2,7 @@
 
 ## Milestones
 
-- ✅ **vE.3.4** — Runtime Phase Transition Wiring (completed 2026-04-02)
+- 🆕 **vE.3.4** — Runtime Phase Transition Wiring (in progress)
 - ✅ **vE.3.3** — Scenario Runner Reliability (completed)
 - ✅ **vE.3.2** — Gap Closure & Integration (completed)
 - ✅ **vE.3.1** — Character Lifecycle E2E (complete)
@@ -12,18 +12,112 @@
 
 ---
 
-<details>
-<summary>✅ vE.3.4: Runtime Phase Transition Wiring — COMPLETED 2026-04-02 (14 plans, 4 phases)</summary>
+## vE.3.4 Summary
 
-**Delivered:** 14/14 scenarios passing, 867 pytest passing.
+**Goal:** Fix runtime phase transition wiring so scenarios properly advance through session lifecycle phases.
 
-**Key Fixes:**
-- `join_campaign()` auto-transitions `lobby → awaiting_ready` when first player joins
-- `all_ready()` helper wires `ready()` to `awaiting_ready → awaiting_admin_start`
-- `start_session()` and `complete_onboarding()` properly wired
-- 14 scenario YAML files updated with missing preconditions
+**Problems Discovered (from vE.3.3 scenario runs):**
+1. **Phase stuck at lobby** — 12/13 scenarios report `Actual: ['lobby']` despite executing join/ready/start_session commands
+2. **No auto-advance on join** — `join_campaign()` adds members but never transitions `lobby → awaiting_ready`
+3. **Ready doesn't trigger phase change** — `ready()` command doesn't check all-ready condition or advance phase
+4. **Missing admin_start → onboarding → scene_round transitions** — No command wires these phase changes
 
-</details>
+**Planned Phases:**
+- Phase E90: Auto-Advance Lobby → Awaiting Ready
+- Phase E91: Ready Command Phase Transitions
+- Phase E92: Admin Start → Onboarding → Scene Round
+- Phase E93: Scenario Precondition Alignment
+
+**Depends on:** vE.3.3 (E86-E89) complete
+
+---
+
+## vE.3.4 Phases
+
+### Phase E90: Auto-Advance Lobby → Awaiting Ready
+
+**Goal:** Add automatic phase transition when first non-owner player joins campaign.
+
+**Problem:** `SessionStore.join_campaign()` only adds members, never changes phase from `lobby`.
+
+**Success Criteria:**
+1. First player join triggers `lobby → awaiting_ready`
+2. Owner-only session stays in `lobby`
+3. Multiple joins stay in `awaiting_ready` (don't overshoot)
+
+**Files to modify:**
+- `src/dm_bot/orchestrator/session_store.py` — add phase transition in `join_campaign()`
+- `tests/test_session_phase_transitions.py` — add phase transition tests
+
+**Plans:** 1 plan created
+- [x] **E90-01-PLAN.md** — Auto-transition lobby → awaiting_ready in join_campaign() (completed 2026-04-01)
+  - Files: `src/dm_bot/orchestrator/session_store.py`, `tests/test_session_phase_transitions.py`
+  - Tasks: 2 (conditional phase transition in join_campaign, 4 new test functions)
+
+### Phase E91: Ready Command Phase Transitions
+
+**Goal:** Wire `ready()` command to advance phase when all players are ready.
+
+**Problem:** `ready()` marks individual readiness but never checks all-ready condition or advances phase.
+
+**Success Criteria:**
+1. Last player's `ready` triggers `awaiting_ready → awaiting_admin_start`
+2. Early ready calls don't advance phase prematurely
+3. `all_ready()` helper method in SessionStore
+
+**Files to modify:**
+- `src/dm_bot/orchestrator/session_store.py` — add `all_ready()` method
+- `src/dm_bot/discord_bot/commands.py` — check all_ready and transition phase in `ready()`
+
+**Plans:** 1 plan created
+- [x] **E91-01-PLAN.md** — Ready command phase transitions (all_ready helper + transition wiring + tests) (completed 2026-04-01)
+  - Files: `src/dm_bot/orchestrator/session_store.py`, `src/dm_bot/discord_bot/commands.py`, `tests/test_session_phase_transitions.py`
+  - Tasks: 3 (all_ready + transition methods, wire ready() command, full test verification)
+
+### Phase E92: Admin Start → Onboarding → Scene Round
+
+**Goal:** Wire remaining phase transitions through the session lifecycle.
+
+**Problem:** No commands transition `awaiting_admin_start → onboarding → scene_round_open`.
+
+**Success Criteria:**
+1. `start_session()` transitions `awaiting_admin_start → onboarding`
+2. Onboarding completion transitions `onboarding → scene_round_open`
+3. Phase history correctly tracks all transitions
+
+**Files to modify:**
+- `src/dm_bot/orchestrator/session_store.py` — add transition methods
+- `src/dm_bot/discord_bot/commands.py` — wire transitions in `start_session()` and onboarding handlers
+
+**Plans:** 1 plan created
+- [x] **E92-01-PLAN.md** — Admin start → onboarding → scene round transitions (completed 2026-04-01)
+  - Files: `src/dm_bot/orchestrator/session_store.py`, `src/dm_bot/discord_bot/commands.py`, `tests/test_session_phase_transitions.py`
+  - Tasks: 2 (verify transition wiring, scenario verification)
+  - **Summary:** E92-01-SUMMARY.md (verified transitions already present, added 3 tests)
+
+### Phase E93: Scenario Precondition Alignment
+
+**Goal:** Update scenario YAML files to include required preconditions for phase transitions.
+
+**Problem:** Some scenarios skip `set_role` or `select_profile` steps that `ready()` requires.
+
+**Success Criteria:**
+1. All 13 previously failing scenarios now pass
+2. `uv run python -m dm_bot.main run-scenario --all` shows all PASS
+3. No regressions in 842 existing tests
+
+**Files to modify:**
+- `tests/scenarios/acceptance/*.yaml` — add missing `set_role` steps
+- `tests/scenarios/contract/visibility/*.yaml` — add preconditions
+- `tests/scenarios/chaos/*.yaml` — fix duplicate member expectations
+
+**Plans:** 1/1 plans complete
+- [x] **E93-01-PLAN.md** — Scenario precondition alignment (runtime_driver.py user_id fix + YAML updates) (completed 2026-04-02)
+  - Files: `src/dm_bot/testing/runtime_driver.py`, `tests/scenarios/**/*.yaml`
+  - Tasks: 6 (driver method user_id, 10+ scenario YAML updates, verification)
+  - **Summary:** E93-01-SUMMARY.md (14/14 scenarios passing)
+
+---
 
 ## vE.1.1 Summary
 

@@ -1,5 +1,43 @@
 # Milestones
 
+## vE.3.4 Runtime Phase Transition Wiring (Shipped: 2026-04-02)
+
+**Phases completed:** 14 phases, 14 plans, 38 tasks
+
+**Key accomplishments:**
+
+- Shared test infrastructure — FakeInteraction, FakeContext, model mocks, VCR/bdd scaffolding, in-memory SQLite fixtures
+- Multi-user session tests covering SESS-01 (3-player campaign lifecycle) and SESS-02 (SessionPhase transitions) all passing - 20 new tests across 3 files, 333 total tests passing
+- COC skill checks, SAN damage, combat resolution, and pushed roll re-roll flow with TDD validation
+- CharacterRecord creation, archive persistence, and profile projection into campaign validated via TDD
+- One-liner:
+- Narration pipeline and streaming tests covering NARR-01 (prompt construction) and NARR-02 (streaming delivery) - 10 tests all passing
+- E2E integration tests for 15-turn fuzhe scenario and chaos lobby with 5 concurrent users, validating session persistence, crash recovery, and concurrent member handling
+- YAML-based scenario DSL with ArtifactWriter and run-scenario CLI command for unified test execution
+- Phase:
+- Phase:
+
+---
+
+## vE.3.2 Gap Closure & Integration (Shipped: 2026-03-31)
+
+**Phases completed:** 14 phases, 14 plans, 38 tasks
+
+**Key accomplishments:**
+
+- Shared test infrastructure — FakeInteraction, FakeContext, model mocks, VCR/bdd scaffolding, in-memory SQLite fixtures
+- Multi-user session tests covering SESS-01 (3-player campaign lifecycle) and SESS-02 (SessionPhase transitions) all passing - 20 new tests across 3 files, 333 total tests passing
+- COC skill checks, SAN damage, combat resolution, and pushed roll re-roll flow with TDD validation
+- CharacterRecord creation, archive persistence, and profile projection into campaign validated via TDD
+- One-liner:
+- Narration pipeline and streaming tests covering NARR-01 (prompt construction) and NARR-02 (streaming delivery) - 10 tests all passing
+- E2E integration tests for 15-turn fuzhe scenario and chaos lobby with 5 concurrent users, validating session persistence, crash recovery, and concurrent member handling
+- YAML-based scenario DSL with ArtifactWriter and run-scenario CLI command for unified test execution
+- Phase:
+- Phase:
+
+---
+
 ## vE.3.1 Character Lifecycle E2E (Shipped: 2026-03-31)
 
 **Phases completed:** 14 phases, 14 plans, 38 tasks
