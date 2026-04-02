@@ -18,13 +18,22 @@ from dm_bot.orchestrator.session_store import (
 @pytest.fixture
 def three_player_session():
     """Create a session with 3 players ready for adventure."""
+    from dm_bot.orchestrator.session_store import CampaignCharacterInstance
+
     store = SessionStore()
     store.bind_campaign(
         campaign_id="c1", channel_id="ch1", guild_id="g1", owner_id="owner"
     )
     store.join_campaign(channel_id="ch1", user_id="player1")
     store.join_campaign(channel_id="ch1", user_id="player2")
-    # owner, player1, player2 are members
+    # owner doesn't get instance from bind_campaign, create it manually
+    session = store.get_by_channel("ch1")
+    session.character_instances["owner"] = CampaignCharacterInstance(
+        campaign_id="c1",
+        user_id="owner",
+        character_name="",
+    )
+    # owner, player1, player2 are members with instances
     return store
 
 
@@ -38,13 +47,16 @@ def test_three_player_bind_join_flow(three_player_session):
 
 
 def test_three_player_select_profile_and_ready(three_player_session):
-    """All 3 players can select profiles and ready up."""
+    """All 3 players can select profiles and ready up (PV-04 instance model)."""
     store = three_player_session
-    # Simulate profile selection
+    # Set up instance with character_name for each player (PV-04 instance model)
     session = store.get_by_channel("ch1")
     for uid in ["owner", "player1", "player2"]:
-        session.members[uid].selected_profile_id = f"prof-{uid}"
-        session.selected_profiles[uid] = f"prof-{uid}"
+        instance = store.get_character_instance("ch1", uid)
+        assert instance is not None
+        instance.character_name = f"Char_{uid}"
+        instance.archive_profile_id = f"prof-{uid}"
+        instance.status = "active"
 
     # Validate ready for all
     for uid in ["owner", "player1", "player2"]:
@@ -90,22 +102,18 @@ def test_three_players_ready_concurrently(three_player_session):
 
 
 def test_all_players_can_have_active_character_name(three_player_session):
-    """All 3 players can have active_character_name OR selected_profile_id for ready."""
-    session = three_player_session.get_by_channel("ch1")
-
-    # Set active_character_name for all
-    session.active_characters = {
-        "owner": "Alice",
-        "player1": "Bob",
-        "player2": "Carol",
-    }
-    for uid in ["owner", "player1", "player2"]:
-        session.members[uid].active_character_name = session.active_characters[uid]
-
-    # All should be valid for ready without profile selection
+    """All 3 players can have active character name for ready (PV-04 instance model)."""
     store = three_player_session
+    session = store.get_by_channel("ch1")
+
+    # Set up instance with character_name for all (PV-04 instance model)
+    for uid in ["owner", "player1", "player2"]:
+        instance = store.get_character_instance("ch1", uid)
+        assert instance is not None
+        instance.character_name = f"Char_{uid}"
+        instance.status = "active"
+
+    # All should be valid for ready
     for uid in ["owner", "player1", "player2"]:
         result = store.validate_ready(channel_id="ch1", user_id=uid)
-        assert result.success, (
-            f"Player {uid} should be ready with active_character_name"
-        )
+        assert result.success, f"Player {uid} should be ready with active instance"

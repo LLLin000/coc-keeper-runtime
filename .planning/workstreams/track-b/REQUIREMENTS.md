@@ -184,40 +184,91 @@ Milestone: Identity Projection And Character Ownership
 
 ### Identity Chain
 
-- [ ] **ID-01**: Every participating Discord user maps explicitly to one archive profile before campaign readiness is allowed
-- [ ] **ID-02**: Campaign membership and campaign character instance are represented as distinct concepts instead of implicit fallbacks
-- [ ] **ID-03**: One player may only have one active character instance per campaign at a time
+- [x] **ID-01**: Every participating Discord user maps explicitly to one archive profile before campaign readiness is allowed
+- [x] **ID-02**: Campaign membership and campaign character instance are represented as distinct concepts instead of implicit fallbacks
+- [x] **ID-03**: One player may only have one active character instance per campaign at a time
 
 ### Ownership Enforcement
 
-- [ ] **OWN-01**: Ready flow rejects users who have not explicitly selected a valid profile/instance
-- [ ] **OWN-02**: Owner/admin identity can never be silently substituted for another player's active character
-- [ ] **OWN-03**: Projection and lookup logic preserve actor identity consistently across onboarding, scene play, and diagnostics
+- [x] **OWN-01**: Ready flow rejects users who have not explicitly selected a valid profile/instance
+- [x] **OWN-02**: Owner/admin identity can never be silently substituted for another player's active character
+- [x] **OWN-03**: Projection and lookup logic preserve actor identity consistently across onboarding, scene play, and diagnostics
 
 ### Governance And Auditability
 
-- [ ] **GOV-01**: Admin and owner actions over player characters are explicit and auditable
-- [ ] **GOV-02**: Archive truth and campaign-instance truth remain distinct after ownership hardening
-- [ ] **GOV-03**: Diagnostics can explain which archive profile and which campaign instance are currently bound to a Discord user
+- [x] **GOV-01**: Admin and owner actions over player characters are explicit and auditable
+- [x] **GOV-02**: Archive truth and campaign-instance truth remain distinct after ownership hardening
+- [x] **GOV-03**: Diagnostics can explain which archive profile and which campaign instance are currently bound to a Discord user
 
 ## vB.1.4 Traceability
 
-| Requirement | Planned Phase |
-|-------------|---------------|
-| ID-01 | TBD |
-| ID-02 | TBD |
-| ID-03 | TBD |
-| OWN-01 | TBD |
-| OWN-02 | TBD |
-| OWN-03 | TBD |
-| GOV-01 | TBD |
-| GOV-02 | TBD |
-| GOV-03 | TBD |
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| ID-01 | Phase 52 | Complete |
+| ID-02 | Phase 52 | Complete |
+| ID-03 | Phase 52 | Complete |
+| OWN-01 | Phase 54 | Complete |
+| OWN-02 | Phase 54 | Complete |
+| OWN-03 | Phase 54 | Complete |
+| GOV-01 | Phase 53 | Complete |
+| GOV-02 | Phase 53 | Complete |
+| GOV-03 | Phase 54 | Complete |
 
 **Coverage:**
 - vB.1.4 requirements: 9 total
-- Mapped to phases: TBD
+- Mapped to phases: 9
 - Unmapped: 0 ✓
+
+---
+
+## vB.1.5 Requirements (Track B)
+
+Milestone: Character Lifecycle And Governance Surface — **COMPLETED**
+
+### Player-Facing Profile Lifecycle
+
+- [x] **PLC-01**: User can view list of all their archive profiles via `/profiles`
+- [x] **PLC-02**: User can activate an archived profile
+- [x] **PLC-03**: User can archive their active profile (soft-delete)
+- [x] **PLC-04**: User can replace an active profile with a new one
+- [x] **PLC-05**: User can permanently delete an archived profile
+- [x] **PLC-06**: User can recover a recently deleted profile within a grace period
+
+### Player-Facing Instance Lifecycle
+
+- [x] **ILC-01**: User can view their active campaign character instances
+- [x] **ILC-02**: User can archive their active campaign character instance
+- [x] **ILC-03**: User can select a different archive profile for campaign instance
+- [x] **ILC-04**: One active instance per campaign enforced
+
+### Player-Facing Visibility
+
+- [x] **PV-01**: `/profiles` shows status: active, archived, deleted, or active-instance
+- [x] **PV-02**: `/profile_detail` shows full archive card with instance context
+- [x] **PV-03**: Clear transition messages for activate/archive/replace
+- [x] **PV-04**: User cannot ready without valid active character instance
+
+### Admin-Facing Visibility
+
+- [x] **AV-01**: Admin can list all player archive profiles via `/admin_profiles`
+- [x] **AV-02**: Admin can view any player's archive profile in detail
+- [x] **AV-03**: Admin can view ownership chain
+- [x] **AV-04**: Admin can view all active instances across all players
+
+### Admin Governance Actions
+
+- [x] **AV-05**: Admin can force-archive a player's active profile
+- [x] **AV-06**: Admin can force-archive a player's campaign instance
+- [x] **AV-07**: Admin can reassign campaign ownership
+- [x] **AV-08**: All admin actions logged with timestamp, admin ID, target ID, reason
+
+### Audit Trail
+
+- [x] **AUD-01**: All lifecycle operations recorded in GovernanceEventLog
+- [x] **AUD-02**: All admin governance actions recorded with full context
+- [x] **AUD-03**: `/admin_governance_events` shows recent events
+
+**Coverage:** 24/24 requirements complete (Phase 55-61)
 
 ---
 

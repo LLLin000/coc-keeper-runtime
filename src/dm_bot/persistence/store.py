@@ -108,3 +108,26 @@ class PersistenceStore:
                 "select profiles_json from archive_profiles where id = 1"
             ).fetchone()
         return json.loads(row[0]) if row else {}
+
+    def save_governance_events(self, events: dict[str, object]) -> None:
+        with self._connect() as conn:
+            # Create table if not exists (may not exist in existing DBs)
+            conn.execute(
+                "create table if not exists governance_events (id integer primary key check (id = 1), events_json text not null)"
+            )
+            conn.execute(
+                "insert into governance_events(id, events_json) values(1, ?) "
+                "on conflict(id) do update set events_json=excluded.events_json",
+                (json.dumps(events, ensure_ascii=False),),
+            )
+
+    def load_governance_events(self) -> dict[str, object]:
+        with self._connect() as conn:
+            # Create table if not exists (may not exist in existing DBs)
+            conn.execute(
+                "create table if not exists governance_events (id integer primary key check (id = 1), events_json text not null)"
+            )
+            row = conn.execute(
+                "select events_json from governance_events where id = 1"
+            ).fetchone()
+        return json.loads(row[0]) if row else {}

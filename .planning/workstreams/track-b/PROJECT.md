@@ -139,10 +139,10 @@ When work genuinely spans multiple tracks:
 
 ## Active Milestone
 
-- Most recently completed milestone: `vB.1.3`
-- Active milestone: `vB.1.4`
+- Most recently completed milestone: `vB.1.4`
+- Active milestone: `vB.1.5`
 - Primary track: `Track B - 人物构建与管理层`
-- Current goal: Make Discord user identity, archive profile ownership, campaign membership, and campaign character instances explicit and auditable so multiplayer sessions cannot accidentally bleed owner/admin identity into player characters.
+- Current goal: Build the operator and player-facing governance layer so active, archived, replaced, and deleted character states are manageable, reviewable, and understandable in Discord.
 
 ## Milestone vB.1.3: B3 Interview-To-Sheet Character Creation
 
@@ -255,7 +255,7 @@ Update it when:
 - do not allow convenience fallbacks to silently choose the wrong character for a player
 - keep owner/admin governance explicit rather than overloading player identity paths
 
-## Queued Milestone vB.1.5: B5 Character Lifecycle And Governance Surface
+## Current Milestone: vB.1.5 Character Lifecycle And Governance Surface
 
 **Goal:** Build the operator and player-facing governance layer on top of explicit identity ownership so active, archived, replaced, and deleted character states are manageable, reviewable, and understandable in Discord.
 
@@ -281,9 +281,50 @@ Update it when:
 - archive/profile status surface
 
 **Migration Notes**
-- queue this after vB.1.4 so lifecycle UI is built on a stable identity chain
+- build lifecycle UI on a stable identity chain (vB.1.4 foundation)
 - preserve one-active-profile-by-default as the baseline policy
 - keep governance changes auditable and explicit rather than silent
+
+---
+
+## Queued Milestone vB.1.6: B6 COC-Legal Character Finalization And New-Player Modes
+
+**Goal:** Turn builder output into a full legal investigator-sheet finalization system that supports both strict canonical COC generation and a clearly bounded quick-start mode for new players.
+
+**Target features:**
+- consume Track A's canonical generation/allocation rules instead of ad-hoc numeric finishing
+- support a strict standard creation path:
+  - canonical attribute generation
+  - age adjustments
+  - derived stats
+  - occupation and interest skill allocation
+- support a clearly labeled quick-start/new-player path:
+  - controlled attribute arrays or KP-approved presets
+  - recommended professions, skills, and starter items from module onboarding metadata
+  - shorter path to a legal playable sheet without pretending to be the canonical method
+- explain to players where each numeric result came from:
+  - rules
+  - dice
+  - chosen profession
+  - optional quick-start constraints
+
+**Primary Track**
+- Track B - 人物构建与管理层
+
+**Secondary Impact**
+- Track A - 模组与规则运行层: finalization consumes canonical generation/allocation contracts
+- Track D - 游戏呈现层: player-facing finalization summaries and newcomer card guidance
+- Track C - Discord 交互层: onboarding and builder flows may expose standard vs quick-start creation modes
+
+**Contracts Changed**
+- `BuilderSession`
+- character finalization contract
+- archive profile writeback for canonical vs quick-start provenance
+
+**Migration Notes**
+- quick-start must remain clearly marked as an onboarding aid, not a silent replacement of canonical rules
+- preserve the interview-to-sheet flow as the narrative front-end while replacing the numeric back-end with stricter rule-bound finalization
+- keep module-specific recommendations data-driven through onboarding metadata rather than hardcoding per-module builder logic
 
 ## Queued Milestone vB.1.6: B6 COC-Legal Character Finalization And New-Player Modes
 
