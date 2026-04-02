@@ -14,7 +14,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from dm_bot.discord_bot.commands import BotCommands
-from dm_bot.orchestrator.session_store import SessionStore
+from dm_bot.orchestrator.session_store import SessionStore, CampaignCharacterInstance
 from tests.fakes.discord import fake_interaction
 
 
@@ -96,10 +96,21 @@ async def test_full_lobby_flow_bind_join_select_ready():
     assert session.selected_profiles["guest"] == "prof-guest"
     assert session.members["guest"].selected_profile_id == "prof-guest"
 
-    session.active_characters["owner"] = "Investigator A"
-    session.members["owner"].active_character_name = "Investigator A"
-    session.active_characters["guest"] = "Investigator B"
-    session.members["guest"].active_character_name = "Investigator B"
+    # Set up instance with character_name for owner (PV-04 instance model)
+    session.character_instances["owner"] = CampaignCharacterInstance(
+        campaign_id="camp-1",
+        user_id="owner",
+        character_name="Investigator A",
+        archive_profile_id="prof-owner",
+        status="active",
+    )
+    session.character_instances["guest"] = CampaignCharacterInstance(
+        campaign_id="camp-1",
+        user_id="guest",
+        character_name="Investigator B",
+        archive_profile_id="prof-guest",
+        status="active",
+    )
 
     await cmd.ready(owner_interaction)
 
@@ -138,8 +149,14 @@ async def test_lobby_flow_state_persistence():
     session = store.get_by_channel("chan-1")
     assert session.selected_profiles["owner"] == "prof-1"
 
-    session.active_characters["owner"] = "Test Investigator"
-    session.members["owner"].active_character_name = "Test Investigator"
+    # Set up instance with character_name (PV-04 instance model)
+    session.character_instances["owner"] = CampaignCharacterInstance(
+        campaign_id="camp-1",
+        user_id="owner",
+        character_name="Test Investigator",
+        archive_profile_id="prof-1",
+        status="active",
+    )
 
     await cmd.ready(interaction)
     session = store.get_by_channel("chan-1")

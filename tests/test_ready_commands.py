@@ -2,7 +2,11 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 import pytest
 
-from dm_bot.orchestrator.session_store import SessionStore, ValidationResult
+from dm_bot.orchestrator.session_store import (
+    SessionStore,
+    ValidationResult,
+    CampaignCharacterInstance,
+)
 from tests.fakes.discord import fake_interaction
 
 
@@ -88,7 +92,7 @@ async def test_ready_rejects_no_profile():
 
 @pytest.mark.asyncio
 async def test_ready_success():
-    """Member with selected profile can ready up."""
+    """Member with active instance can ready up (PV-04 instance model)."""
     from dm_bot.discord_bot.commands import BotCommands
 
     store = SessionStore()
@@ -96,8 +100,14 @@ async def test_ready_success():
         campaign_id="c1", channel_id="chan-1", guild_id="g1", owner_id="user-1"
     )
     session = store.get_by_channel("chan-1")
-    session.members["user-1"].selected_profile_id = "prof-1"
-    session.selected_profiles["user-1"] = "prof-1"
+    # Set up instance with character_name (PV-04 instance model)
+    session.character_instances["user-1"] = CampaignCharacterInstance(
+        campaign_id="c1",
+        user_id="user-1",
+        character_name="Test Investigator",
+        archive_profile_id="prof-1",
+        status="active",
+    )
 
     cmd = BotCommands(
         settings=None,

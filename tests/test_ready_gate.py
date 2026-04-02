@@ -13,6 +13,7 @@ Tests ownership and membership validation:
 
 import pytest
 from dataclasses import dataclass
+from unittest.mock import MagicMock
 from dm_bot.orchestrator.session_store import (
     SessionStore,
     SelectProfileError,
@@ -146,35 +147,159 @@ def test_ready_rejects_no_profile_selected():
 
 
 def test_ready_succeeds_with_selected_profile():
-    """REQ-002: Member with selected profile can ready up."""
+    """REQ-002: Member with selected profile can ready up (instance model - PV-04)."""
     store = SessionStore()
     store.bind_campaign(
         campaign_id="c1", channel_id="chan-1", guild_id="g1", owner_id="owner"
     )
     store.join_campaign(channel_id="chan-1", user_id="user-2")
-    # Simulate profile already selected (bypass select_archive_profile for unit test)
-    session = store.get_by_channel("chan-1")
-    session.members["user-2"].selected_profile_id = "prof-1"
-    session.selected_profiles["user-2"] = "prof-1"
+    # Set up instance with character_name (simulates select_instance_profile)
+    instance = store.get_character_instance("chan-1", "user-2")
+    assert instance is not None
+    instance.character_name = "Test Investigator"
+    instance.archive_profile_id = "prof-1"
+    instance.status = "active"
     result = store.validate_ready(channel_id="chan-1", user_id="user-2")
     assert result.error is None
 
 
 def test_ready_succeeds_with_active_character_name():
-    """REQ-002: Member with ad-hoc character name (no profile) can ready up."""
+    """REQ-002: Member with ad-hoc character name (no profile) can ready up (instance model - PV-04)."""
     store = SessionStore()
     store.bind_campaign(
         campaign_id="c1", channel_id="chan-1", guild_id="g1", owner_id="owner"
     )
     store.join_campaign(channel_id="chan-1", user_id="user-2")
-    session = store.get_by_channel("chan-1")
-    session.members["user-2"].active_character_name = "AdHoc Investigator"
+    # Set up instance with character_name (ad-hoc character without archive)
+    instance = store.get_character_instance("chan-1", "user-2")
+    assert instance is not None
+    instance.character_name = "AdHoc Investigator"
+    instance.status = "active"
     result = store.validate_ready(channel_id="chan-1", user_id="user-2")
     assert result.error is None
 
 
 def test_ready_no_session():
     """Should reject when no session exists for channel."""
+    store = SessionStore()
+    result = store.validate_ready(channel_id="no-chan", user_id="user-1")
+    assert result.error == ReadyGateError.NO_SESSION
+
+
+# --- PV-04: Instance-based Ready Gate (Phase 61 TDD) ---
+
+
+def _make_mock_archive_repo(
+    user_id: str, profile_id: str, name: str = "TestChar"
+) -> MagicMock:
+    """Create a mock archive repository with a single profile."""
+    profile = MagicMock()
+    profile.profile_id = profile_id
+    profile.user_id = user_id
+    profile.name = name
+    profile.status = "active"
+    profile.coc.occupation = "记者"
+    profile.coc.san = 50
+    profile.coc.hp = 10
+    profile.coc.mp = 10
+    profile.coc.luck = 50
+    profile.coc.move_rate = 7
+    profile.coc.build = 0
+    profile.coc.damage_bonus = "0"
+    profile.coc.attributes.str = 50
+    profile.coc.attributes.con = 50
+    profile.coc.attributes.dex = 50
+    profile.coc.attributes.app = 50
+    profile.coc.attributes.pow = 50
+    profile.coc.attributes.siz = 50
+    profile.coc.attributes.int = 50
+    profile.coc.attributes.edu = 50
+    profile.finishing.recommended_occupation_skills = []
+    profile.finishing.recommended_interest_skills = []
+    profile.finishing.allowed_adjustments = []
+    profile.detail_view.return_value = f"【调查员档案】\n{name} / 记者"
+
+    repo = MagicMock()
+    repo.get_profile.return_value = profile
+    return repo
+
+
+def test_ready_with_active_instance_via_select_profile():
+    """PV-04: Member who selected a profile via select_instance_profile can ready.
+
+    This tests the FIX: validate_ready should check instance.character_name,
+    not member.active_character_name.
+    """
+    store = SessionStore()
+    store.bind_campaign(
+        campaign_id="camp1", channel_id="ch1", guild_id="g1", owner_id="owner"
+    )
+    store.join_campaign(channel_id="ch1", user_id="player1")
+
+    # Simulate: player selected profile via select_instance_profile
+    mock_repo = _make_mock_archive_repo("player1", "prof1", "张三")
+    instance = store.get_character_instance("ch1", "player1")
+    instance.character_name = "张三"  # This is what select_instance_profile does
+    instance.archive_profile_id = "prof1"
+    instance.status = "active"
+
+    result = store.validate_ready(channel_id="ch1", user_id="player1")
+    assert result.success is True, f"Expected success but got: {result.error_message}"
+    assert result.error is None
+
+
+def test_ready_with_retired_instance_fails():
+    """PV-04: Member with retired instance cannot ready."""
+    store = SessionStore()
+    store.bind_campaign(
+        campaign_id="camp1", channel_id="ch1", guild_id="g1", owner_id="owner"
+    )
+    store.join_campaign(channel_id="ch1", user_id="player1")
+
+    # Simulate: instance was created then retired
+    instance = store.get_character_instance("ch1", "player1")
+    instance.character_name = "张三"
+    instance.archive_profile_id = "prof1"
+    instance.status = "retired"
+
+    result = store.validate_ready(channel_id="ch1", user_id="player1")
+    assert result.success is False
+    assert result.error == ReadyGateError.NO_PROFILE_SELECTED
+
+
+def test_ready_with_active_instance_but_empty_character_name():
+    """PV-04: Instance with status='active' but empty character_name cannot ready."""
+    store = SessionStore()
+    store.bind_campaign(
+        campaign_id="camp1", channel_id="ch1", guild_id="g1", owner_id="owner"
+    )
+    store.join_campaign(channel_id="ch1", user_id="player1")
+
+    # Instance exists but was never given a character name
+    instance = store.get_character_instance("ch1", "player1")
+    assert instance is not None
+    instance.character_name = ""  # Empty - never selected profile
+    instance.status = "active"
+
+    result = store.validate_ready(channel_id="ch1", user_id="player1")
+    assert result.success is False
+    assert result.error == ReadyGateError.NO_PROFILE_SELECTED
+
+
+def test_ready_still_rejects_non_member():
+    """PV-04: Non-member still cannot ready (unchanged behavior)."""
+    store = SessionStore()
+    store.bind_campaign(
+        campaign_id="camp1", channel_id="ch1", guild_id="g1", owner_id="owner"
+    )
+    # player1 never joined
+    result = store.validate_ready(channel_id="ch1", user_id="player1")
+    assert result.success is False
+    assert result.error == ReadyGateError.NOT_MEMBER
+
+
+def test_ready_still_rejects_no_session():
+    """PV-04: No session still rejects (unchanged behavior)."""
     store = SessionStore()
     result = store.validate_ready(channel_id="no-chan", user_id="user-1")
     assert result.error == ReadyGateError.NO_SESSION

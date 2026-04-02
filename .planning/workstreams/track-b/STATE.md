@@ -2,45 +2,48 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Milestone complete — ready for vB.1.5
-stopped_at: Phase 54 complete, all plans done, tests passing
-last_updated: "2026-03-29T15:32:49.729Z"
+status: executing
+stopped_at: Phase 57 complete - ready for Phase 58
+last_updated: "2026-03-31T20:00:00.000Z"
 progress:
-  total_phases: 15
-  completed_phases: 8
-  total_plans: 9
-  completed_plans: 12
+  total_phases: 22
+  completed_phases: 10
+  total_plans: 12
+  completed_plans: 15
 ---
 
 # Project State
 
-## Current Position
+## Active Milestone
 
-Milestone: vB.1.4 (B4 Identity Projection And Character Ownership) — COMPLETE ✓
-Phase: 54 (character-selection-and-ready-validation) — COMPLETE
-Plan: 54-02 (Discord Command Wiring) — COMPLETE ✓
+**vB.1.5** - Character Lifecycle And Governance Surface
 
-## Milestone vB.1.4 Summary
+- **Primary Track:** Track B - 人物构建与管理层
+- **Status:** Executing Phase 57
+- **Summary:** Phase 57 (Delete And Recovery Operations) complete with 2/2 plans finished
 
-**Goal:** Strengthen identity chain so multiplayer sessions have deterministic ownership, ready gates, and admin separation
-**Target Features:**
+## Completed Milestones
 
-- Explicit contracts for discord_user, archive_profile, campaign_member, campaign_character_instance
-- Require explicit selected profile/instance before player can ready
-- Prevent owner/admin fallbacks from being mistaken as player identity
-- One active campaign instance per player per campaign with clear auditing
+- vB.1.1 — B1 Archive And Builder Normalization (4 phases)
+- vB.1.2 — B2 Archive Card Schema Expansion (4 phases)
+- vB.1.3 — B3 Interview Planner And Portrait Synthesis (4 phases)
+- vB.1.4 — B4 Identity Projection And Character Ownership (3 phases)
 
-**Primary Track:** Track B - 人物构建与管理层
-**Secondary Impact:** Track C - Discord 交互层 (join/ready/session flows)
+## vB.1.5 Progress
 
-## Progress
+- [x] Phase 55: Profile List And Event Logging Foundation (2/2 plans complete)
+- [x] Phase 56: Archive Lifecycle Operations (1/1 plans complete)
+- [x] Phase 57: Delete And Recovery Operations (2/2 plans complete)
+- [ ] Phase 58: Instance Management
+- [ ] Phase 59: Admin Visibility Surfaces
+- [ ] Phase 60: Admin Governance Actions
+- [ ] Phase 61: Integration And Polish
 
-**Phases Complete:** 3/3 (Phase 52, 53, 54)
-**Plans Complete:** 2/2
-**Tests:** 246 passing
+## Next Milestone
+
+**vB.1.6** — COC-Legal Character Finalization And New-Player Modes
 
 ## Session Continuity
 
-**Stopped At:** Phase 54 complete, all plans done, tests passing
-**Next Step:** Activate vB.1.5 — Character Lifecycle And Governance Surface
-**Queued Milestone:** vB.1.5
+**Stopped At:** Phase 57 complete - ready for Phase 58
+**Resume File:** .planning/phases/57-delete-and-recovery-operations/57-02-SUMMARY.md

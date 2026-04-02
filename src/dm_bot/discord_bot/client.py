@@ -199,10 +199,115 @@ class DiscordDmBot(commands.Bot):
             await self.handlers.activate_profile(interaction, profile_id=profile_id)
 
         @self.tree.command(
+            name="delete_profile",
+            description="Soft-delete an archived profile (7-day recovery grace period)",
+        )
+        @app_commands.describe(profile_id="Archive profile id to delete")
+        async def delete_profile(
+            interaction: discord.Interaction, profile_id: str
+        ) -> None:
+            await self.handlers.delete_profile(interaction, profile_id=profile_id)
+
+        @self.tree.command(
+            name="recover_profile",
+            description="Recover a deleted profile within the 7-day grace period",
+        )
+        @app_commands.describe(profile_id="Deleted profile id to recover")
+        async def recover_profile(
+            interaction: discord.Interaction, profile_id: str
+        ) -> None:
+            await self.handlers.recover_profile(interaction, profile_id=profile_id)
+
+        @self.tree.command(
             name="admin_profiles", description="List all player archive profiles"
         )
         async def admin_profiles(interaction: discord.Interaction) -> None:
             await self.handlers.admin_profiles(interaction)
+
+        @self.tree.command(
+            name="admin_profile_detail",
+            description="View any player's full archive profile detail",
+        )
+        @app_commands.describe(profile_id="Optional profile ID to view directly")
+        async def admin_profile_detail(
+            interaction: discord.Interaction, profile_id: str | None = None
+        ) -> None:
+            await self.handlers.admin_profile_detail(interaction, profile_id=profile_id)
+
+        @self.tree.command(
+            name="admin_ownership_chain",
+            description="View full ownership chain for a player",
+        )
+        @app_commands.describe(user_id="Discord user ID or @mention")
+        async def admin_ownership_chain(
+            interaction: discord.Interaction, user_id: str | None = None
+        ) -> None:
+            await self.handlers.admin_ownership_chain(interaction, user_id=user_id)
+
+        @self.tree.command(
+            name="admin_instances",
+            description="View all active character instances across campaigns",
+        )
+        async def admin_instances(interaction: discord.Interaction) -> None:
+            await self.handlers.admin_instances(interaction)
+
+        @self.tree.command(
+            name="admin_force_archive_profile",
+            description="强制归档玩家档案 (管理员)",
+        )
+        @app_commands.describe(
+            profile_id="要归档的档案ID",
+            reason="归档原因（至少10个字符）",
+        )
+        async def admin_force_archive_profile(
+            interaction: discord.Interaction,
+            profile_id: str,
+            reason: str,
+        ) -> None:
+            await self.handlers.admin_force_archive_profile(
+                interaction, profile_id=profile_id, reason=reason
+            )
+
+        @self.tree.command(
+            name="admin_force_archive_instance",
+            description="强制归档玩家角色实例 (所有者)",
+        )
+        @app_commands.describe(
+            user_id="玩家Discord ID或@提及",
+            reason="归档原因（至少10个字符）",
+        )
+        async def admin_force_archive_instance(
+            interaction: discord.Interaction,
+            user_id: str,
+            reason: str,
+        ) -> None:
+            await self.handlers.admin_force_archive_instance(
+                interaction, user_id=user_id, reason=reason
+            )
+
+        @self.tree.command(
+            name="admin_reassign_ownership",
+            description="转让战役所有权 (所有者)",
+        )
+        @app_commands.describe(
+            user_id="新所有者Discord ID或@提及",
+            reason="转让原因（至少10个字符）",
+        )
+        async def admin_reassign_ownership(
+            interaction: discord.Interaction,
+            user_id: str,
+            reason: str,
+        ) -> None:
+            await self.handlers.admin_reassign_ownership(
+                interaction, user_id=user_id, reason=reason
+            )
+
+        @self.tree.command(
+            name="admin_governance_events",
+            description="显示战役最近治理事件 (管理员)",
+        )
+        async def admin_governance_events(interaction: discord.Interaction) -> None:
+            await self.handlers.admin_governance_events(interaction)
 
         @self.tree.command(
             name="turn", description="Submit a player turn into the active campaign"

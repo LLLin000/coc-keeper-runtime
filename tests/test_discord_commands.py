@@ -239,21 +239,27 @@ async def test_select_profile_rejects_non_member():
 
 @pytest.mark.asyncio
 async def test_ready_sets_player_ready_on_success():
-    """ready sets player_ready[user_id] = True on success."""
+    """ready sets player_ready[user_id] = True on success (PV-04 instance model)."""
+    from dm_bot.orchestrator.session_store import CampaignCharacterInstance
+
     store = SessionStore()
     cmd = _make_bot_commands(store)
 
-    # Setup: bind campaign with owner and selected profile
+    # Setup: bind campaign with owner
     interaction = _fake_interaction_with_channel(
         channel_id="chan-1", guild_id="g1", user_id="owner"
     )
     await cmd.bind_campaign(interaction, campaign_id="camp-1")
 
-    # Set selected profile
+    # Set up instance with character_name (PV-04 instance model)
     session = store.get_by_channel("chan-1")
-    session.members["owner"].selected_profile_id = "prof-1"
-    session.selected_profiles["owner"] = "prof-1"
-    session.active_characters["owner"] = "Test Investigator"
+    session.character_instances["owner"] = CampaignCharacterInstance(
+        campaign_id="camp-1",
+        user_id="owner",
+        character_name="Test Investigator",
+        archive_profile_id="prof-1",
+        status="active",
+    )
 
     # Ready up
     ready_interaction = fake_interaction(

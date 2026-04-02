@@ -95,41 +95,9 @@ def build_runtime(settings: Settings | None = None) -> RuntimeBundle:
     )
     session_store = SessionStore()
     session_store.load_sessions(persistence_store.load_sessions())
-    turn_coordinator = TurnCoordinator(
-        turn_runner=turn_runner, persistence_store=persistence_store
-    )
-    handlers = BotCommands(
-        settings=settings,
-        session_store=session_store,
-        turn_coordinator=turn_coordinator,
-        gameplay=gameplay,
-        diagnostics=DiagnosticsService(
-            persistence_store,
-            session_store=session_store,
-            archive_repository=archive_repository,
-        ),
-        persistence_store=persistence_store,
-        coc_assets=coc_assets,
-        archive_repository=archive_repository,
-        character_builder=character_builder,
-        intent_classifier=intent_classifier,
-        message_buffer=message_buffer,
-        intent_handler_registry=intent_handler_registry,
-    )
-    return RuntimeBundle(
-        settings=settings,
-        app=create_app(),
-        discord_bot=create_discord_bot(handlers=handlers, settings=settings),
-    )
-    message_buffer = MessageBuffer()
-    intent_handler_registry = IntentHandlerRegistry(message_buffer=message_buffer)
-    turn_runner = TurnRunner(
-        router=RouterService(model_client),
-        narrator=NarrationService(model_client),
-        gameplay=gameplay,
-    )
-    session_store = SessionStore()
-    session_store.load_sessions(persistence_store.load_sessions())
+    governance_events = persistence_store.load_governance_events()
+    if governance_events:
+        session_store.event_log.import_state(governance_events)
     turn_coordinator = TurnCoordinator(
         turn_runner=turn_runner, persistence_store=persistence_store
     )
