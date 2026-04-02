@@ -111,6 +111,12 @@
 - `tests/scenarios/contract/visibility/*.yaml` — add preconditions
 - `tests/scenarios/chaos/*.yaml` — fix duplicate member expectations
 
+**Plans:** 1 plan created
+- [x] **E93-01-PLAN.md** — Scenario precondition alignment (runtime_driver.py user_id fix + YAML updates) (completed 2026-04-02)
+  - Files: `src/dm_bot/testing/runtime_driver.py`, `tests/scenarios/**/*.yaml`
+  - Tasks: 6 (driver method user_id, 10+ scenario YAML updates, verification)
+  - **Summary:** E93-01-SUMMARY.md (14/14 scenarios passing)
+
 ---
 
 ## vE.1.1 Summary
