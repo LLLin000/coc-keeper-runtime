@@ -6,13 +6,21 @@ from pathlib import Path
 class PersistenceStore:
     def __init__(self, path: str | Path) -> None:
         self._path = Path(path)
+        self._conn: sqlite3.Connection | None = None
+        # For :memory: mode, create a single shared connection so tables persist
+        # across all operations. File-based SQLite works fine with per-operation
+        # connections because the database lives on disk.
+        if str(self._path) == ":memory:":
+            self._conn = sqlite3.connect("file::memory:?cache=shared", uri=True)
         self._init_db()
 
+    def close(self) -> None:
+        pass
+
     def _connect(self) -> sqlite3.Connection:
-        path_str = str(self._path)
-        if path_str == ":memory:":
-            return sqlite3.connect("file::memory:?cache=shared", uri=True)
-        return sqlite3.connect(path_str)
+        if self._conn is not None:
+            return self._conn
+        return sqlite3.connect(str(self._path))
 
     def _init_db(self) -> None:
         with self._connect() as conn:
@@ -28,6 +36,11 @@ class PersistenceStore:
             conn.execute(
                 "create table if not exists archive_profiles (id integer primary key check (id = 1), profiles_json text not null)"
             )
+
+    def close(self) -> None:
+        if self._conn is not None:
+            self._conn.close()
+            self._conn = None
 
     def save_campaign_state(self, campaign_id: str, state: dict[str, object]) -> None:
         with self._connect() as conn:
@@ -109,25 +122,88 @@ class PersistenceStore:
             ).fetchone()
         return json.loads(row[0]) if row else {}
 
-    def save_governance_events(self, events: dict[str, object]) -> None:
+    def save_profile(self, user_id: str, profile: dict) -> None:
+        """Save a profile to the database.
+
+        Args:
+            user_id: The user ID
+            profile: Profile data as dict
+        """
+        profile_id = profile.get("profile_id")
+        if not profile_id:
+            raise ValueError("Profile must have profile_id")
+
         with self._connect() as conn:
-            # Create table if not exists (may not exist in existing DBs)
             conn.execute(
-                "create table if not exists governance_events (id integer primary key check (id = 1), events_json text not null)"
-            )
-            conn.execute(
-                "insert into governance_events(id, events_json) values(1, ?) "
-                "on conflict(id) do update set events_json=excluded.events_json",
-                (json.dumps(events, ensure_ascii=False),),
+                """
+                CREATE TABLE IF NOT EXISTS profiles (
+                    user_id TEXT NOT NULL,
+                    profile_id TEXT NOT NULL,
+                    data TEXT NOT NULL,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, profile_id)
+                )
+                """
             )
 
-    def load_governance_events(self) -> dict[str, object]:
-        with self._connect() as conn:
-            # Create table if not exists (may not exist in existing DBs)
             conn.execute(
-                "create table if not exists governance_events (id integer primary key check (id = 1), events_json text not null)"
+                """
+                INSERT OR REPLACE INTO profiles (user_id, profile_id, data)
+                VALUES (?, ?, ?)
+                """,
+                (user_id, profile_id, json.dumps(profile, ensure_ascii=False)),
             )
-            row = conn.execute(
-                "select events_json from governance_events where id = 1"
-            ).fetchone()
-        return json.loads(row[0]) if row else {}
+            conn.commit()
+
+    def load_profile(self, user_id: str, profile_id: str) -> dict | None:
+        """Load a profile from the database.
+
+        Args:
+            user_id: The user ID
+            profile_id: The profile ID
+
+        Returns:
+            Profile data as dict, or None if not found
+        """
+        with self._connect() as conn:
+            cursor = conn.execute(
+                "SELECT data FROM profiles WHERE user_id = ? AND profile_id = ?",
+                (user_id, profile_id),
+            )
+            row = cursor.fetchone()
+            if row:
+                return json.loads(row[0])
+            return None
+
+    def load_user_profiles(self, user_id: str) -> list[dict]:
+        """Load all profiles for a user.
+
+        Args:
+            user_id: The user ID
+
+        Returns:
+            List of profile dicts
+        """
+        with self._connect() as conn:
+            cursor = conn.execute(
+                "SELECT data FROM profiles WHERE user_id = ?", (user_id,)
+            )
+            return [json.loads(row[0]) for row in cursor.fetchall()]
+
+    def delete_profile(self, user_id: str, profile_id: str) -> bool:
+        """Delete a profile from the database.
+
+        Args:
+            user_id: The user ID
+            profile_id: The profile ID
+
+        Returns:
+            True if deleted, False if not found
+        """
+        with self._connect() as conn:
+            cursor = conn.execute(
+                "DELETE FROM profiles WHERE user_id = ? AND profile_id = ?",
+                (user_id, profile_id),
+            )
+            conn.commit()
+            return cursor.rowcount > 0

@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone, timedelta
-from typing import Callable
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
 from dm_bot.characters.models import COCAttributes, COCInvestigatorProfile
+from dm_bot.coc.presentation import CardSection
 
 GRACE_PERIOD_DAYS = 7
 
@@ -51,7 +50,6 @@ class InvestigatorArchiveProfile(BaseModel):
     favored_skills: list[str] = Field(default_factory=list)
     portrait_summary: str = ""
     status: str = "active"
-    deleted_at: datetime | None = None
     finishing: ArchiveFinishingRecommendation = Field(
         default_factory=ArchiveFinishingRecommendation
     )
@@ -60,8 +58,140 @@ class InvestigatorArchiveProfile(BaseModel):
     def summary_line(self) -> str:
         goal = self.life_goal or "未记录目标"
         goal = goal[:20] + ("…" if len(goal) > 20 else "")
-        status_icon = "🔴" if self.status == "deleted" else ""
-        return f"{self.profile_id} | {self.name} | {self.coc.occupation} | SAN {self.coc.san} | {status_icon}{self.status} | 目标 {goal}"
+        return f"{self.profile_id} | {self.name} | {self.coc.occupation} | SAN {self.coc.san} | {self.status} | 目标 {goal}"
+
+    def card_view(self) -> list[CardSection]:
+        """Return archive profile as a list of CardSection objects.
+
+        Each section is designed to fit within Discord's 1024-character embed field limit.
+        Long-lived archive data only — campaign-local state (SAN, HP, MP, Luck from
+        InvestigatorPanel) is shown separately.
+
+        Returns:
+            List of 6 CardSections: 档案, 身份, 人物, 塑造, 数值, 技能与收束
+        """
+        sections: list[CardSection] = []
+
+        # Section 1: Header with 长期档案 label
+        header = (
+            f"**{self.name}** | {self.coc.occupation} | {self.age}岁 | {self.status}\n"
+            f"📁 长期档案 — 以下内容属于长期调查员档案，不包含当前模组里的临时状态。"
+        )
+        sections.append(
+            CardSection(
+                title="📋 调查员档案", content=header, visibility="public", order=0
+            )
+        )
+
+        # Section 2: 身份
+        identity_lines = [
+            f"骨架：{self.concept or '未记录'}",
+            f"出生地：{self.birthplace or '未记录'}",
+            f"现居地：{self.residence or '未记录'}",
+            f"家庭：{self.family or '未记录'}",
+            f"教育：{self.education_background or '未记录'}",
+        ]
+        sections.append(
+            CardSection(
+                title="🏷️ 身份",
+                content="\n".join(identity_lines),
+                visibility="public",
+                order=1,
+            )
+        )
+
+        # Section 3: 人物
+        person_lines = [
+            f"职业：{self.occupation_detail or self.occupation or '未记录'}",
+            f"专长：{self.specialty or '未记录'}",
+            f"职业轨迹：{self.career_arc or self.background or '未记录'}",
+        ]
+        sections.append(
+            CardSection(
+                title="💼 人物",
+                content="\n".join(person_lines),
+                visibility="public",
+                order=2,
+            )
+        )
+
+        # Section 4: 塑造
+        important_person = self.important_person or self.important_tie or "未记录"
+        shaping_lines = [
+            f"关键过往：{self.key_past_event or '未记录'}",
+            f"核心信念：{self.core_belief or '未记录'}",
+            f"人生目标：{self.life_goal or '未记录'}",
+            f"物质欲望：{self.material_desire or '未记录'}",
+            f"弱点：{self.weakness or '未记录'}",
+            f"特质：{self.trait_notes or self.disposition or '未记录'}",
+            f"重要之人：{important_person}",
+            f"重要场所：{self.significant_location or '未记录'}",
+            f"珍贵之物：{self.treasured_possession or '未记录'}",
+            f"恐惧/禁忌：{self.fear_or_taboo or '未记录'}",
+            f"伤口与疤痕：{self.scars_and_injuries or '未记录'}",
+            f"恐惧症/躁狂症：{self.phobias_and_manias or '未记录'}",
+            f"处事方式：{self.disposition or '未记录'}",
+        ]
+        sections.append(
+            CardSection(
+                title="🎭 塑造",
+                content="\n".join(shaping_lines),
+                visibility="public",
+                order=3,
+            )
+        )
+
+        # Section 5: 数值 with emoji indicators
+        attrs = self.coc.attributes
+        stats_lines = [
+            f"STR {attrs.str} / CON {attrs.con} / DEX {attrs.dex} / APP {attrs.app}",
+            f"POW {attrs.pow} / SIZ {attrs.siz} / INT {attrs.int} / EDU {attrs.edu}",
+            f"🧠 SAN {self.coc.san} / ❤️ HP {self.coc.hp} / 💧 MP {self.coc.mp} / 🍀 LUCK {self.coc.luck}",
+            f"MOV {self.coc.move_rate} / 体格 {self.coc.build} / 伤害加值 {self.coc.damage_bonus}",
+        ]
+        sections.append(
+            CardSection(
+                title="📊 数值",
+                content="\n".join(stats_lines),
+                visibility="public",
+                order=4,
+            )
+        )
+
+        # Section 6: 技能与收束
+        favored = "、".join(self.favored_skills) if self.favored_skills else "未记录"
+        occ_skills = (
+            "、".join(self.finishing.recommended_occupation_skills)
+            if self.finishing.recommended_occupation_skills
+            else "未记录"
+        )
+        interest_skills = (
+            "、".join(self.finishing.recommended_interest_skills)
+            if self.finishing.recommended_interest_skills
+            else "未记录"
+        )
+        adjustments = (
+            "；".join(self.finishing.allowed_adjustments)
+            if self.finishing.allowed_adjustments
+            else "无"
+        )
+        skills_lines = [
+            f"偏好技能：{favored}",
+            f"职业技能建议：{occ_skills}",
+            f"兴趣技能建议：{interest_skills}",
+            f"允许的规则内收束：{adjustments}",
+            f"规则说明：{self.finishing.rules_note or '未记录'}",
+        ]
+        sections.append(
+            CardSection(
+                title="📚 技能与收束",
+                content="\n".join(skills_lines),
+                visibility="public",
+                order=5,
+            )
+        )
+
+        return sections
 
     def detail_view(self) -> str:
         favored = "、".join(self.favored_skills) if self.favored_skills else "未记录"
@@ -81,10 +211,9 @@ class InvestigatorArchiveProfile(BaseModel):
             else "无"
         )
         important_person = self.important_person or self.important_tie or "未记录"
-        status_icon = "🔴 " if self.status == "deleted" else ""
         lines = [
             "【调查员档案】",
-            f"{status_icon}{self.name} / {self.coc.occupation} / {self.age}岁 / {self.status}",
+            f"{self.name} / {self.coc.occupation} / {self.age}岁 / {self.status}",
             "以下内容属于长期档案，不包含当前模组里的临时 SAN、伤势、装备和秘密状态。",
             "",
             "【身份】",
@@ -131,8 +260,9 @@ class InvestigatorArchiveProfile(BaseModel):
 
 
 class InvestigatorArchiveRepository:
-    def __init__(self) -> None:
+    def __init__(self, persistence_store=None) -> None:
         self._profiles: dict[str, dict[str, InvestigatorArchiveProfile]] = {}
+        self._persistence = persistence_store
 
     def create_profile(
         self,
@@ -279,64 +409,109 @@ class InvestigatorArchiveRepository:
     ) -> InvestigatorArchiveProfile:
         active = self.active_profile(user_id)
         if active is not None and active.profile_id != profile_id:
-            active.status = "archived"
+            active.status = "replaced"
         profile = self.get_profile(user_id, profile_id)
         profile.status = "active"
         return profile
 
-    def delete_profile(
-        self, *, user_id: str, profile_id: str
+    def update_profile(
+        self,
+        *,
+        user_id: str,
+        profile_id: str,
+        **updates,
     ) -> InvestigatorArchiveProfile:
-        """Soft-delete a profile. Sets status='deleted' with timestamp. Cannot delete active profiles."""
+        """Update an existing profile.
+
+        Args:
+            user_id: The user ID
+            profile_id: The profile ID to update
+            **updates: Fields to update (only updatable fields)
+
+        Returns:
+            The updated profile
+
+        Raises:
+            ValueError: If profile not found or invalid updates
+        """
         profile = self.get_profile(user_id, profile_id)
-        if profile.status == "active":
-            raise ValueError("Cannot delete an active profile. Archive it first.")
-        if profile.status != "deleted":
-            profile.status = "deleted"
-            profile.deleted_at = datetime.now(timezone.utc)
+
+        # Fields that cannot be updated
+        read_only = {"profile_id", "user_id", "coc", "schema_version"}
+
+        # Validate updates
+        invalid = set(updates.keys()) & read_only
+        if invalid:
+            raise ValueError(f"Cannot update read-only fields: {invalid}")
+
+        # Apply updates
+        for key, value in updates.items():
+            if hasattr(profile, key):
+                setattr(profile, key, value)
+            else:
+                raise ValueError(f"Unknown field: {key}")
+
+        # Update in storage
+        self._profiles[user_id][profile_id] = profile
+
         return profile
 
-    def recover_profile(
-        self, *, user_id: str, profile_id: str
+    def update_coc_stats(
+        self,
+        *,
+        user_id: str,
+        profile_id: str,
+        **coc_updates,
     ) -> InvestigatorArchiveProfile:
-        """Recover a deleted profile within the 7-day grace period."""
+        """Update COC-specific stats.
+
+        Args:
+            user_id: The user ID
+            profile_id: The profile ID
+            **coc_updates: Updates to COCInvestigatorProfile
+
+        Returns:
+            The updated profile
+        """
         profile = self.get_profile(user_id, profile_id)
-        if profile.status != "deleted":
-            raise ValueError("Can only recover a deleted profile.")
-        if profile.deleted_at is None:
-            raise ValueError("Deleted profile has no deletion timestamp.")
-        if datetime.now(timezone.utc) - profile.deleted_at > timedelta(
-            days=GRACE_PERIOD_DAYS
-        ):
-            raise ValueError("Grace period expired. Profile cannot be recovered.")
-        profile.status = "active"
-        profile.deleted_at = None
+
+        # Update COC fields
+        for key, value in coc_updates.items():
+            if hasattr(profile.coc, key):
+                setattr(profile.coc, key, value)
+            else:
+                raise ValueError(f"Unknown COC field: {key}")
+
+        self._profiles[user_id][profile_id] = profile
         return profile
 
-    def purge_expired_deleted(
-        self, *, user_id: str, append_event: Callable | None = None
-    ) -> int:
-        """Permanently remove profiles with expired grace period. Returns count of purged profiles."""
-        purged_count = 0
-        profiles_to_remove = []
-        for profile_id, profile in self._profiles.get(user_id, {}).items():
-            if profile.status == "deleted" and profile.deleted_at is not None:
-                if datetime.now(timezone.utc) - profile.deleted_at > timedelta(
-                    days=GRACE_PERIOD_DAYS
-                ):
-                    profiles_to_remove.append(profile_id)
-                    if append_event:
-                        append_event(
-                            operation="profile_purge",
-                            user_id=user_id,
-                            profile_id=profile_id,
-                            before_state={"status": "deleted"},
-                            after_state={"status": "purged"},
-                        )
-        for profile_id in profiles_to_remove:
-            self._profiles[user_id].pop(profile_id, None)
-            purged_count += 1
-        return purged_count
+    def update_skills(
+        self,
+        *,
+        user_id: str,
+        profile_id: str,
+        skills: dict[str, int],
+    ) -> InvestigatorArchiveProfile:
+        """Update character skills.
+
+        Args:
+            user_id: The user ID
+            profile_id: The profile ID
+            skills: Dict of skill_name -> skill_value
+
+        Returns:
+            The updated profile
+        """
+        profile = self.get_profile(user_id, profile_id)
+
+        for skill, value in skills.items():
+            profile.coc.skills[skill] = value
+
+        self._profiles[user_id][profile_id] = profile
+        return profile
+
+    def delete_profile(self, *, user_id: str, profile_id: str) -> None:
+        self._profiles.get(user_id, {}).pop(profile_id, None)
 
     def export_state(self) -> dict[str, object]:
         return {
@@ -354,6 +529,54 @@ class InvestigatorArchiveRepository:
             for profile_id, raw in dict(raw_profiles).items():
                 bucket[profile_id] = InvestigatorArchiveProfile.model_validate(raw)
             self._profiles[str(user_id)] = bucket
+
+    def save_to_persistence(self, user_id: str, profile_id: str) -> None:
+        """Save a profile to persistent storage.
+
+        Args:
+            user_id: The user ID
+            profile_id: The profile ID
+        """
+        if not self._persistence:
+            return
+
+        profile = self.get_profile(user_id, profile_id)
+        self._persistence.save_profile(user_id, profile.model_dump())
+
+    def load_from_persistence(self, user_id: str) -> list[InvestigatorArchiveProfile]:
+        """Load all profiles for a user from persistent storage.
+
+        Args:
+            user_id: The user ID
+
+        Returns:
+            List of loaded profiles
+        """
+        if not self._persistence:
+            return []
+
+        profiles_data = self._persistence.load_user_profiles(user_id)
+        profiles = []
+
+        for data in profiles_data:
+            profile = InvestigatorArchiveProfile.model_validate(data)
+            profiles.append(profile)
+
+            # Add to memory
+            if user_id not in self._profiles:
+                self._profiles[user_id] = {}
+            self._profiles[user_id][profile.profile_id] = profile
+
+        return profiles
+
+    def persist_all(self) -> None:
+        """Save all profiles to persistent storage."""
+        if not self._persistence:
+            return
+
+        for user_id, profiles in self._profiles.items():
+            for profile_id, profile in profiles.items():
+                self._persistence.save_profile(user_id, profile.model_dump())
 
 
 def _build_finishing_recommendation(
