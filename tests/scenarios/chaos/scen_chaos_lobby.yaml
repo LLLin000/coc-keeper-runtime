@@ -66,6 +66,111 @@ steps:
 
   - actor: p1
     action: command
+    name: create_test_profile
+    args:
+      user_id: u_p1
+      name: Player One
+      occupation: scholar
+      age: 25
+
+  - actor: p2
+    action: command
+    name: create_test_profile
+    args:
+      user_id: u_p2
+      name: Player Two
+      occupation: detective
+      age: 30
+
+  - actor: p3
+    action: command
+    name: create_test_profile
+    args:
+      user_id: u_p3
+      name: Player Three
+      occupation: reporter
+      age: 28
+
+  - actor: p4
+    action: command
+    name: create_test_profile
+    args:
+      user_id: u_p4
+      name: Player Four
+      occupation: doctor
+      age: 35
+
+  - actor: p5
+    action: command
+    name: create_test_profile
+    args:
+      user_id: u_p5
+      name: Player Five
+      occupation: pilot
+      age: 32
+
+  - actor: p1
+    action: command
+    name: set_role
+    args:
+      role: player
+
+  - actor: p1
+    action: command
+    name: select_profile
+    args:
+      profile_id: u_p1
+
+  - actor: p2
+    action: command
+    name: set_role
+    args:
+      role: player
+
+  - actor: p2
+    action: command
+    name: select_profile
+    args:
+      profile_id: u_p2
+
+  - actor: p3
+    action: command
+    name: set_role
+    args:
+      role: player
+
+  - actor: p3
+    action: command
+    name: select_profile
+    args:
+      profile_id: u_p3
+
+  - actor: p4
+    action: command
+    name: set_role
+    args:
+      role: player
+
+  - actor: p4
+    action: command
+    name: select_profile
+    args:
+      profile_id: u_p4
+
+  - actor: p5
+    action: command
+    name: set_role
+    args:
+      role: player
+
+  - actor: p5
+    action: command
+    name: select_profile
+    args:
+      profile_id: u_p5
+
+  - actor: p1
+    action: command
     name: ready
     args: {}
 
@@ -121,5 +226,5 @@ steps:
 
 assertions:
   state:
-    campaign_members: 5
+    campaign_members: 6
     no_duplicate_members: true

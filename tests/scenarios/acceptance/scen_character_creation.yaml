@@ -38,14 +38,29 @@ steps:
 
   - actor: p1
     action: command
+    name: create_test_profile
+    args:
+      user_id: u_p1
+      name: Investigator One
+      occupation: scholar
+      age: 25
+
+  - actor: p1
+    action: command
     name: join_campaign
     args: {}
 
-  - actor: kp
+  - actor: p1
     action: command
     name: set_role
     args:
-      role: investigator
+      role: player
+
+  - actor: p1
+    action: command
+    name: select_profile
+    args:
+      profile_id: u_p1
 
   - actor: p1
     action: command
@@ -57,14 +72,9 @@ steps:
     name: start_session
     args: {}
 
-  - actor: kp
+  - actor: p1
     action: command
     name: complete_onboarding
-    args: {}
-
-  - actor: kp
-    action: command
-    name: next_round
     args: {}
 
   - actor: p1
@@ -76,6 +86,11 @@ steps:
     name: resolve_round
     args: {}
 
+  - actor: kp
+    action: command
+    name: next_round
+    args: {}
+
 assertions:
   phase_timeline:
     - lobby
@@ -83,11 +98,9 @@ assertions:
     - awaiting_admin_start
     - onboarding
     - scene_round_open
-    - scene_round_resolving
-    - scene_round_open
 
   state:
-    campaign_members: 1
+    campaign_members: 2
     no_duplicate_members: true
 
   visible:

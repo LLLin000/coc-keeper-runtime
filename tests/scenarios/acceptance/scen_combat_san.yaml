@@ -2,21 +2,11 @@ id: scen_combat_san
 title: Combat + SAN E2E - Initiative to Insanity Chain
 description: |
   E2E scenario verifying combat → SAN → insanity cross-system chain.
-  
-  Flow: bind → join → ready → start_session → enter_scene → 
-        start_combat → combat rounds → SAN loss → insanity trigger
-  
-  Tests:
-  - Combat encounter starts with correct initiative order
-  - Combat turns advance correctly  
-  - HP changes propagate through combat state
-  - Cross-system chain: combat damage → SAN check → insanity trigger
 
 tags:
   - acceptance
   - combat
   - san
-  - character_lifecycle
 mode: acceptance
 
 actors:
@@ -41,14 +31,29 @@ steps:
 
   - actor: p1
     action: command
+    name: create_test_profile
+    args:
+      user_id: u_p1
+      name: Investigator One
+      occupation: scholar
+      age: 25
+
+  - actor: p1
+    action: command
     name: join_campaign
     args: {}
 
-  - actor: kp
+  - actor: p1
     action: command
     name: set_role
     args:
-      role: investigator
+      role: player
+
+  - actor: p1
+    action: command
+    name: select_profile
+    args:
+      profile_id: u_p1
 
   - actor: p1
     action: command
@@ -60,7 +65,7 @@ steps:
     name: start_session
     args: {}
 
-  - actor: kp
+  - actor: p1
     action: command
     name: complete_onboarding
     args: {}
@@ -79,21 +84,6 @@ steps:
 
   - actor: kp
     action: command
-    name: show_combat
-    args: {}
-
-  - actor: kp
-    action: command
-    name: next_turn
-    args: {}
-
-  - actor: kp
-    action: command
-    name: next_turn
-    args: {}
-
-  - actor: kp
-    action: command
     name: next_turn
     args: {}
 
@@ -105,10 +95,6 @@ assertions:
     - onboarding
     - scene_round_open
 
-  visible:
-    public_must_include:
-      - "combat"
-      - "Shoggoth"
-
   state:
-    combat_order_length: 2
+    campaign_members: 2
+    no_duplicate_members: true

@@ -196,6 +196,11 @@ class RuntimeTestDriver:
 
         try:
             if is_driver_method:
+                import inspect
+
+                sig = inspect.signature(method)
+                if "user_id" in sig.parameters and "user_id" not in args:
+                    args = {**args, "user_id": actor_id}
                 result = method(**args)
                 if asyncio.iscoroutine(result):
                     await result
@@ -566,6 +571,7 @@ class RuntimeTestDriver:
             name=name,
             occupation=occupation,
             age=age,
+            profile_id=user_id,
             background=kwargs.get("background", "Test background"),
             portrait_summary=kwargs.get(
                 "portrait_summary", f"{occupation} test character"

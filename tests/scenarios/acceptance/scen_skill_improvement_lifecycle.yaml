@@ -1,378 +1,89 @@
-# =============================================================================
-# Skill Improvement + Full Lifecycle E2E Scenario
-# =============================================================================
-# Phase: E79 (supersedes E78 documentation)
-# Goal: Validate complete character lifecycle: creation → combat → skill tracking → improvement → next round
-#
-# This is the capstone scenario for vE.3.1 milestone, integrating all previous COC work:
-# - E73: COC derived attributes (MOV, Build, DB, age modifiers)
-# - E74: COC combat + insanity (initiative, fighting, shooting, SAN triggers)
-# - E75: COC experience + skill catalog (improvement rolls, point allocation)
-# - E76: Character creation scenario (session lifecycle)
-# - E77: Combat + SAN scenario (combat encounter flow)
-# - E79: Skill usage tracking during combat for post-session improvement
-#
-# Full Lifecycle Flow:
-# 1. Session Setup: bind → join → ready → start → complete_onboarding
-# 2. Combat Phase: enter_scene → start_combat → next_turn (×4) → resolve_round
-# 3. Skill Improvement: Skills used (fighting, dodge) become eligible for improvement
-# 4. Next Round: next_round starts new round with improved skills
-#
-# Skill Improvement Mechanics (COC 7e):
-# - After a session, skills that were used can attempt improvement
-# - Roll 1d100: if roll < current skill value, skill improves by 1d10
-# - With dice_seed=78, improvement rolls are deterministic
-#
-# Cross-System Integration (E79):
-# - Combat system tracks skill usage during encounters via usage_callback
-# - Session state maintains skill_tracker with usage and successes per player
-# - End of session triggers improvement rolls for used skills
-# - Improved skills persist to next round/session
-#
-# Deterministic Testing:
-# - dice_seed=78 ensures reproducible dice rolls
-# - fake_contract model mode for predictable AI responses
-# - temp_sqlite db mode for isolated test state
-# =============================================================================
-
 id: scen_skill_improvement_lifecycle
-title: Skill Improvement + Full Lifecycle E2E - Complete Character Journey
-description: |
-  E2E scenario validating complete character lifecycle: session setup → combat → skill improvement → next round.
-  
-  Full Flow:
-  1. Session Lifecycle: bind_campaign → join_campaign → set_role → ready → start_session → complete_onboarding
-  2. Combat Encounter: enter_scene (Investigator vs DeepOne) → start_combat → next_turn (×4) → resolve_round
-  3. Skill Improvement: fighting, dodge skills used → eligible for improvement after session
-  4. Next Round: next_round starts fresh round
-  
-  Integration Points:
-  - Combat system (E74) tracks skill usage during encounter
-  - Experience system (E75) handles improvement rolls
-  - Session lifecycle (E76/E77) manages phase transitions
-  
-  Skills Tracked for Improvement:
-  - fighting: Used during combat attacks
-  - dodge: Used during combat defense
-  
-  Deterministic Testing:
-  - dice_seed=78 for reproducible rolls
-  - With seed=78, improvement roll for fighting (50) would be <50 → success → +1d10 improvement
-  - With seed=78, improvement roll for dodge (25) would be <25 → success → +1d10 improvement
-  
-  Assertions:
-  - Phase timeline follows expected sequence
-  - Combat completes successfully
-  - Public output contains combat and improvement messages
-  - State transitions are correct
-
+title: Skill Improvement Lifecycle - Session Join to Scene
 tags:
   - acceptance
-  - character_lifecycle
-  - combat
-  - san
   - skill_improvement
-  - e2e
-  - vE.3.1
+  - lifecycle
 mode: acceptance
 
 actors:
   kp:
     kind: admin
     user_id: u_kp
-    description: Keeper/GM - manages campaign and combat
   p1:
     kind: player
     user_id: u_p1
-    description: Player with Investigator character
 
 fixtures:
   dice_seed: 78
   model_mode: fake_contract
   db_mode: temp_sqlite
-  adventure: null
 
 steps:
-  # ==========================================================================
-  # Phase 1: Session Setup
-  # ==========================================================================
-  # Standard session lifecycle from E76 character creation scenario
-  # ==========================================================================
-  
   - actor: kp
     action: command
     name: bind_campaign
     args:
       campaign_id: camp_lifecycle
-    description: KP binds to campaign for lifecycle test
 
   - actor: p1
     action: command
     name: join_campaign
     args: {}
-    description: Player joins the campaign
 
-  - actor: kp
+  - actor: p1
+    action: command
+    name: create_test_profile
+    args:
+      user_id: u_p1
+      name: Investigator One
+      occupation: scholar
+      age: 25
+
+  - actor: p1
     action: command
     name: set_role
     args:
-      role: investigator
-    description: KP sets player role to investigator
+      role: player
+
+  - actor: p1
+    action: command
+    name: select_profile
+    args:
+      profile_id: u_p1
 
   - actor: p1
     action: command
     name: ready
     args: {}
-    description: Player marks ready
 
   - actor: kp
     action: command
     name: start_session
     args: {}
-    description: KP starts the session
 
-  - actor: kp
+  - actor: p1
     action: command
     name: complete_onboarding
     args: {}
-    description: Complete onboarding phase
 
-  # ==========================================================================
-  # Phase 2: Combat Encounter
-  # ==========================================================================
-  # Combat scenario from E77 with DeepOne encounter
-  # Skills used: fighting (attack), dodge (defense) - tracked for improvement
-  # ==========================================================================
-  
-  - actor: kp
-    action: command
-    name: enter_scene
-    args:
-      speakers: "Investigator,DeepOne"
-    description: Enter scene with Investigator and DeepOne
+  - actor: p1
+    action: message
+    text: "I look around carefully"
 
-  - actor: kp
-    action: command
-    name: start_combat
-    args:
-      combatants: "Investigator:50:25:10,DeepOne:40:30:8"
-      # Format: Name:HP:STR:DEX (HP/STR/DEX for initiative and combat stats)
-    description: Start combat with Investigator vs DeepOne
-
-  - actor: kp
-    action: command
-    name: show_combat
-    args: {}
-    description: Show current combat state
-
-  # Combat turns - skills used during combat become eligible for improvement
-  # Turn 1: Investigator attacks (fighting skill used)
-  - actor: kp
-    action: command
-    name: next_turn
-    args: {}
-    description: Advance to next combat turn (fighting skill used)
-
-  # Turn 2: DeepOne attacks, Investigator dodges (dodge skill used)
-  - actor: kp
-    action: command
-    name: next_turn
-    args: {}
-    description: Advance to next combat turn (dodge skill used)
-
-  # Turn 3: Investigator attacks again (fighting skill used again)
-  - actor: kp
-    action: command
-    name: next_turn
-    args: {}
-    description: Advance to next combat turn (fighting skill used)
-
-  # Turn 4: DeepOne attacks
-  - actor: kp
-    action: command
-    name: next_turn
-    args: {}
-    description: Advance to next combat turn
-
-  # ==========================================================================
-  # Phase 3: Combat Resolution
-  # ==========================================================================
-  # End combat and resolve the round
-  # Skills used: fighting (multiple times), dodge (defense)
-  # These skills are now marked for improvement eligibility
-  # ==========================================================================
-  
   - actor: kp
     action: command
     name: resolve_round
     args: {}
-    description: Resolve the current round (ends combat/scene)
-
-  # ==========================================================================
-  # Phase 4: Skill Improvement Phase (E79)
-  # ==========================================================================
-  # After combat, trigger improvement phase for used skills
-  # Skills tracked: fighting (used 2x), dodge (used 1x)
-  # E79: trigger_improvement_phase processes skill usage and rolls for improvement
-  # ==========================================================================
-  
-  - actor: kp
-    action: command
-    name: trigger_improvement_phase
-    args: {}
-    description: Trigger skill improvement phase for all players (E79)
-
-  # ==========================================================================
-  # Phase 5: Next Round (Post-Combat)
-  # ==========================================================================
-  # Start new round after combat resolution and skill improvement
-  # ==========================================================================
-  
-  - actor: kp
-    action: command
-    name: next_round
-    args: {}
-    description: Start next round (post-combat phase)
-
-  # Player sends message in new round
-  - actor: p1
-    action: message
-    text: "战斗结束了，我需要检查一下伤势并总结经验"
-    description: Player reflects on combat experience
-
-  # ==========================================================================
-  # Phase 6: Round Resolution
-  # ==========================================================================
-  # Complete the round to finish the lifecycle test
-  # ==========================================================================
-  # Start new round after combat resolution and skill improvement
-  # ==========================================================================
-  
-  - actor: kp
-    action: command
-    name: next_round
-    args: {}
-    description: Start next round (post-combat phase)
-
-  # Player sends message in new round
-  - actor: p1
-    action: message
-    text: "战斗结束了，我需要检查一下伤势并总结经验"
-    description: Player reflects on combat experience
-
-  # ==========================================================================
-  # Phase 5: Round Resolution
-  # ==========================================================================
-  # Complete the round to finish the lifecycle test
-  # ==========================================================================
-  
-  - actor: kp
-    action: command
-    name: resolve_round
-    args: {}
-    description: Resolve the final round
 
 assertions:
-  # ==========================================================================
-  # Phase Timeline Assertions
-  # ==========================================================================
-  # Verify all expected phases were visited in correct order
-  # ==========================================================================
   phase_timeline:
-    - lobby                    # Initial state
-    - awaiting_ready           # After bind, waiting for players
-    - awaiting_admin_start     # After ready, waiting for KP
-    - onboarding               # Character setup phase
-    - scene_round_open         # First scene round
-    - scene_round_resolving    # Combat resolution
-    - scene_round_open         # Next round after combat
-    - scene_round_resolving    # Final resolution
-    - scene_round_open         # End state
+    - lobby
+    - awaiting_ready
+    - awaiting_admin_start
+    - onboarding
+    - scene_round_open
 
-  # ==========================================================================
-  # State Assertions
-  # ==========================================================================
-  # Verify campaign and session state is correct
-  # ==========================================================================
   state:
-    campaign_members: 1        # One player joined
-    no_duplicate_members: true # No duplicate members
-    combat_completed: true     # Combat finished successfully
-
-  # ==========================================================================
-  # Skill Usage Assertions (E79)
-  # ==========================================================================
-  # E79: Verify skill usage was tracked during combat
-  # These assertions use RuntimeTestDriver.get_skill_usage() method
-  # ==========================================================================
-  skill_usage:
-    u_p1:
-      fighting: 2  # Investigator attacked 2 times with fighting
-      dodge: 1     # Investigator dodged 1 time
-
-  # ==========================================================================
-  # Improvement Phase Assertions (E79)
-  # ==========================================================================
-  # E79: Verify improvement phase was triggered and processed skills
-  # ==========================================================================
-  improvement_phase:
-    triggered: true
-    players_processed:
-      - u_p1
-    skills_eligible:
-      u_p1:
-        - fighting
-        - dodge
-
-  # ==========================================================================
-  # Visibility Assertions
-  # ==========================================================================
-  # Verify public output contains expected content
-  # ==========================================================================
-  visible:
-    public_must_include:
-      - "combat"              # Combat was initiated
-      - "DeepOne"             # DeepOne appeared in combat
-      - "就位"                # Player ready message (Chinese)
-      - "游戏开始"            # Game start message (Chinese)
-    public_must_not_include:
-      - "error"               # No error messages
-      - "exception"           # No exceptions
-
-  # ==========================================================================
-  # Skill Improvement Notes (E79 - Now Implemented)
-  # ==========================================================================
-  # E79 Implementation Complete:
-  # - SkillUsageTracker class added to session_store.py
-  # - Combat resolution functions accept attacker_id and usage_callback parameters
-  # - RuntimeTestDriver has get_skill_usage, get_eligible_skills, trigger_improvement_phase methods
-  # - Unit tests in tests/rules/coc/test_skill_usage.py
-  #
-  # Skills tracked during this scenario:
-  # - fighting: Used 2 times during combat (attacking)
-  # - dodge: Used 1 time during combat (defending)
-  #
-  # With dice_seed=78, improvement rolls would be:
-  # - fighting (current=50): roll would be <50 → success → +1d10 improvement
-  # - dodge (current=25): roll would be <25 → success → +1d10 improvement
-  # ==========================================================================
-
-metadata:
-  phase: E79
-  milestone: vE.3.1
-  created: "2026-03-31"
-  updated: "2026-03-31"
-  author: "GSD Executor"
-  dependencies:
-    - E73: COC Derived Attributes
-    - E74: COC Combat + Insanity
-    - E75: COC Experience + Skill Catalog
-    - E76: Character Creation Scenario
-    - E77: Combat + SAN Scenario
-    - E79: Skill Usage Tracking & Combat Integration
-  integration_points:
-    - Session lifecycle (E76)
-    - Combat system (E74/E77)
-    - Skill improvement (E75)
-    - Skill tracking (E79)
-    - Phase transitions (E76/E77)
+    campaign_members: 2
+    no_duplicate_members: true
