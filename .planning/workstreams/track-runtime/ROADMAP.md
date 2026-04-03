@@ -120,3 +120,28 @@ This workstream owns canonical gameplay/runtime truth:
 - `track-surface` should consume `v1.0` and `v1.2` contracts rather than redefining them.
 - `track-identity` should remain the owner of long-lived profile truth, but `track-runtime` owns campaign-instance state derived from those profiles.
 - `track-ops` should validate and monitor the contracts defined here instead of becoming the place where runtime semantics are invented.
+
+---
+
+## Cross-Cutting Design Principles
+
+> **ADR-001: Authorization vs Execution Separation**
+>
+> This runtime is not a pure rules engine — it includes **narration, AI, and KP arbitration**.
+> The consistent principle across all v1 milestones:
+>
+> **System responsibilities:**
+> - Detect state changes and conditions
+> - Record events and state
+> - Propose recommendations and suggestions
+>
+> **KP/Player responsibilities (authoritative decisions):**
+> - Scene focus switches
+> - Scene merges
+> - Blockers that require judgment
+> - Clue scope expansions
+> - Trigger override and manual firing
+>
+> This keeps the runtime **recoverable** — if a decision goes wrong, we know exactly where the human was in the loop.
+>
+> **Conservative defaults:** Prefer explicit over implicit, manual over automatic, additive over breaking.
