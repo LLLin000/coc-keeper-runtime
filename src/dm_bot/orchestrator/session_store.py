@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pydantic import BaseModel, Field
+from uuid import uuid4
 
 from dm_bot.orchestrator.governance_event_log import GovernanceEventLog, GovernanceEvent
 
@@ -94,6 +95,12 @@ class ReadyGateError(str, Enum):
     NO_SESSION = "no_session"
     NOT_MEMBER = "not_member"
     NO_PROFILE_SELECTED = "no_profile_selected"
+
+
+class ForkError(str, Enum):
+    MAX_SCENES_EXCEEDED = "max_scenes_exceeded"
+    PLAYER_ALREADY_IN_SCENE = "player_already_in_scene"
+    PLAYER_NOT_IN_TARGET_SCENE = "player_not_in_target_scene"
 
 
 class ValidationResult(BaseModel):
@@ -214,6 +221,38 @@ class PlayerFocusScope(str, Enum):
     KEEPER_ONLY = "keeper_only"
 
 
+# --- Phase 2 models (depend on SceneLifecycle enum above) ---
+
+
+class ForkResult(BaseModel):
+    """Result of a fork() operation."""
+
+    success: bool
+    scene_id: str
+    previous_scene_id: str | None = None
+    error: str | None = None
+
+
+class SwitchFocusResult(BaseModel):
+    """Result of a switch_focus() operation."""
+
+    success: bool
+    player_id: str
+    target_scene_id: str
+    previous_scene_id: str | None = None
+    cross_cut: bool = False
+    error: str | None = None
+
+
+class OpenScene(BaseModel):
+    """Lightweight tracking for an open scene fork (v1.0 Phase 2)."""
+
+    scene_id: str
+    initiating_player: str
+    lifecycle: SceneLifecycle = SceneLifecycle.COLLECTING
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class CampaignSession(BaseModel):
     campaign_id: str
     channel_id: str
@@ -250,6 +289,12 @@ class CampaignSession(BaseModel):
     scene_lifecycle: SceneLifecycle = SceneLifecycle.COLLECTING
     # Explicit player focus scope separate from scene lifecycle (RTR-01)
     player_focus: PlayerFocusScope = PlayerFocusScope.SINGLE
+
+    # --- Open scene tracking (v1.0 Phase 2) ---
+    # Lightweight scene tracking for fork/switch behavior
+    open_scenes: dict[str, OpenScene] = Field(default_factory=dict)
+    # Which scene each player is currently focused on (player_id -> scene_id)
+    focused_scene: dict[str, str] = Field(default_factory=dict)
 
     def _get_or_create_member(self, user_id: str) -> CampaignMember:
         if user_id not in self.members:
@@ -441,6 +486,100 @@ class CampaignSession(BaseModel):
             "submitted_member_count": len(self.action_submitters),
             "all_submitted": self.all_submitted(),
         }
+
+    # --- Fork and switch focus (v1.0 Phase 2 - RTR-02, RTR-03) ---
+
+    def fork(
+        self,
+        initiating_player: str,
+        scene_name: str | None = None,
+    ) -> tuple[str, ForkResult]:
+        """Create a new forked scene without changing player focus.
+
+        Args:
+            initiating_player: Player creating the fork
+            scene_name: Optional name for the scene
+
+        Returns:
+            Tuple of (new_scene_id, ForkResult)
+
+        Validation errors raise ValueError.
+        """
+        # Validate: max 2 OPEN scenes
+        open_count = sum(
+            1
+            for s in self.open_scenes.values()
+            if s.lifecycle == SceneLifecycle.COLLECTING
+        )
+        if open_count >= 2:
+            raise ValueError("Max 2 open scenes allowed")
+
+        # Validate: initiating player not already in an OPEN scene
+        for scene in self.open_scenes.values():
+            if scene.lifecycle == SceneLifecycle.COLLECTING:
+                if scene.initiating_player == initiating_player:
+                    raise ValueError("Player already in an open scene")
+
+        # Create new scene
+        new_scene_id = str(uuid4())
+        new_scene = OpenScene(
+            scene_id=new_scene_id,
+            initiating_player=initiating_player,
+            lifecycle=SceneLifecycle.COLLECTING,
+        )
+        self.open_scenes[new_scene_id] = new_scene
+
+        return new_scene_id, ForkResult(
+            success=True,
+            scene_id=new_scene_id,
+            previous_scene_id=self.focused_scene.get(initiating_player),
+        )
+
+    def switch_focus(
+        self,
+        player_id: str,
+        target_scene_id: str,
+    ) -> SwitchFocusResult:
+        """Switch a player's focus to a different scene.
+
+        Args:
+            player_id: Player changing focus
+            target_scene_id: Scene to focus on
+
+        Returns:
+            SwitchFocusResult with previous_scene_id and cross_cut flag
+
+        Raises ValueError if target scene does not exist.
+        """
+        # Validate target scene exists
+        if target_scene_id not in self.open_scenes:
+            raise ValueError(f"Scene {target_scene_id} does not exist")
+
+        target_scene = self.open_scenes[target_scene_id]
+
+        # Get previous focused scene
+        previous_scene_id = self.focused_scene.get(player_id)
+        previous_scene = None
+        if previous_scene_id and previous_scene_id in self.open_scenes:
+            previous_scene = self.open_scenes[previous_scene_id]
+
+        # Determine if this is a cross-cut (previous was RESOLVED, target is COLLECTING)
+        cross_cut = (
+            previous_scene is not None
+            and previous_scene.lifecycle == SceneLifecycle.RESOLVED
+            and target_scene.lifecycle == SceneLifecycle.COLLECTING
+        )
+
+        # Update focus
+        self.focused_scene[player_id] = target_scene_id
+
+        return SwitchFocusResult(
+            success=True,
+            player_id=player_id,
+            target_scene_id=target_scene_id,
+            previous_scene_id=previous_scene_id,
+            cross_cut=cross_cut,
+        )
 
 
 class SessionStore:
