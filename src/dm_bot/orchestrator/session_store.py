@@ -181,6 +181,39 @@ class SessionPhase(str, Enum):
     PAUSED = "paused"
 
 
+class SceneLifecycle(str, Enum):
+    """Explicit scene lifecycle states for round collection and resolution.
+
+    Separated from SessionPhase so that scene-level batch work can be
+    represented as structured state rather than inferred from timing.
+    """
+
+    #: Round collection is open; players may submit actions
+    COLLECTING = "collecting"
+    #: Scene has received all actions and is locked from further submission
+    LOCKED = "locked"
+    #: Scene actions are being resolved (rules applied, consequences computed)
+    RESOLVING = "resolving"
+    #: Scene resolution is complete and published to players
+    PUBLISHED = "published"
+
+
+class PlayerFocusScope(str, Enum):
+    """Explicit player focus scope within a scene.
+
+    Separated from SceneLifecycle to allow independent tracking of
+    which players are focused on the current scene vs. the scope
+    of the scene's batch collection.
+    """
+
+    #: Single-player focused scene (one actor at a time)
+    SINGLE = "single"
+    #: Shared scene where multiple players act in the same round
+    SHARED = "shared"
+    #: Keeper-only scene (KP narration, no player action collection)
+    KEEPER_ONLY = "keeper_only"
+
+
 class CampaignSession(BaseModel):
     campaign_id: str
     channel_id: str
@@ -211,6 +244,12 @@ class CampaignSession(BaseModel):
 
     # Skill usage tracking (E79 - Skill Usage Tracking & Combat Integration)
     skill_tracker: SkillUsageTracker = Field(default_factory=SkillUsageTracker)
+
+    # --- Scene lifecycle and player focus (v1.0 Phase 1) ---
+    # Explicit scene lifecycle separate from session phase (RTR-01)
+    scene_lifecycle: SceneLifecycle = SceneLifecycle.COLLECTING
+    # Explicit player focus scope separate from scene lifecycle (RTR-01)
+    player_focus: PlayerFocusScope = PlayerFocusScope.SINGLE
 
     def _get_or_create_member(self, user_id: str) -> CampaignMember:
         if user_id not in self.members:
@@ -350,6 +389,58 @@ class CampaignSession(BaseModel):
             if char_name:
                 names.append(char_name)
         return names
+
+    # --- Scene lifecycle methods (v1.0 Phase 1 - RTR-01) ---
+
+    def set_scene_lifecycle(self, lifecycle: SceneLifecycle) -> None:
+        """Set the explicit scene lifecycle state.
+
+        RTR-01: Scene lifecycle is now a canonical runtime model instead of
+        being inferred from message timing or session phase.
+        """
+        self.scene_lifecycle = lifecycle
+
+    def transition_scene_lifecycle(self, new_lifecycle: SceneLifecycle) -> bool:
+        """Transition to a new scene lifecycle state.
+
+        Returns True if transition was valid and applied, False otherwise.
+        Valid transitions follow the round-collection state machine:
+        COLLECTING -> LOCKED -> RESOLVING -> PUBLISHED -> COLLECTING
+        """
+        valid_transitions: dict[SceneLifecycle, set[SceneLifecycle]] = {
+            SceneLifecycle.COLLECTING: {SceneLifecycle.LOCKED},
+            SceneLifecycle.LOCKED: {SceneLifecycle.RESOLVING},
+            SceneLifecycle.RESOLVING: {SceneLifecycle.PUBLISHED},
+            SceneLifecycle.PUBLISHED: {SceneLifecycle.COLLECTING},
+        }
+        allowed = valid_transitions.get(self.scene_lifecycle, set())
+        if new_lifecycle in allowed:
+            self.scene_lifecycle = new_lifecycle
+            return True
+        return False
+
+    def set_player_focus(self, focus: PlayerFocusScope) -> None:
+        """Set the explicit player focus scope for the current scene.
+
+        RTR-01: Player focus is tracked separately from scene lifecycle
+        so the two concepts do not collapse into one field.
+        """
+        self.player_focus = focus
+
+    def get_lifecycle_context(self) -> dict[str, object]:
+        """Return structured context for scene lifecycle and player focus.
+
+        This provides a canonical view of the current scene state
+        separate from session_phase for downstream consumers.
+        """
+        return {
+            "scene_lifecycle": self.scene_lifecycle.value,
+            "player_focus": self.player_focus.value,
+            "round_number": self.round_number,
+            "pending_action_count": len(self.pending_actions),
+            "submitted_member_count": len(self.action_submitters),
+            "all_submitted": self.all_submitted(),
+        }
 
 
 class SessionStore:
@@ -796,6 +887,9 @@ class SessionStore:
                 "pending_actions": dict(session.pending_actions),
                 "action_submitters": sorted(session.action_submitters),
                 "round_number": session.round_number,
+                # Scene lifecycle and player focus (v1.0 Phase 1)
+                "scene_lifecycle": session.scene_lifecycle.value,
+                "player_focus": session.player_focus.value,
             }
             for channel_id, session in self._sessions.items()
         }
@@ -879,5 +973,10 @@ class SessionStore:
                 pending_actions=dict(raw.get("pending_actions", {})),
                 action_submitters=set(raw.get("action_submitters", [])),
                 round_number=raw.get("round_number"),
+                # Scene lifecycle and player focus (v1.0 Phase 1)
+                scene_lifecycle=SceneLifecycle(
+                    raw.get("scene_lifecycle", "collecting")
+                ),
+                player_focus=PlayerFocusScope(raw.get("player_focus", "single")),
             )
             self._sessions[channel_id] = session
