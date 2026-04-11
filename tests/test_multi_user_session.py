@@ -14,6 +14,9 @@ from dm_bot.orchestrator.session_store import (
     CampaignMember,
     SceneLifecycle,
     PlayerFocusScope,
+    OpenScene,
+    ForkResult,
+    SwitchFocusResult,
 )
 
 
@@ -238,3 +241,149 @@ def test_scene_lifecycle_persists_across_round_transitions(three_player_session)
     session.round_number = 3
     assert session.scene_lifecycle == SceneLifecycle.LOCKED
     assert session.player_focus == PlayerFocusScope.SHARED
+
+
+# === Phase 2: Fork and Switch Focus Tests ===
+
+
+class TestForkBehavior:
+    """Tests for fork() operation."""
+
+    def test_fork_creates_new_scene(self, three_player_session):
+        """fork() creates a new scene and returns its ID."""
+        session = three_player_session.get_by_channel("ch1")
+        scene_id, result = session.fork(initiating_player="player1")
+
+        assert result.success is True
+        assert scene_id == result.scene_id
+        assert scene_id in session.open_scenes
+        assert session.open_scenes[scene_id].initiating_player == "player1"
+
+    def test_fork_does_not_change_focus(self, three_player_session):
+        """fork() does not automatically switch any player's focus."""
+        session = three_player_session.get_by_channel("ch1")
+        # Player1 already focused on scene1
+        session.focused_scene["player1"] = "scene1"
+
+        scene_id, result = session.fork(initiating_player="player1")
+
+        # Focus should be unchanged
+        assert session.focused_scene.get("player1") == "scene1"
+
+    def test_fork_rejects_max_scenes_exceeded(self, three_player_session):
+        """fork() raises ValueError when 2 open scenes already exist."""
+        session = three_player_session.get_by_channel("ch1")
+        # Create 2 open scenes
+        session.open_scenes["scene1"] = OpenScene(
+            scene_id="scene1",
+            initiating_player="player1",
+            lifecycle=SceneLifecycle.COLLECTING,
+        )
+        session.open_scenes["scene2"] = OpenScene(
+            scene_id="scene2",
+            initiating_player="player2",
+            lifecycle=SceneLifecycle.COLLECTING,
+        )
+
+        with pytest.raises(ValueError, match="Max 2 open scenes"):
+            session.fork(initiating_player="player3")
+
+    def test_fork_rejects_player_already_in_open_scene(self, three_player_session):
+        """fork() raises ValueError if player is already in an OPEN scene."""
+        session = three_player_session.get_by_channel("ch1")
+        session.open_scenes["scene1"] = OpenScene(
+            scene_id="scene1",
+            initiating_player="player1",
+            lifecycle=SceneLifecycle.COLLECTING,
+        )
+
+        with pytest.raises(ValueError, match="already in an open scene"):
+            session.fork(initiating_player="player1")
+
+
+class TestSwitchFocusBehavior:
+    """Tests for switch_focus() operation."""
+
+    def test_switch_focus_updates_focused_scene(self, three_player_session):
+        """switch_focus() updates which scene the player is focused on."""
+        session = three_player_session.get_by_channel("ch1")
+        session.open_scenes["scene1"] = OpenScene(
+            scene_id="scene1",
+            initiating_player="player1",
+            lifecycle=SceneLifecycle.COLLECTING,
+        )
+        session.open_scenes["scene2"] = OpenScene(
+            scene_id="scene2",
+            initiating_player="player2",
+            lifecycle=SceneLifecycle.COLLECTING,
+        )
+
+        result = session.switch_focus(player_id="player1", target_scene_id="scene2")
+
+        assert result.success is True
+        assert session.focused_scene["player1"] == "scene2"
+        assert result.cross_cut is False
+
+    def test_switch_focus_detects_cross_cut(self, three_player_session):
+        """switch_focus() sets cross_cut=True when switching from PUBLISHED to COLLECTING."""
+        session = three_player_session.get_by_channel("ch1")
+        session.open_scenes["scene1"] = OpenScene(
+            scene_id="scene1",
+            initiating_player="player1",
+            lifecycle=SceneLifecycle.PUBLISHED,  # Resolved/Published scene
+        )
+        session.open_scenes["scene2"] = OpenScene(
+            scene_id="scene2",
+            initiating_player="player2",
+            lifecycle=SceneLifecycle.COLLECTING,  # Open scene
+        )
+        session.focused_scene["player1"] = "scene1"
+
+        result = session.switch_focus(player_id="player1", target_scene_id="scene2")
+
+        assert result.cross_cut is True
+        assert result.previous_scene_id == "scene1"
+        assert result.target_scene_id == "scene2"
+
+    def test_switch_focus_rejects_nonexistent_scene(self, three_player_session):
+        """switch_focus() raises ValueError if target scene does not exist."""
+        session = three_player_session.get_by_channel("ch1")
+
+        with pytest.raises(ValueError, match="does not exist"):
+            session.switch_focus(player_id="player1", target_scene_id="nonexistent")
+
+
+class TestForkSwitchIntegration:
+    """Integration tests for fork/switch workflow."""
+
+    def test_full_fork_switch_workflow(self, three_player_session):
+        """Complete workflow: fork -> switch_focus -> cross_cut detected."""
+        session = three_player_session.get_by_channel("ch1")
+
+        # Player creates fork
+        scene2_id, fork_result = session.fork(initiating_player="player1")
+        assert fork_result.success
+
+        # Player switches focus to new scene
+        switch_result = session.switch_focus(
+            player_id="player1",
+            target_scene_id=scene2_id,
+        )
+        assert switch_result.success
+
+        # First focus switch from nothing should not be cross_cut
+        assert switch_result.cross_cut is False
+
+        # Resolve scene2, then switch back (would be cross_cut)
+        session.open_scenes[scene2_id].lifecycle = SceneLifecycle.PUBLISHED
+        session.open_scenes["original"] = OpenScene(
+            scene_id="original",
+            initiating_player="player1",
+            lifecycle=SceneLifecycle.COLLECTING,
+        )
+
+        switch_result2 = session.switch_focus(
+            player_id="player1",
+            target_scene_id="original",
+        )
+        assert switch_result2.cross_cut is True  # PUBLISHED -> COLLECTING
