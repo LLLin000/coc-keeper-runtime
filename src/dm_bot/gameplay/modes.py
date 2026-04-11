@@ -20,6 +20,12 @@ class GameModeState(BaseModel):
     scene_lifecycle: str = SceneLifecycle.COLLECTING.value
     player_focus: str = PlayerFocusScope.SINGLE.value
 
+    # --- Cross-cut tracking (v1.0 Phase 2) ---
+    # Signals for narrator to produce cutaway narration
+    cross_cut_signal: bool = False
+    cross_cut_from_scene: str | None = None
+    cross_cut_to_scene: str | None = None
+
     def enter_scene(self, *, speakers: list[str]) -> None:
         self.mode = "scene"
         self.scene_speakers = speakers

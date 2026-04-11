@@ -563,10 +563,10 @@ class CampaignSession(BaseModel):
         if previous_scene_id and previous_scene_id in self.open_scenes:
             previous_scene = self.open_scenes[previous_scene_id]
 
-        # Determine if this is a cross-cut (previous was RESOLVED, target is COLLECTING)
+        # Determine if this is a cross-cut (previous was PUBLISHED/RESOLVED, target is COLLECTING)
         cross_cut = (
             previous_scene is not None
-            and previous_scene.lifecycle == SceneLifecycle.RESOLVED
+            and previous_scene.lifecycle == SceneLifecycle.PUBLISHED
             and target_scene.lifecycle == SceneLifecycle.COLLECTING
         )
 
