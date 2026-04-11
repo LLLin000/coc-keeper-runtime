@@ -12,6 +12,8 @@ from dm_bot.orchestrator.session_store import (
     SessionStore,
     SessionPhase,
     CampaignMember,
+    SceneLifecycle,
+    PlayerFocusScope,
 )
 
 
@@ -117,3 +119,122 @@ def test_all_players_can_have_active_character_name(three_player_session):
     for uid in ["owner", "player1", "player2"]:
         result = store.validate_ready(channel_id="ch1", user_id=uid)
         assert result.success, f"Player {uid} should be ready with active instance"
+
+
+# --- Scene Lifecycle Tests (v1.0 Phase 1) ---
+
+
+def test_scene_lifecycle_defaults_to_collecting(three_player_session):
+    """Scene lifecycle defaults to COLLECTING for new sessions."""
+    session = three_player_session.get_by_channel("ch1")
+    assert session.scene_lifecycle == SceneLifecycle.COLLECTING
+
+
+def test_scene_lifecycle_transitions_are_stateful(three_player_session):
+    """Scene lifecycle follows valid transition path: COLLECTING -> LOCKED -> RESOLVING -> PUBLISHED."""
+    session = three_player_session.get_by_channel("ch1")
+
+    # Start in COLLECTING
+    assert session.scene_lifecycle == SceneLifecycle.COLLECTING
+
+    # Valid transition: COLLECTING -> LOCKED
+    result = session.transition_scene_lifecycle(SceneLifecycle.LOCKED)
+    assert result is True
+    assert session.scene_lifecycle == SceneLifecycle.LOCKED
+
+    # Valid transition: LOCKED -> RESOLVING
+    result = session.transition_scene_lifecycle(SceneLifecycle.RESOLVING)
+    assert result is True
+    assert session.scene_lifecycle == SceneLifecycle.RESOLVING
+
+    # Valid transition: RESOLVING -> PUBLISHED
+    result = session.transition_scene_lifecycle(SceneLifecycle.PUBLISHED)
+    assert result is True
+    assert session.scene_lifecycle == SceneLifecycle.PUBLISHED
+
+
+def test_scene_lifecycle_rejects_invalid_transitions(three_player_session):
+    """Scene lifecycle rejects invalid transitions (e.g., COLLECTING -> RESOLVING directly)."""
+    session = three_player_session.get_by_channel("ch1")
+    assert session.scene_lifecycle == SceneLifecycle.COLLECTING
+
+    # Invalid: COLLECTING -> RESOLVING (must go through LOCKED)
+    result = session.transition_scene_lifecycle(SceneLifecycle.RESOLVING)
+    assert result is False
+    assert session.scene_lifecycle == SceneLifecycle.COLLECTING
+
+    # Invalid: COLLECTING -> PUBLISHED (must go through LOCKED and RESOLVING)
+    result = session.transition_scene_lifecycle(SceneLifecycle.PUBLISHED)
+    assert result is False
+    assert session.scene_lifecycle == SceneLifecycle.COLLECTING
+
+
+def test_scene_lifecycle_and_player_focus_are_distinct(three_player_session):
+    """Player focus scope and scene lifecycle are separate concepts tracked independently.
+
+    RTR-01: Scene lifecycle and player focus must not collapse into one field.
+    """
+    session = three_player_session.get_by_channel("ch1")
+
+    # Default values are different enums
+    assert session.scene_lifecycle == SceneLifecycle.COLLECTING
+    assert session.player_focus == PlayerFocusScope.SINGLE
+
+    # Changing one does not affect the other
+    session.scene_lifecycle = SceneLifecycle.LOCKED
+    session.player_focus = PlayerFocusScope.SHARED
+
+    assert session.scene_lifecycle == SceneLifecycle.LOCKED
+    assert session.player_focus == PlayerFocusScope.SHARED
+
+    # Change them independently again
+    session.scene_lifecycle = SceneLifecycle.RESOLVING
+    session.player_focus = PlayerFocusScope.KEEPER_ONLY
+
+    assert session.scene_lifecycle == SceneLifecycle.RESOLVING
+    assert session.player_focus == PlayerFocusScope.KEEPER_ONLY
+
+
+def test_player_focus_scope_defaults_to_single(three_player_session):
+    """Player focus defaults to SINGLE for new sessions."""
+    session = three_player_session.get_by_channel("ch1")
+    assert session.player_focus == PlayerFocusScope.SINGLE
+
+
+def test_lifecycle_context_provides_structured_view(three_player_session):
+    """get_lifecycle_context returns structured dict with all lifecycle info."""
+    session = three_player_session.get_by_channel("ch1")
+
+    ctx = session.get_lifecycle_context()
+
+    # Contains expected keys
+    assert "scene_lifecycle" in ctx
+    assert "player_focus" in ctx
+    assert "round_number" in ctx
+    assert "pending_action_count" in ctx
+    assert "submitted_member_count" in ctx
+    assert "all_submitted" in ctx
+
+    # Values match current state
+    assert ctx["scene_lifecycle"] == session.scene_lifecycle.value
+    assert ctx["player_focus"] == session.player_focus.value
+    assert ctx["round_number"] is None
+
+
+def test_scene_lifecycle_persists_across_round_transitions(three_player_session):
+    """Scene lifecycle persists when round_number changes."""
+    session = three_player_session.get_by_channel("ch1")
+
+    # Set lifecycle and round
+    session.scene_lifecycle = SceneLifecycle.LOCKED
+    session.round_number = 1
+
+    # Round number change does not reset lifecycle
+    session.round_number = 2
+    assert session.scene_lifecycle == SceneLifecycle.LOCKED
+
+    # Round number change does not reset focus
+    session.player_focus = PlayerFocusScope.SHARED
+    session.round_number = 3
+    assert session.scene_lifecycle == SceneLifecycle.LOCKED
+    assert session.player_focus == PlayerFocusScope.SHARED
