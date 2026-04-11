@@ -2,146 +2,153 @@
 
 ## Status
 
-Milestone sequence defined on `2026-04-03` after the `pre-reset-2026-04-02` archive reset.
+Standardized on `2026-04-09` for GSD phase parsing.
 
-This workstream owns canonical gameplay/runtime truth:
-
+**Ownership**
 - session lifecycle at play time
 - multi-actor scene resolution
 - module trigger/consequence execution
-- reveal and blocker state that must exist before any surface renders it
-- runtime compatibility and recovery contracts that other tracks depend on
+- reveal and blocker state that surfaces must consume rather than infer
+- runtime compatibility and recovery contracts
 
-## Milestones
-
-### `v1.0` — Shared Scene Batch Resolution
+## v1.0 Shared Scene Batch Resolution
 
 **Goal:** Make scene-round batching and shared consequence ownership canonical runtime behavior for multiplayer play instead of a Discord-surface convention.
 
-**Why first:** Current multiplayer flow works, but `TurnCoordinator`, buffered submission, and consequence rendering still assume a mostly sequential world. Other tracks should not build richer surfaces on top of that ambiguity.
+### Phase 1: Scene Lifecycle
 
-**Focus:**
+**Goal:** Introduce explicit world-state and scene-state models with lifecycle state separate from player focus.
+**Depends on:** Nothing
+**Requirements:** RTR-01, RTR-02
+**Plans:** 1 plan
 
-- scene-round batch contract
-- multi-actor submission lifecycle
-- deterministic resolution order against shared state
-- canonical consequence ownership before rendering
-- runtime-visible pending/blocker truth
+### Phase 2: Fork And Switch Focus
 
-**Exit criteria:**
+**Goal:** Decouple scene creation from focus switching and define cross-cut runtime behavior.
+**Depends on:** Phase 1
+**Requirements:** RTR-01, RTR-02, RTR-03
+**Plans:** 0 plans
 
-- the runtime has an explicit batch state model for collecting, locking, resolving, and publishing a round
-- rule outcomes, trigger effects, and narrative consequences attach to canonical ownership scopes
-- existing multiplayer scenarios and stress tests validate shared-scene behavior
+### Phase 3: Batch And Merge
 
-**Recommended phase breakdown:**
+**Goal:** Implement local batch collection, deterministic shared resolution, and merge proposal flow.
+**Depends on:** Phase 1, Phase 2
+**Requirements:** RTR-03, RTR-04, RTR-05
+**Plans:** 0 plans
 
-1. `01-scene-lifecycle` — WorldState/Scene data model, lifecycle enum, focus orthogonality
-2. `02-fork-switch` — decoupled fork() and switch_focus(), cross-cut narrator contract
-3. `03-batch-merge` — "see all, act local" collection, semi-auto merge with KP confirmation
+## v1.1 Transactional Trigger And Blocker Runtime
 
-**Supporting spec:** `v1.0-SCENE-FORK-SPEC.md`
+**Goal:** Turn trigger and reaction execution into a resumable runtime state machine instead of a chain of inline mutations.
 
-### `v1.1` — Transactional Trigger And Blocker Runtime
+### Phase 4: Trigger Entry
 
-**Goal:** Turn trigger/reaction execution into a resumable runtime state machine instead of a chain of direct mutations.
+**Goal:** Formalize normalized trigger-event entry and trigger registration.
+**Depends on:** Phase 3
+**Requirements:** RTR-06
+**Plans:** 0 plans
 
-**Why second:** The current trigger system is already useful, but it still applies effects inline and treats blocker states such as clarifications and pending rolls as side effects. That makes complex module behavior hard to reason about and harder to recover.
+### Phase 5: Reaction Classification
 
-**Recommended phase breakdown:**
+**Goal:** Formalize reaction ordering, effect grouping, and atomic application semantics.
+**Depends on:** Phase 4
+**Requirements:** RTR-07, RTR-08
+**Plans:** 0 plans
 
-1. `01-trigger-entry` — formalize TriggerEvent, TriggerSpec, trigger registration
-2. `02-reaction-classification` — formalize ReactionSpec, effect application model
-3. `03-blocker-checkpoints` — formalize BlockerSpec, savepoint/resume semantics
-4. `04-resumable-chains` — implement TriggerChain persistence and recovery
-5. `05-audit-trail` — implement AuditEntry logging, integrate with PersistenceStore
+### Phase 6: Blocker Checkpoints
 
-**Supporting spec:** `v1.1-TRIGGER-BLOCKER-SPEC.md`
+**Goal:** Make blockers first-class runtime checkpoints rather than implicit state dicts.
+**Depends on:** Phase 4, Phase 5
+**Requirements:** RTR-07, RTR-09
+**Plans:** 0 plans
 
-**Exit criteria:**
+### Phase 7: Resumable Chains
 
-- trigger execution can pause and resume without losing canonical state
-- blocker truth is explicit, queryable, and not inferred from surface behavior
-- consequence chains stop mutating state in opaque order
+**Goal:** Persist trigger chains and resume them safely after interruption or restart.
+**Depends on:** Phase 4, Phase 5, Phase 6
+**Requirements:** RTR-07, RTR-08, RTR-09
+**Plans:** 0 plans
 
-### `v1.2` — Reveal Gates And Knowledge Ownership
+### Phase 8: Audit Trail
+
+**Goal:** Record auditable trigger-chain execution for replay and diagnosis.
+**Depends on:** Phase 7
+**Requirements:** RTR-08, RTR-09
+**Plans:** 0 plans
+
+## v1.2 Reveal Gates And Knowledge Ownership
 
 **Goal:** Formalize knowledge, clue, and reveal ownership so private and shared information flow from runtime rules instead of narrative discipline.
 
-**Why third:** Once batch and trigger flow are canonical, the next missing runtime truth is reveal gating. This is currently only partially represented in visibility logic and knowledge logs.
+### Phase 9: Reveal Gate Model
 
-**Recommended phase breakdown:**
+**Goal:** Introduce canonical reveal-gate primitives and their lifecycle.
+**Depends on:** Phase 8
+**Requirements:** RTR-10
+**Plans:** 0 plans
 
-1. `01-reveal-gate-model` — formalize RevealGate, visibility levels, gate conditions
-2. `02-clue-ownership` — formalize Clue, scope transitions, ownership transfer
-3. `03-private-knowledge` — implement PlayerKnowledge, query_visible()
-4. `04-table-kp-partition` — formalize what surfaces to where, visibility dispatch
-5. `05-surface-contract` — define contract for track-surface renderers
+### Phase 10: Clue Ownership
 
-**Supporting spec:** `v1.2-REVEAL-GATES-SPEC.md`
+**Goal:** Formalize clue ownership, scope transitions, and transfer semantics.
+**Depends on:** Phase 9
+**Requirements:** RTR-10, RTR-11
+**Plans:** 0 plans
 
-**Exit criteria:**
+### Phase 11: Private Knowledge
 
-- private knowledge and shared table knowledge have distinct runtime contracts
-- reveal transitions are recorded explicitly
-- surface renderers consume runtime-owned visibility decisions rather than inventing them
+**Goal:** Implement per-player knowledge state and visible-query semantics.
+**Depends on:** Phase 9, Phase 10
+**Requirements:** RTR-11
+**Plans:** 0 plans
 
-### `v1.3` — Runtime Compatibility And Recovery Hardening
+### Phase 12: Table And KP Partition
 
-**Goal:** Make the runtime durable across larger modules, restart/resume flows, and future feature work by locking in compatibility and recovery contracts.
+**Goal:** Separate runtime-owned table-visible and KP-only publication paths.
+**Depends on:** Phase 9, Phase 10, Phase 11
+**Requirements:** RTR-10, RTR-11, RTR-12
+**Plans:** 0 plans
 
-**Why fourth:** After runtime semantics are clean, the next risk is erosion: new modules, longer campaigns, and restart paths will drift unless compatibility and recovery expectations are formalized.
+### Phase 13: Surface Contract
 
-**Recommended phase breakdown:**
+**Goal:** Define the renderer contract that `track-surface` must consume.
+**Depends on:** Phase 9, Phase 10, Phase 11, Phase 12
+**Requirements:** RTR-12, RTR-13
+**Plans:** 0 plans
 
-1. `01-compat-contract` — formalize ModuleContract, validate() algorithm
-2. `02-migration-paths` — implement schema versioning, MigrationPath registry
-3. `03-resume-package` — implement ResumePackage, integrity_check()
-4. `04-integration-tests` — scenario coverage for complex paths, restart tests
-5. `05-placeholder-cleanup` — address CONCERNS.md items, code quality fixes
+## v1.3 Runtime Compatibility And Recovery Hardening
 
-**Supporting spec:** `v1.3-COMPAT-RECOVERY-SPEC.md`
+**Goal:** Make runtime semantics durable across larger modules, restart/resume flows, and future feature work.
 
-**Exit criteria:**
+### Phase 14: Compatibility Contract
 
-- runtime-owned state survives restart/recovery without semantic drift
-- core shipped modules run against the same canonical contracts
-- placeholder runtime logic called out in the current map is either removed or replaced
+**Goal:** Define and validate the runtime/module compatibility contract.
+**Depends on:** Phase 13
+**Requirements:** RTR-14
+**Plans:** 0 plans
 
-## Recommended Execution Order
+### Phase 15: Migration Paths
 
-1. `v1.0` — stabilize shared scene truth
-2. `v1.1` — make trigger/blocker execution resumable
-3. `v1.2` — formalize reveal and knowledge ownership
-4. `v1.3` — harden compatibility and recovery
+**Goal:** Add load-time migration support and versioned runtime-state evolution.
+**Depends on:** Phase 14
+**Requirements:** RTR-14, RTR-15
+**Plans:** 0 plans
 
-## Dependency Notes
+### Phase 16: Resume Package
 
-- `track-surface` should consume `v1.0` and `v1.2` contracts rather than redefining them.
-- `track-identity` should remain the owner of long-lived profile truth, but `track-runtime` owns campaign-instance state derived from those profiles.
-- `track-ops` should validate and monitor the contracts defined here instead of becoming the place where runtime semantics are invented.
+**Goal:** Package runtime recovery state and enforce integrity checks before resume.
+**Depends on:** Phase 14, Phase 15
+**Requirements:** RTR-15
+**Plans:** 0 plans
 
----
+### Phase 17: Integration Tests
 
-## Cross-Cutting Design Principles
+**Goal:** Expand regression coverage to representative runtime flows across v1.0-v1.3 contracts.
+**Depends on:** Phase 14, Phase 15, Phase 16
+**Requirements:** RTR-14, RTR-15, RTR-17
+**Plans:** 0 plans
 
-> **ADR-001: Authorization vs Execution Separation**
->
-> This runtime is not a pure rules engine — it includes **narration, AI, and KP arbitration**.
-> The consistent principle across all v1 milestones:
->
-> **System responsibilities:**
-> - Detect state changes and conditions
-> - Record events and state
-> - Propose recommendations and suggestions
->
-> **KP/Player responsibilities (authoritative decisions):**
-> - Scene focus switches
-> - Scene merges
-> - Blockers that require judgment
-> - Clue scope expansions
-> - Trigger override and manual firing
->
-> This keeps the runtime **recoverable** — if a decision goes wrong, we know exactly where the human was in the loop.
->
-> **Conservative defaults:** Prefer explicit over implicit, manual over automatic, additive over breaking.
+### Phase 18: Placeholder Cleanup
+
+**Goal:** Remove correctness-critical placeholders and align code with the new contracts before widening scope.
+**Depends on:** Phase 14, Phase 15, Phase 16, Phase 17
+**Requirements:** RTR-16, RTR-17
+**Plans:** 0 plans
