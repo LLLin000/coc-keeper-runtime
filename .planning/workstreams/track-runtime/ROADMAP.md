@@ -27,7 +27,10 @@ Standardized on `2026-04-09` for GSD phase parsing.
 **Goal:** Decouple scene creation from focus switching and define cross-cut runtime behavior.
 **Depends on:** Phase 1
 **Requirements:** RTR-01, RTR-02, RTR-03
-**Plans:** 0 plans
+**Plans:** 1 plan
+
+Plans:
+- [ ] `02-01-PLAN.md` — fork() and switch_focus() runtime operations
 
 ### Phase 3: Batch And Merge
 
