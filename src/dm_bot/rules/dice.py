@@ -1,10 +1,12 @@
 import random
-from typing import Protocol
+from typing import Literal, Protocol
 
 import d20
 from pydantic import BaseModel, Field
 
-from dm_bot.rules.actions import AdvantageMode, COCDifficulty
+
+AdvantageMode = Literal["none", "advantage", "disadvantage"]
+COCDifficulty = Literal["regular", "hard", "extreme"]
 
 
 class DiceOutcome(BaseModel):
