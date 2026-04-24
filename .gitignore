@@ -25,3 +25,4 @@ run-bot-bg.cmd
 artifacts/
 assets/
 .DS_Store
+.opencode/

@@ -1,2 +1,0 @@
-"""Shared model-layer utilities."""
-
