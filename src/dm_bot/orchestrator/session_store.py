@@ -253,6 +253,48 @@ class OpenScene(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+# --- Phase 3: Batch collection and resolution (RTR-03, RTR-04, RTR-05) ---
+
+
+class BatchSubmission(BaseModel):
+    """Collection of batch entries for a scene round."""
+
+    scene_id: str
+    entries: dict[str, ActionBatchEntry] = Field(default_factory=dict)  # user_id -> entry
+    round_number: int
+    submitted_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ResolvedAction(BaseModel):
+    """An action after resolution with canonical consequence ownership."""
+
+    user_id: str
+    character_id: str
+    action_text: str
+    visibility: Visibility  # RTR-04: consequence visibility scope
+    owner_scope: str | None = None  # RTR-04: who owns this consequence
+    resolution_order: int  # RTR-03: deterministic position
+    consequence_text: str | None = None
+
+
+class MergeProposal(BaseModel):
+    """Proposed resolution for a scene round, before commit."""
+
+    scene_id: str
+    round_number: int
+    resolved_actions: list[ResolvedAction] = Field(default_factory=list)
+    generated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class BlockerState(BaseModel):
+    """RTR-05: Explicit runtime truth about what a round is waiting on."""
+
+    waiting_on_actors: list[str] = Field(default_factory=list)
+    waiting_on_rolls: list[str] = Field(default_factory=list)
+    waiting_on_clarification: list[str] = Field(default_factory=list)
+    is_blocked: bool = False
+
+
 class CampaignSession(BaseModel):
     campaign_id: str
     channel_id: str
@@ -295,6 +337,12 @@ class CampaignSession(BaseModel):
     open_scenes: dict[str, OpenScene] = Field(default_factory=dict)
     # Which scene each player is currently focused on (player_id -> scene_id)
     focused_scene: dict[str, str] = Field(default_factory=dict)
+
+    # --- Batch collection and resolution (v1.0 Phase 3 - RTR-03, RTR-04, RTR-05) ---
+    batch_submissions: dict[str, BatchSubmission] = Field(default_factory=dict)  # scene_id -> BatchSubmission
+    merge_proposals: dict[str, MergeProposal] = Field(default_factory=dict)  # scene_id -> pending proposal
+    pending_blocker: dict[str, BlockerState] = Field(default_factory=dict)  # scene_id -> blocker state
+    resolution_log: dict[str, list[ResolvedAction]] = Field(default_factory=dict)  # scene_id -> resolved actions
 
     def _get_or_create_member(self, user_id: str) -> CampaignMember:
         if user_id not in self.members:
@@ -580,6 +628,209 @@ class CampaignSession(BaseModel):
             previous_scene_id=previous_scene_id,
             cross_cut=cross_cut,
         )
+
+    # --- Batch collection and resolution methods (v1.0 Phase 3 - RTR-03, RTR-04, RTR-05) ---
+
+    def submit_action(
+        self,
+        *,
+        scene_id: str,
+        user_id: str,
+        character_id: str,
+        action_text: str,
+        dex_value: int | None = None,
+        visibility: Visibility = Visibility.PUBLIC,
+    ) -> BatchSubmission:
+        """Submit an action to the scene's batch collection.
+
+        Args:
+            scene_id: Scene to submit to (must be in COLLECTING state)
+            user_id: Player submitting the action
+            character_id: Character the player is acting as
+            action_text: The action description
+            dex_value: COC dexterity value for deterministic ordering (RTR-03)
+            visibility: Visibility scope for the action/consequence (RTR-04)
+
+        Returns:
+            Updated BatchSubmission for the scene
+
+        Raises ValueError if scene is not in COLLECTING state.
+        """
+        if scene_id not in self.open_scenes:
+            raise ValueError(f"Scene {scene_id} does not exist")
+
+        scene = self.open_scenes[scene_id]
+        if scene.lifecycle != SceneLifecycle.COLLECTING:
+            raise ValueError(f"Scene {scene_id} is not in COLLECTING state")
+
+        if scene_id not in self.batch_submissions:
+            self.batch_submissions[scene_id] = BatchSubmission(
+                scene_id=scene_id,
+                round_number=self.round_number or 1,
+                entries={},
+            )
+
+        batch = self.batch_submissions[scene_id]
+        batch.entries[user_id] = ActionBatchEntry(
+            user_id=user_id,
+            character_id=character_id,
+            action_text=action_text,
+            dex_value=dex_value,
+            visibility=visibility,
+        )
+
+        return batch
+
+    def lock_scene(self, scene_id: str) -> None:
+        """Lock a scene for resolution, rejecting new submissions.
+
+        Args:
+            scene_id: Scene to lock (must be in COLLECTING state)
+
+        Raises ValueError if scene does not exist or is not in COLLECTING state.
+        """
+        if scene_id not in self.open_scenes:
+            raise ValueError(f"Scene {scene_id} does not exist")
+
+        scene = self.open_scenes[scene_id]
+        if scene.lifecycle != SceneLifecycle.COLLECTING:
+            raise ValueError(f"Scene {scene_id} is not in COLLECTING state")
+
+        scene.lifecycle = SceneLifecycle.LOCKED
+        self.scene_lifecycle = SceneLifecycle.LOCKED
+
+    def compute_blocker_state(self, scene_id: str) -> BlockerState:
+        """RTR-05: Compute what a round is waiting on.
+
+        Analyzes the current batch submission state to determine
+        what actors, rolls, or clarifications are pending.
+
+        Args:
+            scene_id: Scene to analyze
+
+        Returns:
+            BlockerState describing what the round is waiting on
+        """
+        if scene_id not in self.open_scenes:
+            return BlockerState(is_blocked=False)
+
+        scene = self.open_scenes[scene_id]
+        blocker = BlockerState()
+
+        # Check: are there any submissions at all?
+        batch = self.batch_submissions.get(scene_id)
+        if not batch or len(batch.entries) == 0:
+            # No submissions yet - waiting on all actors in the scene
+            blocker.waiting_on_actors = list(self.focused_scene.keys())
+            blocker.is_blocked = True
+            return blocker
+
+        # Check: which actors have not submitted?
+        all_players = set(self.focused_scene.keys())
+        submitted_players = set(batch.entries.keys()) if batch else set()
+        blocker.waiting_on_actors = sorted(list(all_players - submitted_players))
+
+        if blocker.waiting_on_actors:
+            blocker.is_blocked = True
+
+        return blocker
+
+    def resolve_scene(self, scene_id: str) -> MergeProposal:
+        """Generate a merge proposal for the scene's batch in deterministic order.
+
+        RTR-03: Actions are ordered by dex_value (descending) then user_id (ascending)
+        as a tiebreaker. This ensures consistent resolution regardless of
+        the order in which actions were submitted.
+
+        Args:
+            scene_id: Scene to resolve (must be in LOCKED state)
+
+        Returns:
+            MergeProposal with resolved actions in deterministic order
+
+        Raises ValueError if scene is not in LOCKED state.
+        """
+        if scene_id not in self.open_scenes:
+            raise ValueError(f"Scene {scene_id} does not exist")
+
+        scene = self.open_scenes[scene_id]
+        if scene.lifecycle != SceneLifecycle.LOCKED:
+            raise ValueError(f"Scene {scene_id} is not in LOCKED state")
+
+        batch = self.batch_submissions.get(scene_id)
+        if not batch or len(batch.entries) == 0:
+            raise ValueError(f"No batch submissions for scene {scene_id}")
+
+        # RTR-03: Deterministic ordering: dex_value descending, user_id ascending as tiebreaker
+        sorted_entries = sorted(
+            batch.entries.values(),
+            key=lambda e: (-(e.dex_value or 0), e.user_id)
+        )
+
+        resolved_actions = []
+        for order, entry in enumerate(sorted_entries, start=1):
+            resolved_actions.append(ResolvedAction(
+                user_id=entry.user_id,
+                character_id=entry.character_id,
+                action_text=entry.action_text,
+                visibility=entry.visibility,
+                resolution_order=order,
+            ))
+
+        # Transition to RESOLVING
+        scene.lifecycle = SceneLifecycle.RESOLVING
+        self.scene_lifecycle = SceneLifecycle.RESOLVING
+
+        # Store resolution in log
+        self.resolution_log[scene_id] = resolved_actions
+
+        # Create and store merge proposal
+        proposal = MergeProposal(
+            scene_id=scene_id,
+            round_number=batch.round_number,
+            resolved_actions=resolved_actions,
+        )
+        self.merge_proposals[scene_id] = proposal
+
+        return proposal
+
+    def publish_scene(self, scene_id: str) -> None:
+        """Publish the resolved scene, committing consequences.
+
+        Args:
+            scene_id: Scene to publish (must be in RESOLVING state)
+
+        Raises ValueError if scene is not in RESOLVING state.
+        """
+        if scene_id not in self.open_scenes:
+            raise ValueError(f"Scene {scene_id} does not exist")
+
+        scene = self.open_scenes[scene_id]
+        if scene.lifecycle != SceneLifecycle.RESOLVING:
+            raise ValueError(f"Scene {scene_id} is not in RESOLVING state")
+
+        # Transition to PUBLISHED
+        scene.lifecycle = SceneLifecycle.PUBLISHED
+        self.scene_lifecycle = SceneLifecycle.PUBLISHED
+
+        # Clear batch submissions for this scene (round complete)
+        if scene_id in self.batch_submissions:
+            del self.batch_submissions[scene_id]
+
+        # Clear merge proposal (no longer needed)
+        if scene_id in self.merge_proposals:
+            del self.merge_proposals[scene_id]
+
+    def get_merge_proposal(self, scene_id: str) -> MergeProposal | None:
+        """Get the current merge proposal for a scene.
+
+        Args:
+            scene_id: Scene to get proposal for
+
+        Returns:
+            MergeProposal if one exists, None otherwise
+        """
+        return self.merge_proposals.get(scene_id)
 
 
 class SessionStore:
