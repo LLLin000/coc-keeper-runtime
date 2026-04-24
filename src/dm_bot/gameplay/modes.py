@@ -26,6 +26,16 @@ class GameModeState(BaseModel):
     cross_cut_from_scene: str | None = None
     cross_cut_to_scene: str | None = None
 
+    # --- Batch collection and resolution state (v1.0 Phase 3 - RTR-03, RTR-04, RTR-05) ---
+    # Pending blocker state from runtime (RTR-05)
+    pending_blocker: dict = Field(default_factory=dict)  # Mirrors CampaignSession.pending_blocker
+    # Current merge proposal if one exists (RTR-04)
+    merge_proposal: dict | None = None  # Mirrors CampaignSession.merge_proposals[scene_id]
+    # Batch submission count for quick visibility (RTR-03)
+    batch_submission_count: int = 0
+    # Resolved actions in current round (RTR-03, RTR-04)
+    resolved_actions: list[dict] = Field(default_factory=list)
+
     def enter_scene(self, *, speakers: list[str]) -> None:
         self.mode = "scene"
         self.scene_speakers = speakers
@@ -35,15 +45,25 @@ class GameModeState(BaseModel):
         self.scene_speakers = []
 
     def sync_from_session(
-        self, *, scene_lifecycle: SceneLifecycle, player_focus: PlayerFocusScope
+        self,
+        *,
+        scene_lifecycle: SceneLifecycle,
+        player_focus: PlayerFocusScope,
+        pending_blocker: dict | None = None,
+        merge_proposal: dict | None = None,
+        batch_submission_count: int = 0,
+        resolved_actions: list | None = None,
     ) -> None:
         """Sync scene lifecycle and focus from canonical session state.
 
-        Called by the orchestration layer when session state changes
-        so gameplay runtime reflects the canonical models.
+        Also syncs batch resolution state for narrator consumption.
         """
         self.scene_lifecycle = scene_lifecycle.value
         self.player_focus = player_focus.value
+        self.pending_blocker = pending_blocker or {}
+        self.merge_proposal = merge_proposal
+        self.batch_submission_count = batch_submission_count
+        self.resolved_actions = resolved_actions or []
 
     def is_scene_collecting(self) -> bool:
         """Check if scene is in COLLECTING state."""
