@@ -17,6 +17,11 @@ from dm_bot.orchestrator.session_store import (
     OpenScene,
     ForkResult,
     SwitchFocusResult,
+    Visibility,
+    BatchSubmission,
+    ResolvedAction,
+    MergeProposal,
+    BlockerState,
 )
 
 
@@ -387,3 +392,252 @@ class TestForkSwitchIntegration:
             target_scene_id="original",
         )
         assert switch_result2.cross_cut is True  # PUBLISHED -> COLLECTING
+
+
+# =============================================================================
+# Phase 3: Batch and Merge Tests (RTR-03, RTR-04, RTR-05)
+# =============================================================================
+
+
+class TestBatchSubmission:
+    """Tests for action batch collection during COLLECTING state."""
+
+    def test_submit_action_accepted_in_collecting(self, three_player_session):
+        """Actions can be submitted when scene is in COLLECTING state."""
+        session = three_player_session.get_by_channel("ch1")
+        scene_id, _ = session.fork(initiating_player="player1")
+
+        batch = session.submit_action(
+            scene_id=scene_id,
+            user_id="player1",
+            character_id="char1",
+            action_text="I attack the creature",
+            dex_value=50,
+            visibility=Visibility.PUBLIC,
+        )
+
+        assert batch is not None
+        assert "player1" in batch.entries
+        assert batch.entries["player1"].action_text == "I attack the creature"
+        assert batch.entries["player1"].dex_value == 50
+        assert batch.entries["player1"].visibility == Visibility.PUBLIC
+
+    def test_submit_action_rejected_in_locked(self, three_player_session):
+        """Actions are rejected when scene is in LOCKED state."""
+        session = three_player_session.get_by_channel("ch1")
+        scene_id, _ = session.fork(initiating_player="player1")
+        session.lock_scene(scene_id)
+
+        with pytest.raises(ValueError, match="not in COLLECTING state"):
+            session.submit_action(
+                scene_id=scene_id,
+                user_id="player1",
+                character_id="char1",
+                action_text="late action",
+            )
+
+    def test_submit_action_rejected_for_nonexistent_scene(self, three_player_session):
+        """Submitting to nonexistent scene raises ValueError."""
+        session = three_player_session.get_by_channel("ch1")
+
+        with pytest.raises(ValueError, match="does not exist"):
+            session.submit_action(
+                scene_id="fake-scene",
+                user_id="player1",
+                character_id="char1",
+                action_text="action",
+            )
+
+
+class TestDeterministicResolution:
+    """Tests for deterministic resolution ordering (RTR-03)."""
+
+    def test_resolution_order_by_dex_descending(self, three_player_session):
+        """Higher dex values resolve first."""
+        session = three_player_session.get_by_channel("ch1")
+        scene_id, _ = session.fork(initiating_player="player1")
+
+        # Submit in wrong order (p2 first) but p1 has higher dex
+        session.submit_action(
+            scene_id=scene_id, user_id="player2", character_id="c2",
+            action_text="dodge", dex_value=30,
+        )
+        session.submit_action(
+            scene_id=scene_id, user_id="player1", character_id="c1",
+            action_text="attack", dex_value=60,
+        )
+
+        session.lock_scene(scene_id)
+        proposal = session.resolve_scene(scene_id)
+
+        assert proposal.resolved_actions[0].user_id == "player1"
+        assert proposal.resolved_actions[0].action_text == "attack"
+        assert proposal.resolved_actions[0].resolution_order == 1
+        assert proposal.resolved_actions[1].user_id == "player2"
+        assert proposal.resolved_actions[1].resolution_order == 2
+
+    def test_resolution_order_dex_tiebreaker_user_id(self, three_player_session):
+        """Same dex resolves by user_id alphabetically."""
+        session = three_player_session.get_by_channel("ch1")
+        scene_id, _ = session.fork(initiating_player="player1")
+
+        # Same dex, submit player2 first but player1 should resolve first (alphabetical)
+        session.submit_action(
+            scene_id=scene_id, user_id="player2", character_id="c2",
+            action_text="player2 action", dex_value=50,
+        )
+        session.submit_action(
+            scene_id=scene_id, user_id="player1", character_id="c1",
+            action_text="player1 action", dex_value=50,
+        )
+
+        session.lock_scene(scene_id)
+        proposal = session.resolve_scene(scene_id)
+
+        assert proposal.resolved_actions[0].user_id == "player1"
+        assert proposal.resolved_actions[1].user_id == "player2"
+
+    def test_resolve_scene_requires_locked_state(self, three_player_session):
+        """resolve_scene() raises if scene is not LOCKED."""
+        session = three_player_session.get_by_channel("ch1")
+        scene_id, _ = session.fork(initiating_player="player1")
+
+        with pytest.raises(ValueError, match="not in LOCKED state"):
+            session.resolve_scene(scene_id)
+
+
+class TestVisibilityConsequences:
+    """Tests for visibility-tagged consequences (RTR-04)."""
+
+    def test_resolved_action_preserves_visibility(self, three_player_session):
+        """Resolved actions carry visibility from submission."""
+        session = three_player_session.get_by_channel("ch1")
+        scene_id, _ = session.fork(initiating_player="player1")
+
+        session.submit_action(
+            scene_id=scene_id, user_id="player1", character_id="c1",
+            action_text="private thought", visibility=Visibility.PRIVATE,
+        )
+
+        session.lock_scene(scene_id)
+        proposal = session.resolve_scene(scene_id)
+
+        assert proposal.resolved_actions[0].visibility == Visibility.PRIVATE
+
+    def test_merge_proposal_contains_ordered_resolved_actions(self, three_player_session):
+        """Merge proposal contains properly ordered resolved actions."""
+        session = three_player_session.get_by_channel("ch1")
+        scene_id, _ = session.fork(initiating_player="player1")
+
+        session.submit_action(
+            scene_id=scene_id, user_id="player1", character_id="c1",
+            action_text="action1", dex_value=40,
+        )
+        session.submit_action(
+            scene_id=scene_id, user_id="player2", character_id="c2",
+            action_text="action2", dex_value=60,
+        )
+
+        session.lock_scene(scene_id)
+        proposal = session.resolve_scene(scene_id)
+
+        assert isinstance(proposal, MergeProposal)
+        assert len(proposal.resolved_actions) == 2
+        assert proposal.scene_id == scene_id
+        assert proposal.round_number == 1
+        # Check ordering
+        assert proposal.resolved_actions[0].resolution_order == 1
+        assert proposal.resolved_actions[1].resolution_order == 2
+
+
+class TestRuntimeBlockerTruth:
+    """Tests for runtime blocker state (RTR-05)."""
+
+    def test_blocker_waiting_on_no_submissions(self, three_player_session):
+        """Blocker state shows waiting actors when no submissions exist."""
+        session = three_player_session.get_by_channel("ch1")
+        scene_id, _ = session.fork(initiating_player="player1")
+        session.focused_scene["player1"] = scene_id
+
+        blocker = session.compute_blocker_state(scene_id)
+
+        assert blocker.is_blocked is True
+        assert "player1" in blocker.waiting_on_actors
+
+    def test_blocker_waiting_after_some_submissions(self, three_player_session):
+        """Blocker state shows remaining actors after some submissions."""
+        session = three_player_session.get_by_channel("ch1")
+        scene_id, _ = session.fork(initiating_player="player1")
+        session.focused_scene["player1"] = scene_id
+        session.focused_scene["player2"] = scene_id
+
+        session.submit_action(
+            scene_id=scene_id, user_id="player1", character_id="c1",
+            action_text="action1",
+        )
+
+        blocker = session.compute_blocker_state(scene_id)
+
+        assert blocker.is_blocked is True
+        assert "player2" in blocker.waiting_on_actors
+        assert "player1" not in blocker.waiting_on_actors
+
+    def test_blocker_not_blocked_after_all_submitted(self, three_player_session):
+        """Blocker state shows not blocked when all have submitted."""
+        session = three_player_session.get_by_channel("ch1")
+        scene_id, _ = session.fork(initiating_player="player1")
+        session.focused_scene["player1"] = scene_id
+
+        session.submit_action(
+            scene_id=scene_id, user_id="player1", character_id="c1",
+            action_text="action1",
+        )
+
+        blocker = session.compute_blocker_state(scene_id)
+
+        assert blocker.is_blocked is False
+        assert len(blocker.waiting_on_actors) == 0
+
+
+class TestSceneLifecycleTransitions:
+    """Tests for batch-related lifecycle transitions."""
+
+    def test_lock_then_resolve_then_publish(self, three_player_session):
+        """Full lifecycle: COLLECTING -> LOCKED -> RESOLVING -> PUBLISHED."""
+        session = three_player_session.get_by_channel("ch1")
+        scene_id, _ = session.fork(initiating_player="player1")
+
+        # COLLECTING
+        assert session.open_scenes[scene_id].lifecycle == SceneLifecycle.COLLECTING
+        session.submit_action(
+            scene_id=scene_id, user_id="player1", character_id="c1", action_text="action",
+        )
+
+        # LOCKED
+        session.lock_scene(scene_id)
+        assert session.open_scenes[scene_id].lifecycle == SceneLifecycle.LOCKED
+
+        # RESOLVING
+        proposal = session.resolve_scene(scene_id)
+        assert session.open_scenes[scene_id].lifecycle == SceneLifecycle.RESOLVING
+        assert isinstance(proposal, MergeProposal)
+
+        # PUBLISHED
+        session.publish_scene(scene_id)
+        assert session.open_scenes[scene_id].lifecycle == SceneLifecycle.PUBLISHED
+
+    def test_publish_clears_batch_submissions(self, three_player_session):
+        """Publishing clears batch submissions for the scene."""
+        session = three_player_session.get_by_channel("ch1")
+        scene_id, _ = session.fork(initiating_player="player1")
+
+        session.submit_action(
+            scene_id=scene_id, user_id="player1", character_id="c1", action_text="action",
+        )
+        assert scene_id in session.batch_submissions
+
+        session.lock_scene(scene_id)
+        session.resolve_scene(scene_id)
+        session.publish_scene(scene_id)
+
+        assert scene_id not in session.batch_submissions
