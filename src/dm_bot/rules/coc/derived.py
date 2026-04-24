@@ -13,10 +13,23 @@ Reference: Call of Cthulhu 7th Edition Keeper's Rulebook, Chapter 2
 """
 
 import random
+from dataclasses import dataclass
 
 from pydantic import BaseModel
 
-from dm_bot.characters.models import COCAttributes
+
+@dataclass
+class COCAttributes:
+    """Base COC 7th Edition attributes."""
+
+    str: int = 50
+    con: int = 50
+    siz: int = 50
+    dex: int = 50
+    app: int = 50
+    int: int = 50  # noqa: A003
+    pow: int = 50
+    edu: int = 50
 
 
 # =============================================================================
