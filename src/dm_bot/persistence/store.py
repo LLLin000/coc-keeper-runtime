@@ -20,7 +20,8 @@ class PersistenceStore:
     def _connect(self) -> sqlite3.Connection:
         if self._conn is not None:
             return self._conn
-        return sqlite3.connect(str(self._path))
+        is_uri = str(self._path).startswith("file:") or "?" in str(self._path)
+        return sqlite3.connect(str(self._path), uri=is_uri)
 
     def _init_db(self) -> None:
         with self._connect() as conn:
