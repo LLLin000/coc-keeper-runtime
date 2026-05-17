@@ -258,41 +258,76 @@ class RuntimeControlService:
 
     def _find_processes(self, kind: str) -> list[dict[str, int]]:
         pattern = r"dm_bot\.main run-bot" if kind == "bot" else r"dm_bot\.main run-api"
-        command = (
-            "Get-CimInstance Win32_Process | "
-            f"Where-Object {{ $_.CommandLine -match '{pattern}' }} | "
-            "Select-Object ProcessId, CommandLine | ConvertTo-Json -Compress"
-        )
-        result = subprocess.run(
-            ["powershell", "-NoProfile", "-Command", command],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        payload = result.stdout.strip()
-        if not payload:
-            return []
-        try:
-            parsed = json.loads(payload)
-        except json.JSONDecodeError:
-            return []
-        if isinstance(parsed, dict):
-            parsed = [parsed]
-        return [{"pid": item["ProcessId"]} for item in parsed if "ProcessId" in item]
+        if os.name == "nt":
+            command = (
+                "Get-CimInstance Win32_Process | "
+                f"Where-Object {{ $_.CommandLine -match '{pattern}' }} | "
+                "Select-Object ProcessId, CommandLine | ConvertTo-Json -Compress"
+            )
+            result = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", command],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            payload = result.stdout.strip()
+            if not payload:
+                return []
+            try:
+                parsed = json.loads(payload)
+            except json.JSONDecodeError:
+                return []
+            if isinstance(parsed, dict):
+                parsed = [parsed]
+            return [{"pid": item["ProcessId"]} for item in parsed if "ProcessId" in item]
+        else:
+            pids = []
+            try:
+                ps_output = subprocess.check_output(["ps", "-ef"], text=True)
+                search_str = "dm_bot.main run-bot" if kind == "bot" else "dm_bot.main run-api"
+                for line in ps_output.splitlines():
+                    if search_str in line and "grep" not in line:
+                        parts = line.split()
+                        if len(parts) > 1:
+                            try:
+                                pids.append({"pid": int(parts[1])})
+                            except ValueError:
+                                pass
+            except subprocess.CalledProcessError:
+                pass
+            except Exception as e:
+                print(e)
+                pass
+            return pids
 
     def _stop_processes(self, kind: str) -> None:
         pattern = r"dm_bot\.main run-bot" if kind == "bot" else r"dm_bot\.main run-api"
-        command = (
-            "Get-CimInstance Win32_Process | "
-            f"Where-Object {{ $_.CommandLine -match '{pattern}' }} | "
-            "ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"
-        )
-        subprocess.run(
-            ["powershell", "-NoProfile", "-Command", command],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
+        if os.name == "nt":
+            command = (
+                "Get-CimInstance Win32_Process | "
+                f"Where-Object {{ $_.CommandLine -match '{pattern}' }} | "
+                "ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"
+            )
+            subprocess.run(
+                ["powershell", "-NoProfile", "-Command", command],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        else:
+            search_str = "dm_bot.main run-bot" if kind == "bot" else "dm_bot.main run-api"
+            try:
+                ps_output = subprocess.check_output(["ps", "-ef"], text=True)
+                for line in ps_output.splitlines():
+                    if search_str in line and "grep" not in line:
+                        parts = line.split()
+                        if len(parts) > 1:
+                            subprocess.run(["kill", "-9", parts[1]], check=False)
+            except subprocess.CalledProcessError:
+                pass
+            except Exception as e:
+                print(e)
+                pass
 
     def _launch_process(self, kind: str, *, wait_seconds: int = 30) -> bool:
         stdout_log = self.cwd / f"{kind}.stdout.log"

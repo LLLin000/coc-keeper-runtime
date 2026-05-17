@@ -5,7 +5,6 @@ import sys
 import time
 import os
 import json
-import platform
 import signal
 from pathlib import Path
 
@@ -36,7 +35,7 @@ def sync_seen_in_log(log_path: Path) -> bool:
 
 
 def terminate_existing_bot_processes(*, current_pid: int) -> None:
-    if platform.system() == "Windows":
+    if os.name == "nt":
         command = (
             "Get-CimInstance Win32_Process | "
             "Where-Object { $_.CommandLine -match 'dm_bot\\.main run-bot' } | "
