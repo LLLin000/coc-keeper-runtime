@@ -23,3 +23,5 @@ manualbot.*.log
 tmp_*.md
 run-bot-bg.cmd
 artifacts/
+assets/
+.DS_Store
