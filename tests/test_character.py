@@ -295,3 +295,37 @@ class TestCharacterSoftDelete:
         finally:
             del store; gc.collect()
             if os.path.exists(db_path): os.remove(db_path)
+
+
+class TestCharacterValidation:
+    def test_valid_character_passes(self):
+        from dm_bot.character.validation import validate_character
+        from dm_bot.character.sheet import CharacterSheet
+
+        sheet = CharacterSheet(character_id="c1", name="Alice")
+        errors = validate_character(sheet)
+        assert len(errors) == 0
+
+    def test_invalid_stats(self):
+        from dm_bot.character.validation import validate_character
+        from dm_bot.character.sheet import CharacterSheet
+
+        sheet = CharacterSheet(character_id="c1", name="Alice", strength=200)
+        errors = validate_character(sheet)
+        assert any("strength" in e.lower() or "STR" in e for e in errors)
+
+    def test_underage(self):
+        from dm_bot.character.validation import validate_character
+        from dm_bot.character.sheet import CharacterSheet
+
+        sheet = CharacterSheet(character_id="c1", name="Kid", age=5)
+        errors = validate_character(sheet)
+        assert any("age" in e.lower() for e in errors)
+
+    def test_empty_name_fails(self):
+        from dm_bot.character.validation import validate_character
+        from dm_bot.character.sheet import CharacterSheet
+
+        sheet = CharacterSheet.model_construct(character_id="c1", name="")
+        errors = validate_character(sheet)
+        assert len(errors) > 0
