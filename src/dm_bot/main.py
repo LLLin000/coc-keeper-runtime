@@ -105,6 +105,32 @@ def describe_runtime(settings: Settings | None = None) -> str:
     )
 
 
+async def run_bot_async(token: str) -> None:
+    import discord
+    from discord import app_commands
+
+    intents = discord.Intents.default()
+    intents.message_content = True
+    client = discord.Client(intents=intents)
+    tree = app_commands.CommandTree(client)
+
+    store = Store("dm_bot.sqlite3")
+    loader = AdventureLoader()
+    narrator = SimpleNarrator()
+    settings = get_settings()
+    bot_cmds = BotCommands(store=store, loader=loader, narrator=narrator, settings=settings)
+
+    @client.event
+    async def on_ready() -> None:
+        assert client.user is not None
+        print(f"Bot logged in as {client.user}")
+        bot_cmds.register(tree)
+        await tree.sync()
+        print("Commands synced. Ready!")
+
+    await client.start(token)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="dm-bot")
     subparsers = parser.add_subparsers(dest="command")
@@ -123,12 +149,7 @@ def main(argv: list[str] | None = None) -> int:
         settings = get_settings()
         if not settings.discord_token:
             raise RuntimeError("DM_BOT_DISCORD_TOKEN is required to start the Discord bot")
-
-        store = Store("dm_bot.sqlite3")
-        loader = AdventureLoader()
-        narrator = SimpleNarrator(settings.narrator_model, settings.ollama_base_url)
-        bot = BotCommands(store=store, loader=loader, narrator=narrator, settings=settings)
-        asyncio.run(bot.start(settings.discord_token))
+        asyncio.run(run_bot_async(settings.discord_token))
         return 0
 
     if args.command == "smoke-check":
