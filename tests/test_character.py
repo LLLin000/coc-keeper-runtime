@@ -210,3 +210,88 @@ class TestBuilderPersistence:
         sheet = builder.get_sheet("user_2")
         assert sheet is not None
         assert sheet.name == "Bob"
+
+
+class TestCharacterSoftDelete:
+    def test_soft_delete(self):
+        from dm_bot.store.db import Store
+        from dm_bot.character.archive import CharacterArchive
+        from dm_bot.character.sheet import CharacterSheet
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_softdel.db")
+        if os.path.exists(db_path): os.remove(db_path)
+        store = Store(db_path)
+        try:
+            sheet = CharacterSheet(character_id="c1", name="Alice")
+            store.save_character(CharacterArchive(character_id="c1", player_id="u1", sheet=sheet))
+            store.soft_delete_character("c1")
+            loaded = store.load_character("c1")
+            assert loaded is None  # excluded by default
+            archived = store.load_character("c1", include_deleted=True)
+            assert archived is not None  # still accessible
+        finally:
+            del store; gc.collect()
+            if os.path.exists(db_path): os.remove(db_path)
+
+    def test_hard_delete(self):
+        from dm_bot.store.db import Store
+        from dm_bot.character.archive import CharacterArchive
+        from dm_bot.character.sheet import CharacterSheet
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_harddel.db")
+        if os.path.exists(db_path): os.remove(db_path)
+        store = Store(db_path)
+        try:
+            sheet = CharacterSheet(character_id="c1", name="Bob")
+            store.save_character(CharacterArchive(character_id="c1", player_id="u1", sheet=sheet))
+            store.delete_character("c1")
+            assert store.load_character("c1") is None
+            assert store.load_character("c1", include_deleted=True) is None
+        finally:
+            del store; gc.collect()
+            if os.path.exists(db_path): os.remove(db_path)
+
+    def test_recover_soft_deleted(self):
+        from dm_bot.store.db import Store
+        from dm_bot.character.archive import CharacterArchive
+        from dm_bot.character.sheet import CharacterSheet
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_recover.db")
+        if os.path.exists(db_path): os.remove(db_path)
+        store = Store(db_path)
+        try:
+            sheet = CharacterSheet(character_id="c1", name="Charlie")
+            store.save_character(CharacterArchive(character_id="c1", player_id="u1", sheet=sheet))
+            store.soft_delete_character("c1")
+            store.recover_character("c1")
+            loaded = store.load_character("c1")
+            assert loaded is not None
+            assert loaded.sheet.name == "Charlie"
+        finally:
+            del store; gc.collect()
+            if os.path.exists(db_path): os.remove(db_path)
+
+    def test_soft_delete_visible_in_list(self):
+        from dm_bot.store.db import Store
+        from dm_bot.character.archive import CharacterArchive
+        from dm_bot.character.sheet import CharacterSheet
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_softlist.db")
+        if os.path.exists(db_path): os.remove(db_path)
+        store = Store(db_path)
+        try:
+            sheet = CharacterSheet(character_id="c1", name="Alice")
+            store.save_character(CharacterArchive(character_id="c1", player_id="u1", sheet=sheet))
+            store.soft_delete_character("c1")
+            active = store.list_characters("u1")
+            assert len(active) == 0
+            store.recover_character("c1")
+            active = store.list_characters("u1")
+            assert len(active) == 1
+        finally:
+            del store; gc.collect()
+            if os.path.exists(db_path): os.remove(db_path)

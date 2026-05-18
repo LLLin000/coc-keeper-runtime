@@ -31,7 +31,8 @@ class Store:
                     character_id TEXT PRIMARY KEY,
                     user_id TEXT NOT NULL,
                     session_id TEXT,
-                    sheet_json TEXT  -- JSON
+                    sheet_json TEXT,  -- JSON
+                    deleted_at TIMESTAMP
                 );
                 CREATE TABLE IF NOT EXISTS blockers (
                     blocker_id TEXT PRIMARY KEY,
@@ -73,6 +74,10 @@ class Store:
                 );
                 """
             )
+            try:
+                conn.execute("ALTER TABLE characters ADD COLUMN deleted_at TIMESTAMP")
+            except Exception:
+                pass
             row = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
@@ -279,12 +284,28 @@ class Store:
                  archive.sheet.model_dump_json()),
             )
 
-    def load_character(self, character_id: str) -> CharacterArchive | None:
+    def soft_delete_character(self, character_id: str) -> None:
+        from datetime import datetime, timezone
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                "UPDATE characters SET deleted_at = ? WHERE character_id = ?",
+                (datetime.now(timezone.utc).isoformat(), character_id),
+            )
+
+    def recover_character(self, character_id: str) -> None:
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                "UPDATE characters SET deleted_at = NULL WHERE character_id = ?",
+                (character_id,),
+            )
+
+    def load_character(self, character_id: str, include_deleted: bool = False) -> CharacterArchive | None:
         import json
         with sqlite3.connect(self.db_path) as conn:
-            row = conn.execute(
-                "SELECT * FROM characters WHERE character_id = ?", (character_id,)
-            ).fetchone()
+            query = "SELECT * FROM characters WHERE character_id = ?"
+            if not include_deleted:
+                query += " AND deleted_at IS NULL"
+            row = conn.execute(query, (character_id,)).fetchone()
             if not row:
                 return None
             from dm_bot.character.sheet import CharacterSheet
@@ -297,7 +318,7 @@ class Store:
         import json
         with sqlite3.connect(self.db_path) as conn:
             rows = conn.execute(
-                "SELECT * FROM characters WHERE user_id = ?", (user_id,)
+                "SELECT * FROM characters WHERE user_id = ? AND deleted_at IS NULL", (user_id,)
             ).fetchall()
             from dm_bot.character.sheet import CharacterSheet
             return [
