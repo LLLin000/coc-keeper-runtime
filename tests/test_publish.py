@@ -129,3 +129,39 @@ class TestPublisher:
         pub.publish(ActionSubmittedEvent(session_id="s1", user_id="u1", action_text="a", scene_id="sc1"))
         pub.clear()
         assert len(pub.events) == 0
+
+
+from dm_bot.publish.contract import RendererContract
+from dm_bot.publish.models import ActionSubmittedEvent
+
+
+class TestRendererContract:
+    def test_cannot_instantiate_abstract(self):
+        import pytest
+        with pytest.raises(TypeError):
+            RendererContract()
+
+    def test_concrete_renderer(self):
+        class TestRenderer(RendererContract):
+            def render(self, event):
+                return f"Rendered: {event.event_type}"
+
+        r = TestRenderer()
+        event = ActionSubmittedEvent(
+            session_id="s1", user_id="u1",
+            action_text="search", scene_id="sc1",
+        )
+        result = r.render(event)
+        assert result == "Rendered: action.submitted"
+
+    def test_multiple_events(self):
+        class TestRenderer(RendererContract):
+            def render(self, event):
+                return f"Event: {event.event_type}"
+
+        r = TestRenderer()
+        from dm_bot.publish.models import RoundResolvedEvent
+        e1 = ActionSubmittedEvent(session_id="s1", user_id="u1", action_text="a", scene_id="sc1")
+        e2 = RoundResolvedEvent(session_id="s1", scene_id="sc1", round_number=1)
+        assert r.render(e1) == "Event: action.submitted"
+        assert r.render(e2) == "Event: round.resolved"
