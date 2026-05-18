@@ -244,3 +244,66 @@ class TestAuditEntry:
         e1 = AuditEntry(chain_id="ch_1", step="event.fire", detail={})
         e2 = AuditEntry(chain_id="ch_1", step="reaction.exec", detail={})
         assert e2.timestamp >= e1.timestamp
+
+
+class TestChainPersistence:
+    def test_save_and_load_chain(self):
+        from dm_bot.store.db import Store
+        from dm_bot.trigger.models import TriggerChain
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_chains.db")
+        if os.path.exists(db_path):
+            os.remove(db_path)
+        store = Store(db_path)
+        chain = TriggerChain(event_type="action.submit", trigger_id="tr_1")
+        store.save_chain(chain)
+        loaded = store.load_chain(chain.chain_id)
+        assert loaded is not None
+        assert loaded.chain_id == chain.chain_id
+        assert loaded.status == "running"
+        del store
+        gc.collect()
+        os.remove(db_path)
+
+    def test_save_and_list_chains_by_status(self):
+        from dm_bot.store.db import Store
+        from dm_bot.trigger.models import TriggerChain
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_chains2.db")
+        if os.path.exists(db_path):
+            os.remove(db_path)
+        store = Store(db_path)
+        c1 = TriggerChain(event_type="test", trigger_id="t1")
+        c2 = TriggerChain(event_type="test", trigger_id="t2")
+        c2.complete()
+        store.save_chain(c1)
+        store.save_chain(c2)
+        running = store.list_chains_by_status("running")
+        assert len(running) == 1
+        assert running[0].chain_id == c1.chain_id
+        del store
+        gc.collect()
+        os.remove(db_path)
+
+    def test_save_and_load_audit_entries(self):
+        from dm_bot.store.db import Store
+        from dm_bot.trigger.models import AuditEntry
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_audit.db")
+        if os.path.exists(db_path):
+            os.remove(db_path)
+        store = Store(db_path)
+        e1 = AuditEntry(chain_id="ch_1", step="event.fire", detail={"type": "test"})
+        e2 = AuditEntry(chain_id="ch_1", step="trigger.match", detail={"trigger_id": "tr_1"})
+        store.save_audit_entry(e1)
+        store.save_audit_entry(e2)
+        entries = store.list_audit_entries("ch_1")
+        assert len(entries) == 2
+        assert entries[0].step == "event.fire"
+        assert entries[1].step == "trigger.match"
+        del store
+        gc.collect()
+        os.remove(db_path)

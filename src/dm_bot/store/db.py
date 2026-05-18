@@ -2,7 +2,7 @@
 
 import sqlite3
 from pathlib import Path
-from dm_bot.trigger.models import BlockerCheckpoint
+from dm_bot.trigger.models import BlockerCheckpoint, TriggerChain, AuditEntry
 
 
 class Store:
@@ -38,6 +38,22 @@ class Store:
                     payload TEXT DEFAULT '{}',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     resolved_at TIMESTAMP
+                );
+                CREATE TABLE IF NOT EXISTS trigger_chains (
+                    chain_id TEXT PRIMARY KEY,
+                    event_id TEXT DEFAULT '',
+                    event_type TEXT NOT NULL,
+                    trigger_id TEXT NOT NULL,
+                    status TEXT DEFAULT 'running',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    completed_at TIMESTAMP
+                );
+                CREATE TABLE IF NOT EXISTS audit_entries (
+                    entry_id TEXT PRIMARY KEY,
+                    chain_id TEXT NOT NULL,
+                    step TEXT NOT NULL,
+                    detail TEXT DEFAULT '{}',
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
                 """
             )
@@ -121,6 +137,77 @@ class Store:
                     blocker_id=r[0], trigger_chain_id=r[1], scene_id=r[2] or "",
                     reason=r[3], payload=json.loads(r[4]) if r[4] else {},
                     created_at=datetime.fromisoformat(r[5]),
+                )
+                for r in rows
+            ]
+
+    def save_chain(self, chain: TriggerChain) -> None:
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                """INSERT OR REPLACE INTO trigger_chains
+                   (chain_id, event_id, event_type, trigger_id, status, created_at, completed_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (chain.chain_id, chain.event_id, chain.event_type,
+                 chain.trigger_id, chain.status,
+                 chain.created_at.isoformat(),
+                 chain.completed_at.isoformat() if chain.completed_at else None),
+            )
+
+    def load_chain(self, chain_id: str) -> TriggerChain | None:
+        from datetime import datetime
+        with sqlite3.connect(self.db_path) as conn:
+            row = conn.execute(
+                "SELECT * FROM trigger_chains WHERE chain_id = ?", (chain_id,)
+            ).fetchone()
+            if not row:
+                return None
+            return TriggerChain(
+                chain_id=row[0], event_id=row[1] or "", event_type=row[2],
+                trigger_id=row[3], status=row[4],
+                created_at=datetime.fromisoformat(row[5]),
+                completed_at=datetime.fromisoformat(row[6]) if row[6] else None,
+            )
+
+    def list_chains_by_status(self, status: str) -> list[TriggerChain]:
+        from datetime import datetime
+        with sqlite3.connect(self.db_path) as conn:
+            rows = conn.execute(
+                "SELECT * FROM trigger_chains WHERE status = ?", (status,)
+            ).fetchall()
+            return [
+                TriggerChain(
+                    chain_id=r[0], event_id=r[1] or "", event_type=r[2],
+                    trigger_id=r[3], status=r[4],
+                    created_at=datetime.fromisoformat(r[5]),
+                    completed_at=datetime.fromisoformat(r[6]) if r[6] else None,
+                )
+                for r in rows
+            ]
+
+    def save_audit_entry(self, entry: AuditEntry) -> None:
+        import json
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                """INSERT INTO audit_entries
+                   (entry_id, chain_id, step, detail, timestamp)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (entry.entry_id, entry.chain_id, entry.step,
+                 json.dumps(entry.detail), entry.timestamp.isoformat()),
+            )
+
+    def list_audit_entries(self, chain_id: str) -> list[AuditEntry]:
+        import json
+        from datetime import datetime
+        with sqlite3.connect(self.db_path) as conn:
+            rows = conn.execute(
+                "SELECT * FROM audit_entries WHERE chain_id = ? ORDER BY timestamp ASC",
+                (chain_id,)
+            ).fetchall()
+            return [
+                AuditEntry(
+                    entry_id=r[0], chain_id=r[1], step=r[2],
+                    detail=json.loads(r[3]) if r[3] else {},
+                    timestamp=datetime.fromisoformat(r[4]),
                 )
                 for r in rows
             ]
