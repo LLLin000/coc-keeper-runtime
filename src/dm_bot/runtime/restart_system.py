@@ -92,21 +92,36 @@ def run_restart_system(*, cwd: Path, wait_seconds: int = 60) -> int:
 
 
 def _find_active_bot_pid() -> int | None:
-    command = (
-        "Get-CimInstance Win32_Process | "
-        "Where-Object { $_.CommandLine -match 'dm_bot\\.main run-bot' } | "
-        "Select-Object -ExpandProperty ProcessId"
-    )
-    result = subprocess.run(
-        ["powershell", "-NoProfile", "-Command", command],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
-    if not lines:
-        return None
-    try:
-        return int(lines[0])
-    except ValueError:
+    if os.name == "nt":
+        command = (
+            "Get-CimInstance Win32_Process | "
+            "Where-Object { $_.CommandLine -match 'dm_bot\\.main run-bot' } | "
+            "Select-Object -ExpandProperty ProcessId"
+        )
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-Command", command],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+        if not lines:
+            return None
+        try:
+            return int(lines[0])
+        except ValueError:
+            return None
+    else:
+        try:
+            ps_output = subprocess.check_output(["ps", "-ef"], text=True)
+            for line in ps_output.splitlines():
+                if "dm_bot.main run-bot" in line and "grep" not in line:
+                    parts = line.split()
+                    if len(parts) > 1:
+                        return int(parts[1])
+        except (subprocess.CalledProcessError, ValueError):
+            pass
+        except Exception as e:
+            print(e)
+            pass
         return None

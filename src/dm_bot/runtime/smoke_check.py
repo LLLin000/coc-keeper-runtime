@@ -5,6 +5,7 @@ import sys
 import time
 import os
 import json
+import signal
 from pathlib import Path
 
 SYNC_MARKER = "SYNC_DONE"
@@ -34,18 +35,34 @@ def sync_seen_in_log(log_path: Path) -> bool:
 
 
 def terminate_existing_bot_processes(*, current_pid: int) -> None:
-    command = (
-        "Get-CimInstance Win32_Process | "
-        "Where-Object { $_.CommandLine -match 'dm_bot\\.main run-bot' } | "
-        f"Where-Object {{ $_.ProcessId -ne {current_pid} }} | "
-        "ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"
-    )
-    subprocess.run(
-        ["powershell", "-NoProfile", "-Command", command],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    if os.name == "nt":
+        command = (
+            "Get-CimInstance Win32_Process | "
+            "Where-Object { $_.CommandLine -match 'dm_bot\\.main run-bot' } | "
+            f"Where-Object {{ $_.ProcessId -ne {current_pid} }} | "
+            "ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"
+        )
+        subprocess.run(
+            ["powershell", "-NoProfile", "-Command", command],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    else:
+        # macOS / Linux logic: find processes containing 'dm_bot.main run-bot'
+        try:
+            ps_output = subprocess.check_output(["ps", "-ef"], text=True)
+            for line in ps_output.splitlines():
+                if "dm_bot.main run-bot" in line and str(current_pid) not in line:
+                    parts = line.split()
+                    if len(parts) > 1:
+                        try:
+                            target_pid = int(parts[1])
+                            os.kill(target_pid, signal.SIGTERM)
+                        except (ValueError, ProcessLookupError):
+                            continue
+        except Exception:
+            pass
 
 
 def run_local_smoke_check(*, cwd: Path, wait_seconds: int = 8) -> int:
