@@ -119,3 +119,65 @@ class TestConsequenceBoard:
         board = ConsequenceBoard()
         output = board.render({"events": []})
         assert "No events" in output
+
+
+class TestSessionContext:
+    def test_session_context_holds_state(self):
+        from dm_bot.surface.session_context import SessionContext
+
+        ctx = SessionContext(session_id="ses_1", module_name="Test")
+        assert ctx.session_id == "ses_1"
+        assert ctx.phase == "idle"
+
+    def test_session_context_participants(self):
+        from dm_bot.surface.session_context import SessionContext
+
+        ctx = SessionContext(session_id="ses_1", module_name="Test")
+        ctx.add_participant("Alice")
+        ctx.add_participant("Bob")
+        assert "Alice" in ctx.participants
+        assert len(ctx.participants) == 2
+
+    def test_session_board_from_context(self):
+        from dm_bot.surface.session_context import SessionContext
+        from dm_bot.surface.session_board import SessionBoard
+
+        ctx = SessionContext(session_id="ses_abc", module_name="Haunting")
+        ctx.add_participant("Alice")
+        ctx.phase = "exploration"
+
+        board = SessionBoard()
+        output = board.render(ctx.to_dict())
+        assert "ses_abc" in output
+        assert "Haunting" in output
+        assert "Alice" in output
+        assert "exploration" in output
+
+
+class TestBoardIntegration:
+    def test_all_boards_render_session_state(self):
+        from dm_bot.surface.session_context import SessionContext
+        from dm_bot.surface.session_board import SessionBoard
+        from dm_bot.surface.consequence_board import ConsequenceBoard
+        from dm_bot.publish.models import ActionSubmittedEvent
+
+        ctx = SessionContext(session_id="ses_test", module_name="TestModule")
+        ctx.add_participant("Alice")
+        ctx.phase = "active"
+
+        pub = ctx.publisher
+        pub.publish(ActionSubmittedEvent(
+            session_id="ses_test", scene_id="s1",
+            user_id="Alice", action_text="Alice searched the room"
+        ))
+
+        session_out = SessionBoard().render(ctx.to_dict())
+        assert "TestModule" in session_out
+        assert "Alice" in session_out
+
+        events = [
+            {"event_type": e.event_type, "visibility": e.visibility.value, "summary": getattr(e, 'action_text', '')}
+            for e in pub.get_events()
+        ]
+        conseq_out = ConsequenceBoard().render({"events": events})
+        assert "Alice searched the room" in conseq_out

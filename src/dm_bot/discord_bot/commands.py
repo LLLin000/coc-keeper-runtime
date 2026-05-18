@@ -1,5 +1,6 @@
 """Simplified Discord slash commands for the COC bot."""
 
+import uuid
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -10,6 +11,11 @@ from dm_bot.character.builder import CharacterBuilder
 from dm_bot.scene.action import Action
 from dm_bot.scene.round import Round
 from dm_bot.scene.state import SceneState
+from dm_bot.surface.session_context import SessionContext
+from dm_bot.surface.session_board import SessionBoard
+from dm_bot.surface.scene_board import SceneBoard
+from dm_bot.surface.blocker_board import BlockerBoard
+from dm_bot.surface.consequence_board import ConsequenceBoard
 
 if TYPE_CHECKING:
     from dm_bot.adventure.loader import AdventureLoader
@@ -24,18 +30,24 @@ class BotCommands:
     def __init__(
         self,
         *,
-        adventure_loader: "AdventureLoader",
+        loader: "AdventureLoader",
         narrator: "NarratorClient",
         store: "Store",
+        settings: Any = None,
     ) -> None:
-        self.adventure_loader = adventure_loader
+        self.loader = loader
         self.narrator = narrator
         self.store = store
         self.builder = CharacterBuilder()
+        self.session: SessionContext | None = None
         self.current_adventure: "Adventure | None" = None
         self.current_round: Round | None = None
         self.player_sheets: dict[str, dict] = {}
         self.player_locations: dict[str, str] = {}
+        self.session_board = SessionBoard()
+        self.scene_board = SceneBoard()
+        self.blocker_board = BlockerBoard()
+        self.consequence_board = ConsequenceBoard()
 
     def register(self, tree: Any) -> None:
         import discord
@@ -97,8 +109,15 @@ class BotCommands:
         await interaction.response.send_message(response, ephemeral=True)
 
     async def _cmd_begin_module(self, interaction: Any, module_name: str) -> None:
-        self.current_adventure = self.adventure_loader.load_module(module_name)
-        self.current_round = Round()
+        self.current_adventure = self.loader.load_module(module_name)
+        self.session = SessionContext(
+            session_id=f"ses_{uuid.uuid4().hex[:8]}",
+            module_name=module_name,
+            store=self.store,
+        )
+        self.session.phase = "active"
+        self.session.add_participant(str(interaction.user.id))
+        self.current_round = Round(trigger_engine=self.session.trigger_engine)
         self.current_round.start_collection()
         await interaction.response.send_message(
             f"模组 **{module_name}** 开始！当前场景：{self.current_adventure.opening_scene_id}\n"
@@ -145,15 +164,45 @@ class BotCommands:
         await self._resolve_round(interaction)
 
     async def _cmd_status(self, interaction: Any) -> None:
-        if not self.current_adventure:
+        if not self.current_adventure or not self.session:
             await interaction.response.send_message("没有进行中的模组。")
             return
-        state = self.current_round.state if self.current_round else "none"
-        await interaction.response.send_message(
-            f"当前模组：{self.current_adventure.name}\n"
-            f"回合状态：{state}\n"
-            f"已提交行动：{len(self.current_round.actions) if self.current_round else 0}"
-        )
+
+        parts = []
+        parts.append(self.session_board.render(self.session.to_dict()))
+
+        scene_id = getattr(self.current_adventure, "opening_scene_id", "")
+        scene_name = ""
+        scene = getattr(self.current_adventure, "get_scene", None)
+        if scene and scene_id:
+            s = scene(scene_id)
+            if s:
+                scene_name = getattr(s, 'name', scene_id)
+
+        round_state = self.current_round.state.value if self.current_round else "N/A"
+        action_count = len(self.current_round.actions) if self.current_round else 0
+
+        blockers = []
+        if self.session.store:
+            blockers = [
+                {"reason": b.reason, "scene_id": b.scene_id, "blocker_id": b.blocker_id}
+                for b in self.session.store.list_unresolved_blockers()
+            ]
+
+        scene_output = self.scene_board.render({
+            "scene_id": scene_id,
+            "scene_name": scene_name,
+            "round_state": round_state,
+            "action_count": action_count,
+            "waiting_for": [b["reason"] for b in blockers] if blockers else None,
+        })
+        parts.append(scene_output)
+
+        if blockers:
+            parts.append(self.blocker_board.render({"blockers": blockers}))
+
+        response_text = "\n---\n".join(parts)
+        await interaction.response.send_message(response_text)
 
     async def handle_message(self, interaction: Any, text: str) -> None:
         if not self.current_round or self.current_round.state != SceneState.COLLECTING:
