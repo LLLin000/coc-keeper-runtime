@@ -109,6 +109,21 @@ class TestTriggerEngine:
         results = engine.fire_event(event)
         assert len(results) == 0  # no match
 
+    def test_unregister_removes_trigger(self):
+        from dm_bot.trigger.engine import TriggerEngine
+        from dm_bot.trigger.models import Trigger, Reaction
+
+        engine = TriggerEngine()
+        trigger = Trigger(
+            trigger_id="tr_1",
+            event_type="test",
+            reactions=[Reaction(reaction_id="rx_1", effect_type="message")],
+        )
+        engine.register_trigger(trigger)
+        assert "tr_1" in engine.triggers
+        engine.unregister("tr_1")
+        assert "tr_1" not in engine.triggers
+
     def test_reaction_priority_order(self):
         from dm_bot.trigger.engine import TriggerEngine
         from dm_bot.trigger.models import Trigger, Reaction, TriggerEvent
@@ -357,6 +372,26 @@ class TestEngineChains:
         assert "event.fire" in steps
         assert "trigger.match" in steps
 
+    def test_get_audit_trail_filters_by_chain_id(self):
+        from dm_bot.trigger.engine import TriggerEngine
+        from dm_bot.trigger.models import Trigger, Reaction, TriggerEvent
+
+        engine = TriggerEngine()
+        t1 = Trigger(trigger_id="tr_a", event_type="event.a", reactions=[Reaction(reaction_id="rx_a", effect_type="log")])
+        t2 = Trigger(trigger_id="tr_b", event_type="event.b", reactions=[Reaction(reaction_id="rx_b", effect_type="log")])
+        engine.register_trigger(t1)
+        engine.register_trigger(t2)
+        engine.fire_event(TriggerEvent(event_type="event.a", source={}))
+        engine.fire_event(TriggerEvent(event_type="event.b", source={}))
+
+        chain_a = engine.chains[0]
+        chain_b = engine.chains[1]
+        audit_a = engine.get_audit_trail(chain_a.chain_id)
+        audit_b = engine.get_audit_trail(chain_b.chain_id)
+
+        assert all(e.chain_id == chain_a.chain_id for e in audit_a)
+        assert all(e.chain_id == chain_b.chain_id for e in audit_b)
+
     def test_no_match_no_chain(self):
         from dm_bot.trigger.engine import TriggerEngine
         from dm_bot.trigger.models import TriggerEvent
@@ -419,7 +454,7 @@ class TestEngineChains:
         gc.collect()
         store2 = Store(db_path)
         entries = store2.list_audit_entries(saved_id)
-        assert len(entries) >= 2
+        assert len(entries) == 3
         del store2
         gc.collect()
         os.remove(db_path)

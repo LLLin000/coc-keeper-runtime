@@ -10,6 +10,7 @@ class Store:
 
     def __init__(self, db_path: str = "dm_bot.db") -> None:
         self.db_path = Path(db_path)
+        self._conn: sqlite3.Connection | None = None
         self._init_db()
 
     def _init_db(self) -> None:
@@ -194,6 +195,17 @@ class Store:
                 (entry.entry_id, entry.chain_id, entry.step,
                  json.dumps(entry.detail), entry.timestamp.isoformat()),
             )
+
+    def close(self) -> None:
+        if self._conn is not None:
+            self._conn.close()
+            self._conn = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def list_audit_entries(self, chain_id: str) -> list[AuditEntry]:
         import json
