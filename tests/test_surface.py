@@ -24,3 +24,37 @@ class TestSessionBoard:
         import pytest
         with pytest.raises(TypeError):
             Board()
+
+
+class TestSceneBoard:
+    def test_render_scene_context(self):
+        from dm_bot.surface.scene_board import SceneBoard
+
+        state = {
+            "scene_id": "s1",
+            "scene_name": "Creaky Hallway",
+            "scene_desc": "A dark corridor.",
+            "round_state": "COLLECTING",
+            "action_count": 2,
+            "waiting_for": ["KP decision on lockpick"],
+        }
+        board = SceneBoard()
+        output = board.render(state)
+        assert "Creaky Hallway" in output
+        assert "COLLECTING" in output
+        assert "KP decision on lockpick" in output
+        assert "2" in output
+
+    def test_render_no_waiting_reason(self):
+        from dm_bot.surface.scene_board import SceneBoard
+
+        state = {
+            "scene_id": "s2",
+            "scene_name": "Empty Room",
+            "round_state": "WAITING",
+            "action_count": 0,
+        }
+        board = SceneBoard()
+        output = board.render(state)
+        assert "Empty Room" in output
+        assert "WAITING" in output
