@@ -278,6 +278,18 @@ class Store:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
+    def check_integrity(self) -> dict:
+        """Validate Store health. Returns dict with status and details."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute("PRAGMA quick_check").fetchone()
+                table_count = conn.execute(
+                    "SELECT COUNT(*) FROM sqlite_master WHERE type='table'"
+                ).fetchone()[0]
+                return {"status": "ok", "tables": table_count}
+        except sqlite3.DatabaseError as e:
+            return {"status": "corrupt", "error": str(e)}
+
     def list_audit_entries(self, chain_id: str) -> list[AuditEntry]:
         import json
         from datetime import datetime
