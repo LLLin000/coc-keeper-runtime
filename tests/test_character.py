@@ -169,3 +169,44 @@ class TestCharacterStore:
             gc.collect()
             if os.path.exists(db_path):
                 os.remove(db_path)
+
+
+class TestBuilderPersistence:
+    def test_builder_persists_to_store(self):
+        from dm_bot.character.builder import CharacterBuilder
+        from dm_bot.store.db import Store
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_build_persist.db")
+        if os.path.exists(db_path):
+            os.remove(db_path)
+        store = Store(db_path)
+        try:
+            builder = CharacterBuilder(store=store)
+            builder.begin_creation("user_1")
+            builder.handle_response("user_1", "Alice")
+            builder.handle_response("user_1", "30")
+            result = builder.handle_response("user_1", "Detective")
+            assert "角色创建完成" in result
+            loaded = store.load_character("user_1")
+            assert loaded is not None
+            assert loaded.sheet.name == "Alice"
+            assert loaded.sheet.age == 30
+        finally:
+            del store
+            gc.collect()
+            if os.path.exists(db_path):
+                os.remove(db_path)
+
+    def test_builder_without_store_no_persist(self):
+        from dm_bot.character.builder import CharacterBuilder
+
+        builder = CharacterBuilder()
+        builder.begin_creation("user_2")
+        builder.handle_response("user_2", "Bob")
+        builder.handle_response("user_2", "25")
+        result = builder.handle_response("user_2", "Doctor")
+        assert "角色创建完成" in result
+        sheet = builder.get_sheet("user_2")
+        assert sheet is not None
+        assert sheet.name == "Bob"

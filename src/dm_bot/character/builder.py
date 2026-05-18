@@ -4,8 +4,9 @@ from dm_bot.character.sheet import CharacterSheet
 class CharacterBuilder:
     """对话式角色创建器"""
 
-    def __init__(self) -> None:
-        self._sessions: dict[str, dict] = {}  # user_id -> 创建会话状态
+    def __init__(self, store=None) -> None:
+        self._sessions: dict[str, dict] = {}
+        self._store = store
 
     def begin_creation(self, user_id: str) -> str:
         """开始创建流程，返回第一句话"""
@@ -55,6 +56,13 @@ class CharacterBuilder:
             data["sanity"] = stats["power"]
             data["sanity_max"] = 99 - data["skills_bonus"] if "skills_bonus" in data else 99
             session["step"] = "done"
+            if self._store:
+                from dm_bot.character.archive import CharacterArchive
+                archive = CharacterArchive(
+                    character_id=user_id, player_id=user_id,
+                    sheet=self.get_sheet(user_id),
+                )
+                self._store.save_character(archive)
             return (
                 f"角色创建完成！\n"
                 f"姓名：{data['name']}\n"
