@@ -201,3 +201,38 @@ class TestViewPayload:
         )
         assert len(payload.fields) == 2
         assert payload.fields[1].inline is True
+
+
+class TestDiscordFormatter:
+    def test_format_title_and_fields(self):
+        from dm_bot.surface.discord_formatter import DiscordFormatter
+        from dm_bot.surface.view_payload import ViewPayload, FieldEntry
+
+        payload = ViewPayload(
+            title="Session: The Haunting",
+            fields=[FieldEntry(name="Phase", value="exploration"), FieldEntry(name="Players", value="Alice, Bob")],
+        )
+        result = DiscordFormatter.format(payload)
+        assert "Session: The Haunting" in result
+        assert "Phase" in result
+        assert "exploration" in result
+        assert "Alice, Bob" in result
+
+    def test_format_sections(self):
+        from dm_bot.surface.discord_formatter import DiscordFormatter
+        from dm_bot.surface.view_payload import ViewPayload, ViewSection
+
+        payload = ViewPayload(
+            title="Clue Report",
+            sections=[ViewSection(heading="Bloody Footprint", body="A trail leads east.")],
+        )
+        result = DiscordFormatter.format(payload)
+        assert "Bloody Footprint" in result
+        assert "A trail leads east." in result
+
+    def test_format_empty_payload(self):
+        from dm_bot.surface.discord_formatter import DiscordFormatter
+        from dm_bot.surface.view_payload import ViewPayload
+
+        result = DiscordFormatter.format(ViewPayload(title="Empty"))
+        assert "Empty" in result
