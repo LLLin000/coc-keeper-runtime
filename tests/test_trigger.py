@@ -307,3 +307,242 @@ class TestChainPersistence:
         del store
         gc.collect()
         os.remove(db_path)
+
+
+class TestEngineChains:
+    def test_fire_event_creates_chain(self):
+        from dm_bot.trigger.engine import TriggerEngine
+        from dm_bot.trigger.models import Trigger, Reaction, TriggerEvent
+
+        engine = TriggerEngine()
+        trigger = Trigger(
+            trigger_id="tr_1",
+            event_type="action.submit",
+            reactions=[Reaction(reaction_id="rx_1", effect_type="message")],
+        )
+        engine.register_trigger(trigger)
+        event = TriggerEvent(event_type="action.submit", source={"scene_id": "s1"})
+        engine.fire_event(event)
+        assert len(engine.chains) == 1
+        assert engine.chains[0].event_type == "action.submit"
+
+    def test_chain_marked_completed_after_execution(self):
+        from dm_bot.trigger.engine import TriggerEngine
+        from dm_bot.trigger.models import Trigger, Reaction, TriggerEvent
+
+        engine = TriggerEngine()
+        trigger = Trigger(
+            trigger_id="tr_1",
+            event_type="test.event",
+            reactions=[Reaction(reaction_id="rx_1", effect_type="log")],
+        )
+        engine.register_trigger(trigger)
+        engine.fire_event(TriggerEvent(event_type="test.event", source={}))
+        assert engine.chains[0].status == "completed"
+
+    def test_fire_event_records_audit_trail(self):
+        from dm_bot.trigger.engine import TriggerEngine
+        from dm_bot.trigger.models import Trigger, Reaction, TriggerEvent
+
+        engine = TriggerEngine()
+        trigger = Trigger(
+            trigger_id="tr_1",
+            event_type="test.event",
+            reactions=[Reaction(reaction_id="rx_1", effect_type="log")],
+        )
+        engine.register_trigger(trigger)
+        engine.fire_event(TriggerEvent(event_type="test.event", source={}))
+        audit = engine.get_audit_trail()
+        steps = [e.step for e in audit]
+        assert "event.fire" in steps
+        assert "trigger.match" in steps
+
+    def test_no_match_no_chain(self):
+        from dm_bot.trigger.engine import TriggerEngine
+        from dm_bot.trigger.models import TriggerEvent
+
+        engine = TriggerEngine()
+        engine.fire_event(TriggerEvent(event_type="no_match", source={}))
+        assert len(engine.chains) == 0
+
+    def test_persists_chain_to_store(self):
+        from dm_bot.trigger.engine import TriggerEngine
+        from dm_bot.trigger.models import Trigger, Reaction, TriggerEvent
+        from dm_bot.store.db import Store
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_engine_chains.db")
+        if os.path.exists(db_path):
+            os.remove(db_path)
+        store = Store(db_path)
+        engine = TriggerEngine(store=store)
+        trigger = Trigger(
+            trigger_id="tr_1",
+            event_type="test.event",
+            reactions=[Reaction(reaction_id="rx_1", effect_type="log")],
+        )
+        engine.register_trigger(trigger)
+        engine.fire_event(TriggerEvent(event_type="test.event", source={}))
+        saved_id = engine.chains[0].chain_id
+        del engine
+        del store
+        gc.collect()
+        store2 = Store(db_path)
+        loaded = store2.load_chain(saved_id)
+        assert loaded is not None
+        assert loaded.status == "completed"
+        del store2
+        gc.collect()
+        os.remove(db_path)
+
+    def test_persists_audit_to_store(self):
+        from dm_bot.trigger.engine import TriggerEngine
+        from dm_bot.trigger.models import Trigger, Reaction, TriggerEvent
+        from dm_bot.store.db import Store
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_engine_audit.db")
+        if os.path.exists(db_path):
+            os.remove(db_path)
+        store = Store(db_path)
+        engine = TriggerEngine(store=store)
+        trigger = Trigger(
+            trigger_id="tr_1",
+            event_type="test.event",
+            reactions=[Reaction(reaction_id="rx_1", effect_type="log")],
+        )
+        engine.register_trigger(trigger)
+        engine.fire_event(TriggerEvent(event_type="test.event", source={}))
+        saved_id = engine.chains[0].chain_id
+        del engine
+        del store
+        gc.collect()
+        store2 = Store(db_path)
+        entries = store2.list_audit_entries(saved_id)
+        assert len(entries) >= 2
+        del store2
+        gc.collect()
+        os.remove(db_path)
+
+
+class TestChainResume:
+    def test_resume_creates_chain_in_memory(self):
+        from dm_bot.trigger.engine import TriggerEngine
+        from dm_bot.trigger.models import TriggerChain
+
+        engine = TriggerEngine()
+        chain = TriggerChain(event_type="test", trigger_id="tr_1", status="blocked")
+        engine.resume_chain(chain)
+        assert len(engine.chains) == 1
+        assert engine.chains[0].chain_id == chain.chain_id
+
+    def test_resume_sets_running_status(self):
+        from dm_bot.trigger.engine import TriggerEngine
+        from dm_bot.trigger.models import TriggerChain
+
+        engine = TriggerEngine()
+        chain = TriggerChain(event_type="test", trigger_id="tr_1", status="blocked")
+        engine.resume_chain(chain)
+        assert engine.chains[0].status == "running"
+
+    def test_resume_records_audit_entry(self):
+        from dm_bot.trigger.engine import TriggerEngine
+        from dm_bot.trigger.models import TriggerChain
+
+        engine = TriggerEngine()
+        chain = TriggerChain(event_type="test", trigger_id="tr_1", status="blocked")
+        engine.resume_chain(chain)
+        audit = engine.get_audit_trail(chain.chain_id)
+        assert any(e.step == "chain.resume" for e in audit)
+
+    def test_recover_from_store(self):
+        from dm_bot.trigger.engine import TriggerEngine
+        from dm_bot.trigger.models import TriggerChain
+        from dm_bot.store.db import Store
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_recover.db")
+        if os.path.exists(db_path):
+            os.remove(db_path)
+        store = Store(db_path)
+        old_chain = TriggerChain(event_type="action.submit", trigger_id="tr_1", status="blocked")
+        store.save_chain(old_chain)
+        del store
+        gc.collect()
+
+        store2 = Store(db_path)
+        engine = TriggerEngine(store=store2)
+        engine.recover_chains()
+        assert len(engine.chains) == 1
+        assert engine.chains[0].chain_id == old_chain.chain_id
+        assert engine.chains[0].status == "running"
+        del engine
+        gc.collect()
+        os.remove(db_path)
+
+    def test_recover_no_store_does_nothing(self):
+        from dm_bot.trigger.engine import TriggerEngine
+
+        engine = TriggerEngine()
+        engine.recover_chains()
+        assert len(engine.chains) == 0
+
+    def test_recover_multiple_chains(self):
+        from dm_bot.trigger.engine import TriggerEngine
+        from dm_bot.trigger.models import TriggerChain
+        from dm_bot.store.db import Store
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_recover_multi.db")
+        if os.path.exists(db_path):
+            os.remove(db_path)
+        store = Store(db_path)
+        store.save_chain(TriggerChain(event_type="a", trigger_id="t1", status="blocked"))
+        store.save_chain(TriggerChain(event_type="b", trigger_id="t2", status="running"))
+        store.save_chain(TriggerChain(event_type="c", trigger_id="t3", status="completed"))
+        del store
+        gc.collect()
+
+        store2 = Store(db_path)
+        engine = TriggerEngine(store=store2)
+        engine.recover_chains()
+        assert len(engine.chains) == 2
+        del engine
+        gc.collect()
+        os.remove(db_path)
+
+    def test_auto_recover_on_init(self):
+        from dm_bot.trigger.engine import TriggerEngine
+        from dm_bot.trigger.models import TriggerChain
+        from dm_bot.store.db import Store
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_auto_recover.db")
+        if os.path.exists(db_path):
+            os.remove(db_path)
+        store = Store(db_path)
+        store.save_chain(TriggerChain(event_type="test", trigger_id="t1", status="blocked"))
+        del store
+        gc.collect()
+
+        store2 = Store(db_path)
+        engine = TriggerEngine(store=store2)
+        assert len(engine.chains) == 1
+        del engine
+        gc.collect()
+        os.remove(db_path)
+
+    def test_list_running_chains(self):
+        from dm_bot.trigger.engine import TriggerEngine
+        from dm_bot.trigger.models import Trigger, Reaction, TriggerEvent
+
+        engine = TriggerEngine()
+        trigger = Trigger(
+            trigger_id="tr_1",
+            event_type="test",
+            reactions=[Reaction(reaction_id="rx_1", effect_type="log")],
+        )
+        engine.register_trigger(trigger)
+        engine.fire_event(TriggerEvent(event_type="test", source={}))
+        running = engine.list_running_chains()
+        assert len(running) == 0  # chain completed
