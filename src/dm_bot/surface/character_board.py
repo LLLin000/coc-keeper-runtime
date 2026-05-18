@@ -44,3 +44,18 @@ class CharacterCardBoard(Board):
             sections=sections,
         )
         return DiscordFormatter.format(payload)
+
+
+class CharacterListBoard(Board):
+    """Renders player's character roster."""
+
+    def render(self, state: dict) -> str:
+        chars: list[dict] = state.get("characters", [])
+        if not chars:
+            return "No characters."
+        sections = [
+            ViewSection(heading=c.get("name", "?"), body=c.get("occupation", ""))
+            for c in chars
+        ]
+        payload = ViewPayload(title=f"Characters ({len(chars)})", sections=sections)
+        return DiscordFormatter.format(payload)

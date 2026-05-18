@@ -349,6 +349,30 @@ class TestClueBoardIntegration:
         assert "Open Clue" in output
         assert "Hidden Clue" not in output
 
+class TestCharacterListBoard:
+    def test_list_characters(self):
+        from dm_bot.surface.character_board import CharacterListBoard
+
+        state = {
+            "characters": [
+                {"name": "Alice", "occupation": "Detective"},
+                {"name": "Bob", "occupation": "Doctor"},
+            ]
+        }
+        board = CharacterListBoard()
+        output = board.render(state)
+        assert "Alice" in output
+        assert "Bob" in output
+        assert "2" in output
+
+    def test_list_empty(self):
+        from dm_bot.surface.character_board import CharacterListBoard
+
+        board = CharacterListBoard()
+        output = board.render({"characters": []})
+        assert "No characters" in output
+
+
 class TestCharacterBoard:
     def test_render_sheet(self):
         from dm_bot.surface.character_board import CharacterCardBoard
