@@ -73,3 +73,59 @@ class TestPublicationModels:
         assert PublicationPath.TABLE_VISIBLE == "table_visible"
         assert PublicationPath.KP_ONLY == "kp_only"
         assert PublicationPath.PRIVATE == "private"
+
+
+from dm_bot.publish.publisher import Publisher
+from dm_bot.publish.models import (
+    PublicationEvent, ActionSubmittedEvent, PublicationPath,
+)
+
+
+class TestPublisher:
+    def test_publish_stores_event(self):
+        pub = Publisher()
+        event = ActionSubmittedEvent(
+            session_id="s1", user_id="u1",
+            action_text="search", scene_id="sc1",
+        )
+        pub.publish(event)
+        assert len(pub.events) == 1
+        assert pub.events[0].event_type == "action.submitted"
+
+    def test_publish_sets_timestamp(self):
+        pub = Publisher()
+        event = ActionSubmittedEvent(
+            session_id="s1", user_id="u1",
+            action_text="search", scene_id="sc1",
+        )
+        pub.publish(event)
+        assert pub.events[0].timestamp is not None
+
+    def test_get_events_by_visibility(self):
+        pub = Publisher()
+        pub.publish(ActionSubmittedEvent(session_id="s1", user_id="u1", action_text="a", scene_id="sc1"))
+        evt2 = ActionSubmittedEvent(session_id="s1", user_id="u2", action_text="b", scene_id="sc1")
+        evt2.visibility = PublicationPath.KP_ONLY
+        pub.publish(evt2)
+
+        table = pub.get_events(visibility=PublicationPath.TABLE_VISIBLE)
+        kp = pub.get_events(visibility=PublicationPath.KP_ONLY)
+        assert len(table) == 1
+        assert len(kp) == 1
+
+    def test_get_events_by_type(self):
+        pub = Publisher()
+        pub.publish(ActionSubmittedEvent(session_id="s1", user_id="u1", action_text="a", scene_id="sc1"))
+        from dm_bot.publish.models import RoundResolvedEvent
+        pub.publish(RoundResolvedEvent(session_id="s1", scene_id="sc1", round_number=1))
+
+        actions = pub.get_events(event_type="action.submitted")
+        rounds = pub.get_events(event_type="round.resolved")
+        assert len(actions) == 1
+        assert len(rounds) == 1
+
+    def test_clear_events(self):
+        pub = Publisher()
+        pub.publish(ActionSubmittedEvent(session_id="s1", user_id="u1", action_text="a", scene_id="sc1"))
+        pub.clear()
+        assert len(pub.events) == 0
