@@ -94,3 +94,78 @@ class TestFullPathBuilder:
         result = builder.build()
         assert isinstance(result.name, str)
         assert len(result.name) > 0
+
+
+class TestCharacterStore:
+    def test_save_and_load_character(self):
+        from dm_bot.store.db import Store
+        from dm_bot.character.archive import CharacterArchive
+        from dm_bot.character.sheet import CharacterSheet
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_crud_save.db")
+        if os.path.exists(db_path):
+            os.remove(db_path)
+        store = Store(db_path)
+        try:
+            sheet = CharacterSheet(character_id="c1", name="Alice", occupation="Writer")
+            archive = CharacterArchive(character_id="c1", player_id="u1", sheet=sheet)
+            store.save_character(archive)
+            loaded = store.load_character("c1")
+            assert loaded is not None
+            assert loaded.sheet.name == "Alice"
+            assert loaded.player_id == "u1"
+        finally:
+            del store
+            gc.collect()
+            if os.path.exists(db_path):
+                os.remove(db_path)
+
+    def test_list_characters_by_player(self):
+        from dm_bot.store.db import Store
+        from dm_bot.character.archive import CharacterArchive
+        from dm_bot.character.sheet import CharacterSheet
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_crud_list.db")
+        if os.path.exists(db_path):
+            os.remove(db_path)
+        store = Store(db_path)
+        try:
+            alice = CharacterArchive(character_id="c1", player_id="u1", sheet=CharacterSheet(character_id="c1", name="Alice"))
+            bob = CharacterArchive(character_id="c2", player_id="u1", sheet=CharacterSheet(character_id="c2", name="Bob"))
+            charlie = CharacterArchive(character_id="c3", player_id="u2", sheet=CharacterSheet(character_id="c3", name="Charlie"))
+            for a in [alice, bob, charlie]:
+                store.save_character(a)
+            u1_list = store.list_characters("u1")
+            assert len(u1_list) == 2
+            u2_list = store.list_characters("u2")
+            assert len(u2_list) == 1
+            assert u2_list[0].sheet.name == "Charlie"
+        finally:
+            del store
+            gc.collect()
+            if os.path.exists(db_path):
+                os.remove(db_path)
+
+    def test_delete_character(self):
+        from dm_bot.store.db import Store
+        from dm_bot.character.archive import CharacterArchive
+        from dm_bot.character.sheet import CharacterSheet
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_crud_del.db")
+        if os.path.exists(db_path):
+            os.remove(db_path)
+        store = Store(db_path)
+        try:
+            sheet = CharacterSheet(character_id="c1", name="ToDelete")
+            archive = CharacterArchive(character_id="c1", player_id="u1", sheet=sheet)
+            store.save_character(archive)
+            store.delete_character("c1")
+            assert store.load_character("c1") is None
+        finally:
+            del store
+            gc.collect()
+            if os.path.exists(db_path):
+                os.remove(db_path)

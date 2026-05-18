@@ -4,6 +4,7 @@ import sqlite3
 from pathlib import Path
 from dm_bot.trigger.models import BlockerCheckpoint, TriggerChain, AuditEntry
 from dm_bot.reveal.models import RevealGate
+from dm_bot.character.archive import CharacterArchive
 
 
 class Store:
@@ -266,6 +267,52 @@ class Store:
                 )
                 for r in rows
             ]
+
+    def save_character(self, archive: CharacterArchive) -> None:
+        import json
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                """INSERT OR REPLACE INTO characters
+                   (character_id, user_id, sheet_json)
+                   VALUES (?, ?, ?)""",
+                (archive.character_id, archive.player_id,
+                 archive.sheet.model_dump_json()),
+            )
+
+    def load_character(self, character_id: str) -> CharacterArchive | None:
+        import json
+        with sqlite3.connect(self.db_path) as conn:
+            row = conn.execute(
+                "SELECT * FROM characters WHERE character_id = ?", (character_id,)
+            ).fetchone()
+            if not row:
+                return None
+            from dm_bot.character.sheet import CharacterSheet
+            sheet = CharacterSheet.model_validate(json.loads(row[3]))
+            return CharacterArchive(
+                character_id=row[0], player_id=row[1], sheet=sheet,
+            )
+
+    def list_characters(self, user_id: str) -> list[CharacterArchive]:
+        import json
+        with sqlite3.connect(self.db_path) as conn:
+            rows = conn.execute(
+                "SELECT * FROM characters WHERE user_id = ?", (user_id,)
+            ).fetchall()
+            from dm_bot.character.sheet import CharacterSheet
+            return [
+                CharacterArchive(
+                    character_id=r[0], player_id=r[1],
+                    sheet=CharacterSheet.model_validate(json.loads(r[3])),
+                )
+                for r in rows
+            ]
+
+    def delete_character(self, character_id: str) -> None:
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                "DELETE FROM characters WHERE character_id = ?", (character_id,)
+            )
 
     def close(self) -> None:
         if self._conn is not None:
