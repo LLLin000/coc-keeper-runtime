@@ -191,3 +191,49 @@ class TestRevealChecker:
         visible_b = checker.is_clue_visible("clue_b", "p1", [gate_a, gate_b], KnowledgeState(player_id="p1"))
         assert visible_a is True
         assert visible_b is False
+
+
+from dm_bot.adventure.models import Scene, Clue
+
+
+class TestSceneRevealIntegration:
+    def test_clue_without_gate_visible_by_default(self):
+        scene = Scene(
+            scene_id="s1", name="Study", description="A dusty study.",
+            clues=[Clue(clue_id="c1", description="A hidden letter")],
+        )
+        checker = RevealChecker()
+        for clue in scene.clues:
+            visible = checker.is_clue_visible(
+                clue_id=clue.clue_id,
+                player_id="p1",
+                gates=[],
+                knowledge=KnowledgeState(player_id="p1"),
+            )
+            assert visible is True
+
+    def test_learned_clue_visible_even_with_closed_gate(self):
+        ks = KnowledgeState(player_id="p1")
+        ks.learn_clue("c1")
+        gate = RevealGate(clue_id="c1", gate_type="skill_check", condition={"skill": "spot"})
+        scene = Scene(
+            scene_id="s1", name="Hall", description="A hall.",
+            clues=[Clue(clue_id="c1", description="A clue")],
+        )
+        checker = RevealChecker()
+        visible = checker.is_clue_visible("c1", "p1", [gate], ks)
+        assert visible is True
+
+    def test_multiple_players_independent_knowledge(self):
+        ks_p1 = KnowledgeState(player_id="p1")
+        ks_p2 = KnowledgeState(player_id="p2")
+        ks_p1.learn_clue("c1")
+
+        gate_c1 = RevealGate(clue_id="c1", gate_type="skill_check", condition={})
+        gate_c2 = RevealGate(clue_id="c2", gate_type="manual", condition={})
+        gate_c2.open()
+        checker = RevealChecker()
+
+        assert checker.is_clue_visible("c1", "p1", [gate_c1, gate_c2], ks_p1) is True
+        assert checker.is_clue_visible("c1", "p2", [gate_c1, gate_c2], ks_p2) is False
+        assert checker.is_clue_visible("c2", "p2", [gate_c1, gate_c2], ks_p2) is True
