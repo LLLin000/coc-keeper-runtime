@@ -12,3 +12,8 @@ class TestPreflight:
         result = check_modules()
         assert result["all_ok"] is True
         assert len(result["modules"]) > 5
+
+    def test_smoke_check_ok(self):
+        from dm_bot.main import smoke_check
+        code = smoke_check()
+        assert code == 0
