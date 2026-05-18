@@ -1,19 +1,26 @@
 from dm_bot.scene.action import Action, ActionResult
 from dm_bot.scene.state import SceneState
+from dm_bot.trigger.engine import TriggerEngine
+from dm_bot.trigger.models import TriggerEvent
 
 
 class Round:
     """管理单个回合的收集与结算"""
 
-    def __init__(self) -> None:
+    def __init__(self, trigger_engine: TriggerEngine | None = None) -> None:
         self.actions: list[Action] = []
         self.state = SceneState.WAITING
+        self.trigger_engine = trigger_engine or TriggerEngine()
 
     def submit_action(self, action: Action) -> None:
         """提交玩家行动"""
         if self.state != SceneState.COLLECTING:
             raise RuntimeError(f"Cannot submit action in state {self.state}")
         self.actions.append(action)
+        self.trigger_engine.fire_event(TriggerEvent(
+            event_type="action.submit",
+            source={"scene_id": "", "user_id": action.user_id, "action_text": action.action_text},
+        ))
 
     def start_collection(self) -> None:
         """开始收集行动"""
@@ -36,6 +43,11 @@ class Round:
             self.actions,
             key=lambda a: (-a.dex_value, a.user_id),
         )
+
+        self.trigger_engine.fire_event(TriggerEvent(
+            event_type="round.resolve",
+            source={"action_count": len(ordered)},
+        ))
 
         # 2. 逐个处理（占位，实际结算由外部注入 rules/checks）
         for action in ordered:

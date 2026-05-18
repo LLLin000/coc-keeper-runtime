@@ -168,3 +168,39 @@ class TestBlockerPersistence:
         del store
         gc.collect()
         os.remove(db_path)
+
+
+class TestRoundTriggerIntegration:
+    def test_round_has_trigger_engine(self):
+        from dm_bot.scene.round import Round
+        from dm_bot.trigger.engine import TriggerEngine
+        round_obj = Round(trigger_engine=TriggerEngine())
+        assert round_obj.trigger_engine is not None
+
+    def test_submit_fires_trigger(self):
+        from dm_bot.scene.round import Round
+        from dm_bot.trigger.engine import TriggerEngine
+        from dm_bot.trigger.models import Trigger, Reaction, TriggerEvent
+        from dm_bot.scene.action import Action
+
+        class SpyEngine(TriggerEngine):
+            def __init__(self):
+                super().__init__()
+                self.fired: list[TriggerEvent] = []
+
+            def fire_event(self, event: TriggerEvent) -> list[Reaction]:
+                self.fired.append(event)
+                return super().fire_event(event)
+
+        engine = SpyEngine()
+        trigger = Trigger(
+            trigger_id="tr_submit",
+            event_type="action.submit",
+            reactions=[Reaction(reaction_id="rx_log", effect_type="log")],
+        )
+        engine.register_trigger(trigger)
+        round_obj = Round(trigger_engine=engine)
+        round_obj.start_collection()
+        round_obj.submit_action(Action(user_id="u1", character_id="c1", action_text="hit"))
+        assert len(engine.fired) == 1
+        assert engine.fired[0].event_type == "action.submit"
