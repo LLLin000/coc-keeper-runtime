@@ -125,3 +125,46 @@ class TestTriggerEngine:
         engine.register_trigger(trigger)
         results = engine.fire_event(TriggerEvent(event_type="test", source={}))
         assert [r.reaction_id for r in results] == ["r_first", "r_second"]
+
+
+class TestBlockerPersistence:
+    def test_save_and_load_blocker(self):
+        from dm_bot.store.db import Store
+        from dm_bot.trigger.models import BlockerCheckpoint
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_blockers.db")
+        if os.path.exists(db_path):
+            os.remove(db_path)
+        store = Store(db_path)
+        cp = BlockerCheckpoint(trigger_chain_id="chain_1", reason="kp_decides")
+        store.save_blocker(cp)
+        loaded = store.load_blocker(cp.blocker_id)
+        assert loaded is not None
+        assert loaded.blocker_id == cp.blocker_id
+        assert loaded.reason == "kp_decides"
+        assert loaded.resolved_at is None
+        del store
+        gc.collect()
+        os.remove(db_path)
+
+    def test_list_unresolved_blockers(self):
+        from dm_bot.store.db import Store
+        from dm_bot.trigger.models import BlockerCheckpoint
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_blockers2.db")
+        if os.path.exists(db_path):
+            os.remove(db_path)
+        store = Store(db_path)
+        cp1 = BlockerCheckpoint(trigger_chain_id="chain_1", reason="wait")
+        cp2 = BlockerCheckpoint(trigger_chain_id="chain_2", reason="wait")
+        cp2.resolve()
+        store.save_blocker(cp1)
+        store.save_blocker(cp2)
+        unresolved = store.list_unresolved_blockers()
+        assert len(unresolved) == 1
+        assert unresolved[0].blocker_id == cp1.blocker_id
+        del store
+        gc.collect()
+        os.remove(db_path)

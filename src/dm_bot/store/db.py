@@ -2,6 +2,7 @@
 
 import sqlite3
 from pathlib import Path
+from dm_bot.trigger.models import BlockerCheckpoint
 
 
 class Store:
@@ -28,6 +29,15 @@ class Store:
                     user_id TEXT NOT NULL,
                     session_id TEXT,
                     sheet_json TEXT  -- JSON
+                );
+                CREATE TABLE IF NOT EXISTS blockers (
+                    blocker_id TEXT PRIMARY KEY,
+                    trigger_chain_id TEXT NOT NULL,
+                    scene_id TEXT DEFAULT '',
+                    reason TEXT NOT NULL,
+                    payload TEXT DEFAULT '{}',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    resolved_at TIMESTAMP
                 );
                 """
             )
@@ -69,3 +79,48 @@ class Store:
                 "scene_state": row[3],
                 "player_locations": json.loads(row[4]) if row[4] else {},
             }
+
+    def save_blocker(self, blocker: BlockerCheckpoint) -> None:
+        import json
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                """INSERT OR REPLACE INTO blockers
+                   (blocker_id, trigger_chain_id, scene_id, reason, payload, created_at, resolved_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (blocker.blocker_id, blocker.trigger_chain_id, blocker.scene_id,
+                 blocker.reason, json.dumps(blocker.payload),
+                 blocker.created_at.isoformat(),
+                 blocker.resolved_at.isoformat() if blocker.resolved_at else None),
+            )
+
+    def load_blocker(self, blocker_id: str) -> BlockerCheckpoint | None:
+        import json
+        from datetime import datetime
+        with sqlite3.connect(self.db_path) as conn:
+            row = conn.execute(
+                "SELECT * FROM blockers WHERE blocker_id = ?", (blocker_id,)
+            ).fetchone()
+            if not row:
+                return None
+            return BlockerCheckpoint(
+                blocker_id=row[0], trigger_chain_id=row[1], scene_id=row[2] or "",
+                reason=row[3], payload=json.loads(row[4]) if row[4] else {},
+                created_at=datetime.fromisoformat(row[5]),
+                resolved_at=datetime.fromisoformat(row[6]) if row[6] else None,
+            )
+
+    def list_unresolved_blockers(self) -> list[BlockerCheckpoint]:
+        import json
+        from datetime import datetime
+        with sqlite3.connect(self.db_path) as conn:
+            rows = conn.execute(
+                "SELECT * FROM blockers WHERE resolved_at IS NULL"
+            ).fetchall()
+            return [
+                BlockerCheckpoint(
+                    blocker_id=r[0], trigger_chain_id=r[1], scene_id=r[2] or "",
+                    reason=r[3], payload=json.loads(r[4]) if r[4] else {},
+                    created_at=datetime.fromisoformat(r[5]),
+                )
+                for r in rows
+            ]
