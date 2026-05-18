@@ -15,10 +15,31 @@ from dm_bot.adventure.loader import AdventureLoader
 def describe_runtime(settings: Settings | None = None) -> str:
     settings = settings or get_settings()
     token_status = "configured" if settings.discord_token else "missing"
+
+    module_checks = []
+    modules = [
+        ("adventure.models", "Scene model"),
+        ("trigger.models", "Trigger models"),
+        ("trigger.engine", "Trigger engine"),
+        ("reveal.models", "Reveal models"),
+        ("reveal.checker", "Reveal checker"),
+        ("publish.models", "Publish models"),
+        ("publish.publisher", "Publisher"),
+        ("publish.contract", "Renderer contract"),
+        ("store.db", "Store"),
+    ]
+    for mod_path, label in modules:
+        try:
+            __import__(f"dm_bot.{mod_path}")
+            module_checks.append(f"  [OK] {label}")
+        except Exception as e:
+            module_checks.append(f"  [FAIL] {label}: {e}")
+
     return (
         f"discord_token={token_status}\n"
         f"narrator_model={settings.narrator_model}\n"
-        f"ollama_base_url={settings.ollama_base_url}"
+        f"ollama_base_url={settings.ollama_base_url}\n"
+        f"module_checks:\n" + "\n".join(module_checks)
     )
 
 
