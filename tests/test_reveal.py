@@ -1,4 +1,6 @@
-"""Tests for reveal gate and knowledge models."""
+"""Tests for reveal gate, knowledge models, and visibility checker."""
+
+import pytest
 
 from dm_bot.reveal.models import RevealGate, KnowledgeState
 
@@ -127,3 +129,65 @@ class TestRevealGatePersistence:
         del store2
         gc.collect()
         os.remove(db_path)
+
+
+from dm_bot.reveal.checker import RevealChecker
+from dm_bot.reveal.models import KnowledgeState
+
+
+class TestRevealChecker:
+    def test_clue_with_no_gate_is_visible(self):
+        checker = RevealChecker()
+        visible = checker.is_clue_visible(
+            clue_id="clue_1",
+            player_id="p1",
+            gates=[],
+            knowledge=KnowledgeState(player_id="p1"),
+        )
+        assert visible is True
+
+    def test_clue_with_open_gate_is_visible(self):
+        checker = RevealChecker()
+        gate = RevealGate(clue_id="clue_1", gate_type="manual", condition={})
+        gate.open()
+        visible = checker.is_clue_visible(
+            clue_id="clue_1",
+            player_id="p1",
+            gates=[gate],
+            knowledge=KnowledgeState(player_id="p1"),
+        )
+        assert visible is True
+
+    def test_clue_with_closed_gate_not_visible(self):
+        checker = RevealChecker()
+        gate = RevealGate(clue_id="clue_1", gate_type="skill_check", condition={"skill": "spot"})
+        visible = checker.is_clue_visible(
+            clue_id="clue_1",
+            player_id="p1",
+            gates=[gate],
+            knowledge=KnowledgeState(player_id="p1"),
+        )
+        assert visible is False
+
+    def test_known_clue_is_visible_regardless_of_gate(self):
+        checker = RevealChecker()
+        gate = RevealGate(clue_id="clue_1", gate_type="skill_check", condition={})
+        ks = KnowledgeState(player_id="p1")
+        ks.learn_clue("clue_1")
+        visible = checker.is_clue_visible(
+            clue_id="clue_1",
+            player_id="p1",
+            gates=[gate],
+            knowledge=ks,
+        )
+        assert visible is True
+
+    def test_multiple_clues_independent_gates(self):
+        checker = RevealChecker()
+        gate_a = RevealGate(clue_id="clue_a", gate_type="manual", condition={})
+        gate_b = RevealGate(clue_id="clue_b", gate_type="manual", condition={})
+        gate_a.open()
+        visible_a = checker.is_clue_visible("clue_a", "p1", [gate_a, gate_b], KnowledgeState(player_id="p1"))
+        visible_b = checker.is_clue_visible("clue_b", "p1", [gate_a, gate_b], KnowledgeState(player_id="p1"))
+        assert visible_a is True
+        assert visible_b is False
