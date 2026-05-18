@@ -12,7 +12,7 @@
 
 1. Direct user request
 2. This `AGENTS.md`
-3. Installed GSD workflow and command files under `C:\Users\Lin\.config\opencode\get-shit-done`
+3. Installed GSD workflow and command files under `~/.config/opencode/get-shit-done`
 4. General model defaults
 
 If a user explicitly asks to bypass GSD for a one-off task, obey the user. Otherwise, follow GSD.
@@ -29,7 +29,7 @@ If a user explicitly asks to bypass GSD for a one-off task, obey the user. Other
 
 ### Canonical GSD Installation
 
-- Installed runtime: `C:\Users\Lin\.config\opencode\get-shit-done`
+- Installed runtime: `~/.config/opencode/get-shit-done`
 - Local source mirror for inspection: `D:\L\AI\get-shit-done-1.30.0`
 - OpenCode command style: `/gsd-...`
 - Do not use `/gsd:...` in this repository
@@ -328,7 +328,7 @@ prefer `/gsd-resume-work` or `/gsd-progress` instead of guessing from memory.
 GSD workflow initialization commands use:
 
 ```bash
-node "C:\Users\Lin\.config\opencode\get-shit-done\bin\gsd-tools.cjs" init <subcommand>
+node "~/.config/opencode/get-shit-done\bin\gsd-tools.cjs" init <subcommand>
 ```
 
 Important:
@@ -340,11 +340,11 @@ Important:
 Common valid forms:
 
 ```bash
-node "C:\Users\Lin\.config\opencode\get-shit-done\bin\gsd-tools.cjs" init quick "fix X"
-node "C:\Users\Lin\.config\opencode\get-shit-done\bin\gsd-tools.cjs" init plan-phase E93
-node "C:\Users\Lin\.config\opencode\get-shit-done\bin\gsd-tools.cjs" init execute-phase E93
-node "C:\Users\Lin\.config\opencode\get-shit-done\bin\gsd-tools.cjs" init resume
-node "C:\Users\Lin\.config\opencode\get-shit-done\bin\gsd-tools.cjs" init verify-work E93
+node "~/.config/opencode/get-shit-done\bin\gsd-tools.cjs" init quick "fix X"
+node "~/.config/opencode/get-shit-done\bin\gsd-tools.cjs" init plan-phase E93
+node "~/.config/opencode/get-shit-done\bin\gsd-tools.cjs" init execute-phase E93
+node "~/.config/opencode/get-shit-done\bin\gsd-tools.cjs" init resume
+node "~/.config/opencode/get-shit-done\bin\gsd-tools.cjs" init verify-work E93
 ```
 
 Common invalid forms:
@@ -414,7 +414,7 @@ Do not make workflow state harder to audit:
 <!-- GSD:project-start -->
 ## Project Overview
 
-**Discord AI Keeper** — 本地模型驱动的 Call of Cthulhu 跑团系统
+**Discord AI Keeper** — 本地模型驱动的 horror investigation TTRPG 跑团系统
 
 核心目标：
 
@@ -424,7 +424,7 @@ Do not make workflow state harder to audit:
 - 模组不是纯提示词，而是可结构化、可迁移、可复用的数据
 - 长期角色和模组内实例分离，方便跨模组持续使用
 
-**Core Value:** Run real multiplayer Call of Cthulhu sessions in Discord where a local AI Keeper can narrate, roleplay NPCs, and enforce COC rules without constant manual bookkeeping.
+**Core Value:** Run real multiplayer horror investigation sessions in Discord where a local AI Keeper can narrate, roleplay NPCs, and enforce d100 rules without constant manual bookkeeping.
 
 ### Constraints
 
@@ -432,7 +432,7 @@ Do not make workflow state harder to audit:
 - **Inference:** local models
 - **Target Hardware:** consumer local machine, practical for `8GB`-class GPU and `32GB` RAM
 - **Architecture:** prefer mature integrations before custom subsystems
-- **Rules Scope:** COC rules support is required in v1
+- **Rules Scope:** d100 investigation rules support is required in v1
 - **Delivery:** optimize for campaign-usable reliability, not maximal surface area
 
 ### Product Tracks
@@ -461,7 +461,7 @@ Always derive the current track and phase from:
 - **Discord layer** — slash commands, normal message intake, streaming output
 - **Session / orchestrator layer** — campaign binding, turn coordination, mode switching, routing
 - **Adventure runtime** — structured modules, room or scene graphs, triggers, reveal policy, ending conditions
-- **Rules layer** — deterministic COC dice, success grades, SAN, combat and checks
+- **Rules layer** — deterministic d100 dice, success grades, sanity, combat and checks
 - **Character / archive layer** — long-lived investigator profiles and campaign projections
 - **Model layer** — router for structured decisions, narrator for prose and roleplay
 - **Persistence / diagnostics layer** — SQLite, event log, recovery, debug summaries

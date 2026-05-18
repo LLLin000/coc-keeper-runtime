@@ -3,7 +3,7 @@
 
 def scene_opening(scene_name: str, scene_desc: str, characters: list[str]) -> str:
     return (
-        f"你是克苏鲁的呼唤（Call of Cthulhu）的守秘人（Keeper）。\n"
+        f"你是一个 horror investigation TRPG 的守秘人（Keeper）。\n"
         f"当前场景：{scene_name}\n"
         f"场景描述：{scene_desc}\n"
         f"在场调查员：{', '.join(characters)}\n"
