@@ -66,8 +66,20 @@ class Store:
                     opened_at TIMESTAMP,
                     opened_by TEXT DEFAULT ''
                 );
+                CREATE TABLE IF NOT EXISTS schema_version (
+                    version INTEGER NOT NULL,
+                    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
                 """
             )
+            row = conn.execute(
+                "SELECT MAX(version) FROM schema_version"
+            ).fetchone()
+            current = row[0] if row[0] else 0
+            if current < 1:
+                conn.execute(
+                    "INSERT INTO schema_version (version) VALUES (1)"
+                )
 
     def save_session(self, session_id: str, data: dict) -> None:
         import json
