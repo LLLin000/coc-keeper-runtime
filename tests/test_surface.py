@@ -236,3 +236,44 @@ class TestDiscordFormatter:
 
         result = DiscordFormatter.format(ViewPayload(title="Empty"))
         assert "Empty" in result
+
+
+class TestClueBoard:
+    def test_render_visible_clues(self):
+        from dm_bot.surface.clue_board import ClueBoard
+
+        state = {
+            "clues": [
+                {"clue_id": "c1", "title": "Bloody Knife", "description": "Found under the bed."},
+                {"clue_id": "c2", "title": "Strange Symbol", "description": "Carved into the wall."},
+            ],
+            "visible_clue_ids": ["c1"],
+            "player_id": "Alice",
+        }
+        board = ClueBoard()
+        output = board.render(state)
+        assert "Bloody Knife" in output
+        assert "Strange Symbol" not in output
+
+    def test_render_no_clues(self):
+        from dm_bot.surface.clue_board import ClueBoard
+
+        board = ClueBoard()
+        output = board.render({"clues": [], "visible_clue_ids": [], "player_id": "Alice"})
+        assert "No visible clues" in output
+
+    def test_render_known_clues(self):
+        from dm_bot.surface.clue_board import ClueBoard
+
+        state = {
+            "clues": [
+                {"clue_id": "c1", "title": "Letter", "description": "A torn letter."},
+                {"clue_id": "c2", "title": "Key", "description": "An iron key."},
+            ],
+            "visible_clue_ids": ["c1", "c2"],
+            "known_clue_ids": ["c1"],
+            "player_id": "Alice",
+        }
+        board = ClueBoard()
+        output = board.render(state)
+        assert "[Known]" in output or "Known" in output
