@@ -49,3 +49,30 @@ class TestCharacterSheet:
         assert sheet.get_skill_value("Unknown") == 0
         sheet.skills["Spot Hidden"] = 45
         assert sheet.get_skill_value("Spot Hidden") == 45
+
+
+class TestCharacterArchive:
+    def test_create_archive(self):
+        from dm_bot.character.archive import CharacterArchive
+
+        sheet = CharacterSheet(character_id="c1", name="Alice", occupation="Detective")
+        archive = CharacterArchive(character_id="c1", player_id="user_1", sheet=sheet)
+        assert archive.schema_version == 1
+        assert archive.sheet.name == "Alice"
+        assert archive.player_id == "user_1"
+
+    def test_archive_default_version(self):
+        from dm_bot.character.archive import CharacterArchive
+
+        sheet = CharacterSheet(character_id="c2", name="Bob")
+        archive = CharacterArchive(character_id="c2", player_id="user_2", sheet=sheet)
+        assert archive.schema_version == 1
+
+    def test_archive_versioned_serialization(self):
+        from dm_bot.character.archive import CharacterArchive
+
+        sheet = CharacterSheet(character_id="c3", name="Charlie", strength=60)
+        archive = CharacterArchive(character_id="c3", player_id="user_3", sheet=sheet)
+        data = archive.model_dump()
+        assert data["schema_version"] == 1
+        assert data["sheet"]["name"] == "Charlie"
