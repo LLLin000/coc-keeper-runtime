@@ -204,3 +204,43 @@ class TestRoundTriggerIntegration:
         round_obj.submit_action(Action(user_id="u1", character_id="c1", action_text="hit"))
         assert len(engine.fired) == 1
         assert engine.fired[0].event_type == "action.submit"
+
+
+class TestTriggerChain:
+    def test_create_chain(self):
+        from dm_bot.trigger.models import TriggerChain
+        chain = TriggerChain(event_type="action.submit", trigger_id="tr_1")
+        assert chain.chain_id is not None
+        assert chain.status == "running"
+        assert chain.completed_at is None
+
+    def test_complete_chain(self):
+        from dm_bot.trigger.models import TriggerChain
+        chain = TriggerChain(event_type="action.submit", trigger_id="tr_1")
+        chain.complete()
+        assert chain.status == "completed"
+        assert chain.completed_at is not None
+
+    def test_mark_blocked(self):
+        from dm_bot.trigger.models import TriggerChain
+        chain = TriggerChain(event_type="action.submit", trigger_id="tr_1")
+        chain.mark_blocked()
+        assert chain.status == "blocked"
+
+
+class TestAuditEntry:
+    def test_create_audit(self):
+        from dm_bot.trigger.models import AuditEntry
+        entry = AuditEntry(
+            chain_id="ch_1",
+            step="trigger.match",
+            detail={"trigger_id": "tr_1"},
+        )
+        assert entry.entry_id is not None
+        assert entry.timestamp is not None
+
+    def test_audit_ordering(self):
+        from dm_bot.trigger.models import AuditEntry
+        e1 = AuditEntry(chain_id="ch_1", step="event.fire", detail={})
+        e2 = AuditEntry(chain_id="ch_1", step="reaction.exec", detail={})
+        assert e2.timestamp >= e1.timestamp
