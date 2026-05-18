@@ -13,119 +13,123 @@
 ## Architecture
 
 ```
-                    ┌─────────────────────────────────────────────┐
-                    │              Discord Users                  │
-                    └──────────────────┬────────────────────────┘
-                                       │ slash commands / messages
-                                       ▼
-                    ┌─────────────────────────────────────────────┐
-                    │           discord_bot / commands.py          │
-                    │   /start  /begin_module  /action  /roll    │
-                    │   /sheet  /end_round  /status               │
-                    └──────┬──────────┬──────────────┬────────────┘
-                           │          │              │
-           ┌───────────────┘          │              └──────────────┐
-           │                          ▼                                  │
-           │         ┌──────────────────────────────┐                  │
-           │         │         scene / round.py       │                  │
-           │         │  WAITING → COLLECTING        │                  │
-           │         │  → RESOLVING → NARRATING     │                  │
-           │         └──────────────┬───────────────┘                  │
-           │                        │                                    │
-           ▼                        ▼                                    ▼
-┌─────────────────────┐  ┌──────────────────┐  ┌─────────────────────────────────┐
-│   character /       │  │   adventure /    │  │          narrator /             │
-│   builder.py        │  │   loader.py     │  │          client.py               │
-│                     │  │                  │  │                                 │
-│  Conversational     │  │  Adventure       │  │  SimpleNarrator (placeholder)    │
-│  character          │  │  Scene / NPC /   │  │ 接入 qwen3:4b 后替换             │
-│  creation           │  │  Clue models     │  │                                 │
-│                     │  │                  │  │                                 │
-│  → CharacterSheet   │  │  → Adventure     │  │  → 场景叙事                      │
-│                     │  │                  │  │  → 行动结算描述                  │
-└─────────────────────┘  └──────────────────┘  │  → NPC 对话                      │
-                                                └─────────────────────────────────┘
-                                       │
-                    ┌──────────────────┴──────────────────────┐
-                    │                 rules /                    │
-                    │                                          │
-                    │  dice.py   ──── 百分骰系统               │
-                    │  coc/skills.py ─── 80+ 技能定义/检定    │
-                    │  coc/combat.py ─── 格斗/射击/摔跤/闪避  │
-                    │  coc/sanity.py ─── SAN/疯狂/运气        │
-                    │  coc/derived.py ── 衍生属性计算         │
-                    │                                          │
-                    └──────────────────┬───────────────────────┘
-                                       │
-                    ┌──────────────────┴───────────────────────┐
-                    │               store / db.py               │
-                    │                                          │
-                    │  SQLite: sessions, characters 表         │
-                    └─────────────────────────────────────────┘
+                       ┌───────────────────────────────────────┐
+                       │           Discord Users               │
+                       └──────────────┬────────────────────────┘
+                                      │ slash commands / messages
+                                      ▼
+                       ┌───────────────────────────────────────┐
+                       │    discord_bot / commands.py          │
+                       │    /start /begin_module /action       │
+                       │    /roll /sheet /end_round /status    │
+                       └──────┬──────────┬──────────┬──────────┘
+                              │          │          │
+         ┌────────────────────┘          │          └──────────────────┐
+         │                               │                            │
+         ▼                               ▼                            ▼
+ ┌───────────────┐            ┌──────────────────┐       ┌──────────────────┐
+ │ surface/      │            │ scene/ round.py   │       │ narrator/        │
+ │ SessionBoard  │            │ WAITING→COLLECTING│       │ SimpleNarrator   │
+ │ SceneBoard    │            │ →RESOLVING→NARRATE│       │ (placeholder)    │
+ │ BlockerBoard  │            └──────┬───────────┘       └──────────────────┘
+ │ Consequence   │                   │
+ │ Board         │                   │ fires TriggerEvent
+ │ ClueBoard     │                   ▼
+ │ Character     │            ┌────────────────────────────────┐
+ │ CardBoard     │            │ trigger/ engine.py             │
+ │ CharListBoard │            │ TriggerEngine                  │
+ │ Board (ABC)   │            │ → match event_type             │
+ └───────────────┘            │ → collect reactions            │
+                              │ → sort by priority             │
+                              │ → create TriggerChain          │
+                              │ → record audit trail            │
+                              │ → persist to Store             │
+                              │ → resume / recover chains      │
+                              └──────────┬─────────────────────┘
+                                         │
+                    ┌────────────────────┴────────────────────┐
+                    │                                         │
+                    ▼                                         ▼
+       ┌──────────────────────┐              ┌──────────────────────┐
+       │ reveal/ checker.py   │              │ publish/             │
+       │ RevealChecker        │              │ Publisher            │
+       │ is_clue_visible()    │              │ 6 typed event models │
+       │ gate + knowledge     │              │ visibility filtering  │
+       │ enforcement          │              │ RendererContract ABC │
+       └──────────────────────┘              └──────────────────────┘
+                    │                                         │
+                    └────────────────┬────────────────────────┘
+                                     │
+                                     ▼
+                    ┌───────────────────────────────────────────┐
+                    │           character/                      │
+                    │   CharacterSheet (COC stats + skills)     │
+                    │   CharacterArchive (versioned wrapper)    │
+                    │   CharacterBuilder (conversational)       │
+                    │   FullPathBuilder (heuristic fallback)    │
+                    │   SessionCheckpoint (post-session)        │
+                    │   AdventureLog (structured history)       │
+                    │   Importer (JSON paste import)            │
+                    │   Validation (COC legality rules)          │
+                    └───────────────────────────────────────────┘
+                                     │
+                                     ▼
+                    ┌───────────────────────────────────────────┐
+                    │           rules/                          │
+                    │   dice.py         ─── 百分骰系统          │
+                    │   coc/skills.py   ─── 80+ 技能/检定       │
+                    │   coc/combat.py   ─── 格斗/射击/摔跤/闪避 │
+                    │   coc/sanity.py   ─── SAN/疯狂/运气       │
+                    │   coc/derived.py  ── 衍生属性计算          │
+                    │   coc/experience.py ── 技能提升/成长       │
+                    └───────────────────────────────────────────┘
+                                     │
+                                     ▼
+                    ┌───────────────────────────────────────────┐
+                    │           store / db.py                   │
+                    │   SQLite: sessions, characters, blockers, │
+                    │   trigger_chains, audit_entries,          │
+                    │   reveal_gates, schema_version            │
+                    │   soft delete, integrity check            │
+                    └───────────────────────────────────────────┘
 ```
 
-## 7 Package Design
+## 模块说明
 
-| Package       | Responsibility                                    |
-| ------------- | ------------------------------------------------- |
-| `discord_bot` | Discord I/O：slash commands、消息路由、DM 推送     |
+| Package       | Responsibility                                           |
+| ------------- | -------------------------------------------------------- |
+| `discord_bot` | Discord I/O：7 slash commands、消息路由                    |
 | `scene`       | 回合状态机：WAITING → COLLECTING → RESOLVING → NARRATING |
-| `adventure`   | 模组数据：Adventure / Scene / NPC / Clue 模型     |
-| `character`   | 角色卡：CharacterSheet、对话建卡 CharacterBuilder   |
-| `narrator`   | AI 叙事层（接入 ollama 前为 placeholder）          |
-| `rules`       | d100 规则：骰子、技能、战斗、SAN、衍生属性       |
-| `store`       | SQLite 持久化：sessions、characters 表              |
-
-### Design Principles
-
-- **规则和叙事分离** — `rules/` 决定"能不能、发生了什么"，`narrator/` 决定"怎么讲得像 Keeper"
-- **状态真相不交给模型** — canonical truth 在结构化状态、规则结算、模组数据里
-- **模组结构化** — 模组是 Scene/NPC/Clue 数据，不是整篇剧本塞给模型
-- **长期角色和模组实例分离** — 玩家档案是长期资产，模组内 SAN/秘密/临时状态是实例状态
+| `adventure`   | 模组数据：Adventure / Scene / NPC / Clue / TriggerRef    |
+| `trigger`     | 触发器引擎：TriggerEvent 匹配、Reaction 排序、Blocker 检查点 |
+| `reveal`      | 揭露门系统：RevealGate、KnowledgeState、RevealChecker    |
+| `publish`     | 发布事件：6 种结构化事件（Action/Clue/Scene/Blocker/...） |
+| `surface`     | Discord 信息面板：7 个 Board + SessionContext            |
+| `character`   | 角色系统：CharacterSheet / Archive / Builder / Checkpoint |
+| `narrator`    | AI 叙事层（接入 ollama 前为 placeholder）                 |
+| `rules`       | d100 规则：骰子、技能、战斗、SAN、成长                    |
+| `store`       | SQLite 持久化层：10 个表，schema 版本管理，完整性检查      |
 
 ## Project Layout
 
 ```
 src/dm_bot/
-  discord_bot/
-    __init__.py
-    commands.py       # 7 slash commands: /start /begin_module /action /roll /sheet /end_round /status
-  scene/
-    __init__.py
-    state.py         # SceneState enum: WAITING / COLLECTING / RESOLVING / NARRATING
-    action.py        # Action, ActionResult models
-    round.py         # Round class: submit_action() / resolve() / get_private_results()
-  adventure/
-    __init__.py
-    models.py        # Adventure / Scene / NPC / Clue Pydantic models
-    loader.py        # AdventureLoader (目前返回空模组，待接入 JSON/YAML)
-  character/
-    __init__.py
-    sheet.py         # CharacterSheet: 8 base attributes, HP/MP/SAN, skills dict
-    builder.py       # CharacterBuilder: conversational creation flow
-  narrator/
-    __init__.py
-    client.py        # NarratorClient protocol + SimpleNarrator placeholder
-    prompts.py       # 场景叙事/行动确认/结算叙事 prompt 模板
-  rules/
-    __init__.py
-    dice.py          # 百分骰: SeededDiceRoller, D20DiceRoller, COCDifficulty
-    coc/
-      __init__.py
-      derived.py     # COCAttributes, 衍生属性计算, 年龄修正
-      skills.py      # 80+ 技能定义, SkillCheckResult, resolve_skill_check()
-      combat.py      # CombatantStats, 格斗/射击/摔跤/闪避, damage bonus
-      sanity.py      # SAN check, 疯狂, 运气消耗
-      magic.py       # 魔法 (占位)
-      chase.py       # 追逐 (占位)
-      experience.py  # 经验值 (占位)
-  store/
-    __init__.py
-    db.py            # SQLite Store: sessions / characters 表
-  config.py          # Settings: discord_token, ollama_base_url, narrator_model
-  logging.py         # 日志配置
-  main.py            # 入口: preflight / run-bot / smoke-check
-  testing/           # 测试工具
+  discord_bot/       commands.py — 7 slash commands
+  scene/             state.py / action.py / round.py
+  adventure/         models.py / loader.py (JSON file loading)
+  trigger/           models.py / engine.py (chain lifecycle, audit, resume)
+  reveal/            models.py / checker.py (gate visibility enforcement)
+  publish/           models.py / publisher.py / contract.py
+  surface/           board.py / session_board / scene_board / blocker_board /
+                     consequence_board / clue_board / character_board /
+                     session_context / view_payload / discord_formatter
+  character/         sheet.py / archive.py / builder.py / checkpoint.py /
+                     adventure_log.py / importer.py / validation.py
+  narrator/          client.py / prompts.py
+  rules/             dice.py + coc/ (skills, combat, sanity, experience)
+  store/             db.py (11 tables, schema versioning, integrity checks)
+  config.py          Settings (Pydantic, .env)
+  main.py            Entry: preflight / run-bot / smoke-check
 ```
 
 ## Setup
@@ -136,12 +140,13 @@ cp .env.example .env
 
 # 2. 填写 .env
 DM_BOT_DISCORD_TOKEN=your_token_here
+DM_BOT_DISCORD_GUILD_ID=your_guild_id
 
 # 3. 安装依赖
 uv sync
 
-# 4. 确保 Ollama 已拉好模型（可选，接入 AI 叙事之前 bot 可以跑占位符）
-ollama pull qwen3:4b
+# 4. 确保 Ollama 已拉好模型（可选）
+ollama pull qwen3:4b-instruct-2507-q4_K_M
 
 # 5. 启动前检查
 uv run python -m dm_bot.main preflight
@@ -151,73 +156,63 @@ uv run python -m dm_bot.main smoke-check
 uv run python -m dm_bot.main run-bot
 ```
 
-## Discord Usage
+## Discord Commands
 
-推荐双频道模式：
+**角色管理（私密）：**
+- `/start` — 对话式建卡
+- `/sheet` — 查看角色卡
+- `/roll <技能>` — 技能检定
 
-**DM Bot（私密）**
-- `/start` — 开始创建调查员（对话式建卡）
-- `/sheet` — 查看当前角色卡
-- `/roll <技能>` — 手动技能检定
-
-**游戏大厅（公开）**
-- `/begin_module <模组名>` — 开始一个模组，AI 发出开场叙事
-- 普通消息 → 视为公开行动提交
-- `/action <行动描述>` — 私密行动（其他玩家看不到）
-- `/end_round` — 强制结算当前回合
-- `/status` — 查看当前状态
+**游戏流程（公开）：**
+- `/begin_module <模组名>` — 开始模组（支持 .json 文件）
+- `/action <描述>` — 私密行动提交
+- 普通消息 → 公开行动
+- `/end_round` — 结算当前回合（DEX 排序 + 触发引擎）
+- `/status` — 查看 session/场景/拦截点/线索 状态
 
 ## Round Flow
 
 ```
-1. /begin_module         → Round 进入 COLLECTING，AI 发出开场叙事
-2. 玩家提交行动
-   - 普通消息 → 公开行动 (visibility=public)
-   - /action text → 私密行动 (visibility=private)
+1. /begin_module → Round 进入 COLLECTING
+2. 玩家提交行动（公开消息或 /action）
+   → submit_action() fires TriggerEvent("action.submit")
+   → TriggerEngine 匹配触发器 → 创建 TriggerChain → 审计
 3. /end_round 或所有玩家已行动
-   → Round.resolve():
-     a. DEX 降序排序，DEX 相同则 user_id 升序（确定性）
+   → resolve():
+     a. DEX 降序 + user_id asc 排序（确定性）
      b. 按序执行规则检定
-     c. 私密结果 DM 玩家
-     d. 公开结算发送大厅
-4. 进入下一轮 COLLECTING
+     c. fires TriggerEvent("round.resolve")
+     d. 私密结果 DM 玩家，公开结算发送大厅
+4. 下一轮 COLLECTING
 ```
 
-## Local Models
+## 当前状态 (2026-05-19)
 
-| 用途       | 默认模型                  |
-| --------- | ------------------------ |
-| Narrator  | `qwen3:4b-instruct-2507-q4_K_M` |
+**已实现（187 个测试，全部通过）：**
+- S2 触发器系统：事件匹配、反应排序、Blocker 检查点
+- S3 可恢复链 + 审计：TriggerChain 生命周期、Store 持久化、进程重启恢复
+- S4 揭露门：RevealGate 条件控制、KnowledgeState 玩家独立知识
+- S5 发布事件：6 种类型事件、可见性标记（全员/KP/私密）
+- S6 运行时硬化：Schema 版本管理、AdventureLoader JSON 加载、完整性检查
+- S7 信息面板：SessionBoard / SceneBoard / BlockerBoard / ConsequenceBoard
+- S8 线索面板 + 视图分离：ViewPayload → DiscordFormatter 解耦
+- S9 角色面板：CharacterCardBoard / CharacterListBoard / Session 角色绑定
+- S11 角色档案：CharacterArchive 版本包装、Store CRUD、双路径建卡
+- S12 数据生命周期：JSON 导入、软/硬删除、COC 合法性校验
+- S13 会话集成：SessionCheckpoint 技能提升、AdventureLog 结构化日志
+- S14 Ops：增强 preflight、smoke-check 区分模块/存储失败
 
-Narrator 目前为 `SimpleNarrator` placeholder，接入 ollama 后替换 `narrator/client.py`。
-
-## 当前状态
-
-**已实现：**
-- 7 包架构（discord_bot / scene / adventure / character / narrator / rules / store）
-- d100 完整规则（骰子/技能/战斗/SAN/衍生属性）
-- 对话式建卡流程
-- 回合状态机（COLLECTING → RESOLVING → NARRATING）
-- 确定性排序（DEX desc + user_id asc）
-- 49 个测试，`smoke-check` 通过
-
-**待完成（P0 阻塞）：**
-- 接入 ollama 替换 SimpleNarrator placeholder
-- Round.resolve() 真实调用 rules 系统
-- Discord 消息路由（玩家大厅文字 → handle_response）
-- AdventureLoader 接入真实模组 JSON/YAML 数据
-- /roll 命令实现
-
-**交付前检查：**
-```powershell
-uv run pytest -q
-uv run python -m dm_bot.main smoke-check
-```
+**待完成：**
+- S10 交互式 UI：按钮/选择菜单/Activity UI（需要视觉验证）
+- S15 诊断：测试场景标准化、故障诊断
+- 接入真实 ollama 模型替换 SimpleNarrator
+- /roll 真实调用 rules 系统
+- Discord 消息路由（玩家大厅文字 → trigger 引擎）
 
 ## Commands Reference
 
 ```powershell
-uv run python -m dm_bot.main preflight      # 查看配置状态
-uv run python -m dm_bot.main smoke-check    # 冒烟测试
-uv run python -m dm_bot.main run-bot        # 启动 bot
+uv run python -m dm_bot.main preflight      # 详细系统诊断
+uv run python -m dm_bot.main smoke-check    # 模块 + 存储检查
+uv run python -m dm_bot.main run-bot        # 启动 Discord bot
 ```
