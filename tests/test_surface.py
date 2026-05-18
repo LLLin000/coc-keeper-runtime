@@ -348,3 +348,31 @@ class TestClueBoardIntegration:
         output = board.render(state)
         assert "Open Clue" in output
         assert "Hidden Clue" not in output
+
+class TestCharacterBoard:
+    def test_render_sheet(self):
+        from dm_bot.surface.character_board import CharacterCardBoard
+
+        state = {
+            "name": "Alice",
+            "age": 30,
+            "occupation": "Detective",
+            "strength": 60, "constitution": 50, "size": 50,
+            "dexterity": 50, "appearance": 50, "intelligence": 70,
+            "power": 60, "education": 65, "luck": 40,
+            "hit_points": 10, "magic_points": 12, "sanity": 60, "sanity_max": 99,
+            "skills": {"Spot Hidden": 60, "Library Use": 50},
+        }
+        board = CharacterCardBoard()
+        output = board.render(state)
+        assert "Alice" in output
+        assert "Detective" in output
+        assert "60" in output  # strength value
+        assert "Spot Hidden" in output
+
+    def test_render_minimal_sheet(self):
+        from dm_bot.surface.character_board import CharacterCardBoard
+
+        board = CharacterCardBoard()
+        output = board.render({"name": "Bob", "occupation": "Writer"})
+        assert "Bob" in output
