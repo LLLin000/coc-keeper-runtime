@@ -82,3 +82,40 @@ class TestBlockerBoard:
         board = BlockerBoard()
         output = board.render({"blockers": []})
         assert "No unresolved blockers" in output
+
+
+class TestConsequenceBoard:
+    def test_render_table_visible_events(self):
+        from dm_bot.surface.consequence_board import ConsequenceBoard
+
+        state = {
+            "events": [
+                {"event_type": "action.submitted", "visibility": "table_visible", "summary": "Alice searched the room"},
+                {"event_type": "action.submitted", "visibility": "kp_only", "summary": "Bob found a hidden key"},
+            ]
+        }
+        board = ConsequenceBoard()
+        output = board.render(state, visibility="table_visible")
+        assert "Alice searched the room" in output
+        assert "Bob found a hidden key" not in output
+
+    def test_render_kp_only_events(self):
+        from dm_bot.surface.consequence_board import ConsequenceBoard
+
+        state = {
+            "events": [
+                {"event_type": "clue.revealed", "visibility": "kp_only", "summary": "DC15 Spot Hidden"},
+                {"event_type": "clue.revealed", "visibility": "table_visible", "summary": "A clue was found"},
+            ]
+        }
+        board = ConsequenceBoard()
+        output = board.render(state, visibility="kp_only")
+        assert "DC15 Spot Hidden" in output
+        assert "A clue was found" not in output
+
+    def test_render_all_events(self):
+        from dm_bot.surface.consequence_board import ConsequenceBoard
+
+        board = ConsequenceBoard()
+        output = board.render({"events": []})
+        assert "No events" in output
