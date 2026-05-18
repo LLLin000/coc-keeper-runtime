@@ -12,6 +12,68 @@ from dm_bot.store.db import Store
 from dm_bot.adventure.loader import AdventureLoader
 
 
+def check_store(db_path: str = ":memory:") -> dict:
+    """Verify Store can connect and DB is healthy."""
+    try:
+        store = Store(db_path)
+        integrity = store.check_integrity()
+        return integrity
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+def check_modules() -> dict:
+    """Verify all runtime modules import correctly."""
+    mods = [
+        "dm_bot.adventure.models", "dm_bot.trigger.models", "dm_bot.trigger.engine",
+        "dm_bot.reveal.models", "dm_bot.reveal.checker",
+        "dm_bot.publish.models", "dm_bot.publish.publisher", "dm_bot.publish.contract",
+        "dm_bot.store.db", "dm_bot.character.sheet", "dm_bot.character.archive",
+        "dm_bot.surface.board", "dm_bot.surface.discord_formatter",
+    ]
+    results = {}
+    all_ok = True
+    for mod in mods:
+        try:
+            __import__(mod)
+            results[mod] = "ok"
+        except Exception as e:
+            results[mod] = str(e)
+            all_ok = False
+    return {"all_ok": all_ok, "modules": results}
+
+
+def smoke_check() -> int:
+    """Comprehensive smoke check — separates module vs runtime failure."""
+    mods = check_modules()
+    if not mods["all_ok"]:
+        failed = [n for n, s in mods["modules"].items() if s != "ok"]
+        print(f"Smoke check FAILED — module failures: {failed}")
+        return 1
+    store_check = check_store()
+    if store_check.get("status") != "ok":
+        print(f"Smoke check FAILED — store: {store_check}")
+        return 1
+    print("All core modules import successfully. Store: OK.")
+    return 0
+
+
+def describe_runtime_full(settings: Settings | None = None) -> str:
+    settings = settings or get_settings()
+    lines = []
+    lines.append("=== Discord AI Keeper — Preflight ===")
+    lines.append(f"discord_token={'[CONFIGURED]' if settings.discord_token else '[MISSING]'}")
+    lines.append(f"narrator_model={settings.narrator_model}")
+    lines.append(f"ollama_base_url={settings.ollama_base_url}")
+    store_check = check_store()
+    lines.append(f"store_integrity={store_check['status']}")
+    mods = check_modules()
+    lines.append(f"modules={mods['all_ok']}")
+    for name, status in mods["modules"].items():
+        lines.append(f"  {name}: {status}")
+    return "\n".join(lines)
+
+
 def describe_runtime(settings: Settings | None = None) -> str:
     settings = settings or get_settings()
     token_status = "configured" if settings.discord_token else "missing"
@@ -54,7 +116,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "preflight":
-        print(describe_runtime())
+        print(describe_runtime_full())
         return 0
 
     if args.command == "run-bot":
@@ -70,20 +132,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "smoke-check":
-        # Basic import check
-        try:
-            from dm_bot.scene.round import Round
-            from dm_bot.scene.state import SceneState
-            from dm_bot.character.sheet import CharacterSheet
-            from dm_bot.narrator.client import SimpleNarrator
-            from dm_bot.store.db import Store
-            from dm_bot.discord_bot.commands import BotCommands
-            from dm_bot.adventure.loader import AdventureLoader
-            print("All core modules import successfully.")
-            return 0
-        except Exception as e:
-            print(f"Smoke check failed: {e}")
-            return 1
+        return smoke_check()
 
     print("Error: No command specified. Use: preflight, run-bot, smoke-check")
     return 1
