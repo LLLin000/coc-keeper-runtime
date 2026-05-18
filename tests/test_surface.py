@@ -400,3 +400,21 @@ class TestCharacterBoard:
         board = CharacterCardBoard()
         output = board.render({"name": "Bob", "occupation": "Writer"})
         assert "Bob" in output
+
+
+class TestSessionCharacterBinding:
+    def test_select_character(self):
+        from dm_bot.surface.session_context import SessionContext
+
+        ctx = SessionContext(session_id="ses_1")
+        ctx.select_character("c1", "Alice", "Detective")
+        assert ctx.selected_character_id == "c1"
+        assert ctx.selected_character_name == "Alice"
+
+    def test_to_dict_includes_character(self):
+        from dm_bot.surface.session_context import SessionContext
+
+        ctx = SessionContext(session_id="ses_1")
+        ctx.select_character("c1", "Alice", "Detective")
+        d = ctx.to_dict()
+        assert d["selected_character_name"] == "Alice"

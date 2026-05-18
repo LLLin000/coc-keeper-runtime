@@ -23,6 +23,9 @@ class SessionContext:
         self.module_name = module_name
         self.phase: str = "idle"
         self.participants: list[str] = []
+        self.selected_character_id: str = ""
+        self.selected_character_name: str = ""
+        self.selected_character_occupation: str = ""
         self.store = store or Store(":memory:")
         self.trigger_engine = trigger_engine or TriggerEngine()
         self.publisher = publisher or Publisher()
@@ -30,6 +33,11 @@ class SessionContext:
     def add_participant(self, user_id: str) -> None:
         if user_id not in self.participants:
             self.participants.append(user_id)
+
+    def select_character(self, char_id: str, name: str, occupation: str = "") -> None:
+        self.selected_character_id = char_id
+        self.selected_character_name = name
+        self.selected_character_occupation = occupation
 
     def to_dict(self) -> dict[str, Any]:
         blockers: list[dict[str, str]] = []
@@ -50,5 +58,7 @@ class SessionContext:
             "module_name": self.module_name,
             "phase": self.phase,
             "participants": list(self.participants),
+            "selected_character_id": self.selected_character_id,
+            "selected_character_name": self.selected_character_name,
             "blockers": blockers,
         }
