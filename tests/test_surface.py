@@ -58,3 +58,27 @@ class TestSceneBoard:
         output = board.render(state)
         assert "Empty Room" in output
         assert "WAITING" in output
+
+
+class TestBlockerBoard:
+    def test_render_blocker_summary(self):
+        from dm_bot.surface.blocker_board import BlockerBoard
+
+        state = {
+            "blockers": [
+                {"blocker_id": "blk_1", "reason": "KP decides lockpick DC", "scene_id": "s1"},
+                {"blocker_id": "blk_2", "reason": "Awaiting player response", "scene_id": "s2"},
+            ]
+        }
+        board = BlockerBoard()
+        output = board.render(state)
+        assert "KP decides lockpick DC" in output
+        assert "Awaiting player response" in output
+        assert "2" in output
+
+    def test_render_no_blockers(self):
+        from dm_bot.surface.blocker_board import BlockerBoard
+
+        board = BlockerBoard()
+        output = board.render({"blockers": []})
+        assert "No unresolved blockers" in output
