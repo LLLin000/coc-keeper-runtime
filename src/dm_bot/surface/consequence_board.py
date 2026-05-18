@@ -1,29 +1,25 @@
-"""Consequence output board with visibility filtering."""
-
-from typing import Any
+"""Consequence output board — visibility-filtered event display."""
 
 from dm_bot.surface.board import Board
+from dm_bot.surface.view_payload import ViewPayload, ViewSection
+from dm_bot.surface.discord_formatter import DiscordFormatter
 
 
 class ConsequenceBoard(Board):
-    """Renders published events filtered by visibility path."""
+    """Renders events filtered by visibility path."""
 
-    def render(self, state: dict[str, Any], **kwargs: Any) -> str:
-        events = state.get("events", [])
-        if not events:
-            return "**Recent Events:** No events."
+    def render(self, state: dict, visibility: str | None = None) -> str:
+        events: list[dict] = state.get("events", [])
+        filtered = events
+        if visibility:
+            filtered = [e for e in events if e.get("visibility") == visibility]
+        if not filtered:
+            return "No events."
 
-        visibility_filter = kwargs.get("visibility")
-        if visibility_filter:
-            events = [e for e in events if e.get("visibility") == visibility_filter]
-
-        if not events:
-            return f"**Recent Events:** (none with {visibility_filter} visibility)"
-
-        lines = [f"**Recent Events ({len(events)}):**"]
-        for e in events:
-            ev_type = e.get("event_type", "?")
-            summary = e.get("summary", "")
-            vis = e.get("visibility", "table_visible")
-            lines.append(f"- [{vis}] {summary} ({ev_type})")
-        return "\n".join(lines)
+        sections = [
+            ViewSection(heading=e.get("summary", e.get("event_type", "?")), body=f"Type: {e.get('event_type', '?')} | Visibility: {e.get('visibility', '?')}")
+            for e in filtered
+        ]
+        label = visibility.replace("_", " ").title() if visibility else "All"
+        payload = ViewPayload(title=f"{label} Events ({len(filtered)})", sections=sections)
+        return DiscordFormatter.format(payload)

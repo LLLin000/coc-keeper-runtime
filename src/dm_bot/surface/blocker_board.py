@@ -1,18 +1,21 @@
-from typing import Any
+"""Blocker summary board — KP-readable checkpoint list."""
 
 from dm_bot.surface.board import Board
+from dm_bot.surface.view_payload import ViewPayload, ViewSection
+from dm_bot.surface.discord_formatter import DiscordFormatter
 
 
 class BlockerBoard(Board):
-    def render(self, state: dict[str, Any]) -> str:
-        blockers = state.get("blockers", [])
+    """Renders unresolved blocker checkpoints."""
+
+    def render(self, state: dict) -> str:
+        blockers: list[dict] = state.get("blockers", [])
         if not blockers:
-            return "**Blockers:** No unresolved blockers."
-        lines = [f"**Blockers ({len(blockers)}):**"]
-        for b in blockers:
-            blocker_id = b.get("blocker_id", "?")
-            reason = b.get("reason", "?")
-            scene_id = b.get("scene_id", "")
-            scene_info = f" (scene: {scene_id})" if scene_id else ""
-            lines.append(f"- `{blocker_id}`{scene_info}: {reason}")
-        return "\n".join(lines)
+            return "No unresolved blockers."
+
+        sections = [
+            ViewSection(heading=b.get("reason", "?"), body=f"Scene: {b.get('scene_id', '?')} | ID: {b.get('blocker_id', '?')}")
+            for b in blockers
+        ]
+        payload = ViewPayload(title=f"Blockers ({len(blockers)})", sections=sections)
+        return DiscordFormatter.format(payload)
