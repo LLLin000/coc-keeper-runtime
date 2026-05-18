@@ -42,3 +42,22 @@ class TestBlockerCheckpoint:
         cp = BlockerCheckpoint(trigger_chain_id="chain_1", reason="test")
         cp.resolve()
         assert cp.resolved_at is not None
+
+
+class TestSceneTriggerIntegration:
+    def test_scene_has_triggers(self):
+        from dm_bot.adventure.models import Scene, TriggerRef
+        scene = Scene(
+            scene_id="s1", name="Hallway", description="A long corridor.",
+            triggers=[TriggerRef(trigger_id="tr_enter", event_type="scene.enter")],
+        )
+        assert len(scene.triggers) == 1
+        assert scene.triggers[0].trigger_id == "tr_enter"
+
+    def test_scene_has_blockers(self):
+        from dm_bot.adventure.models import Scene, BlockerRef
+        scene = Scene(
+            scene_id="s1", name="Locked Door", description="A heavy steel door.",
+            blockers=[BlockerRef(blocker_id="bl_door", condition={"skill": "mechanical_repair"})],
+        )
+        assert len(scene.blockers) == 1

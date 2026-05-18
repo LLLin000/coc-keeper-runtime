@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -15,6 +17,17 @@ class NPC(BaseModel):
     stats: dict[str, int] = Field(default_factory=dict)
 
 
+class TriggerRef(BaseModel):
+    trigger_id: str = Field(min_length=1)
+    event_type: str = Field(min_length=1)
+    condition: dict[str, Any] = Field(default_factory=dict)
+
+
+class BlockerRef(BaseModel):
+    blocker_id: str = Field(min_length=1)
+    condition: dict[str, Any] = Field(default_factory=dict)
+
+
 class Scene(BaseModel):
     scene_id: str = Field(min_length=1)
     name: str = Field(min_length=1)
@@ -22,6 +35,8 @@ class Scene(BaseModel):
     exits: list[str] = Field(default_factory=list)  # 可前往的场景ID
     clues: list[Clue] = Field(default_factory=list)
     npcs: list[NPC] = Field(default_factory=list)
+    triggers: list[TriggerRef] = Field(default_factory=list)
+    blockers: list[BlockerRef] = Field(default_factory=list)
 
 
 class Adventure(BaseModel):
