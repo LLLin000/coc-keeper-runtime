@@ -418,3 +418,58 @@ class TestSessionCharacterBinding:
         ctx.select_character("c1", "Alice", "Detective")
         d = ctx.to_dict()
         assert d["selected_character_name"] == "Alice"
+
+
+class TestCharacterBoardIntegration:
+    def test_character_card_from_store(self):
+        from dm_bot.store.db import Store
+        from dm_bot.character.archive import CharacterArchive
+        from dm_bot.character.sheet import CharacterSheet
+        from dm_bot.surface.character_board import CharacterCardBoard
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_char_board2.db")
+        if os.path.exists(db_path):
+            os.remove(db_path)
+        store = Store(db_path)
+        try:
+            sheet = CharacterSheet(character_id="u1", name="Alice", age=30, occupation="Writer")
+            archive = CharacterArchive(character_id="u1", player_id="u1", sheet=sheet)
+            store.save_character(archive)
+
+            loaded = store.load_character("u1")
+            state = loaded.sheet.model_dump()
+            output = CharacterCardBoard().render(state)
+            assert "Alice" in output
+            assert "Writer" in output
+        finally:
+            del store
+            gc.collect()
+            if os.path.exists(db_path):
+                os.remove(db_path)
+
+    def test_character_list_from_store(self):
+        from dm_bot.store.db import Store
+        from dm_bot.character.archive import CharacterArchive
+        from dm_bot.character.sheet import CharacterSheet
+        from dm_bot.surface.character_board import CharacterListBoard
+        import tempfile, os, gc
+
+        db_path = os.path.join(tempfile.gettempdir(), "test_char_list3.db")
+        if os.path.exists(db_path):
+            os.remove(db_path)
+        store = Store(db_path)
+        try:
+            for cid, name, occ in [("c1", "Alice", "Writer"), ("c2", "Bob", "Doctor")]:
+                sheet = CharacterSheet(character_id=cid, name=name, occupation=occ)
+                store.save_character(CharacterArchive(character_id=cid, player_id="u1", sheet=sheet))
+            chars = [s.sheet.model_dump() for s in (store.load_character(c) for c in ["c1", "c2"]) if s]
+            state = {"player_id": "u1", "characters": [{"name": c["name"], "occupation": c["occupation"]} for c in chars]}
+            output = CharacterListBoard().render(state)
+            assert "Alice" in output
+            assert "Bob" in output
+        finally:
+            del store
+            gc.collect()
+            if os.path.exists(db_path):
+                os.remove(db_path)
