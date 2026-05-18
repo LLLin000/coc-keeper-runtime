@@ -3,6 +3,7 @@
 import sqlite3
 from pathlib import Path
 from dm_bot.trigger.models import BlockerCheckpoint, TriggerChain, AuditEntry
+from dm_bot.reveal.models import RevealGate
 
 
 class Store:
@@ -55,6 +56,15 @@ class Store:
                     step TEXT NOT NULL,
                     detail TEXT DEFAULT '{}',
                     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE TABLE IF NOT EXISTS reveal_gates (
+                    gate_id TEXT PRIMARY KEY,
+                    clue_id TEXT NOT NULL,
+                    gate_type TEXT NOT NULL,
+                    condition TEXT DEFAULT '{}',
+                    is_open INTEGER DEFAULT 0,
+                    opened_at TIMESTAMP,
+                    opened_by TEXT DEFAULT ''
                 );
                 """
             )
@@ -195,6 +205,55 @@ class Store:
                 (entry.entry_id, entry.chain_id, entry.step,
                  json.dumps(entry.detail), entry.timestamp.isoformat()),
             )
+
+    def save_reveal_gate(self, gate: RevealGate) -> None:
+        import json
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                """INSERT OR REPLACE INTO reveal_gates
+                   (gate_id, clue_id, gate_type, condition, is_open, opened_at, opened_by)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (gate.gate_id, gate.clue_id, gate.gate_type,
+                 json.dumps(gate.condition),
+                 1 if gate.is_open else 0,
+                 gate.opened_at.isoformat() if gate.opened_at else None,
+                 gate.opened_by),
+            )
+
+    def load_reveal_gate(self, gate_id: str) -> RevealGate | None:
+        import json
+        from datetime import datetime
+        with sqlite3.connect(self.db_path) as conn:
+            row = conn.execute(
+                "SELECT * FROM reveal_gates WHERE gate_id = ?", (gate_id,)
+            ).fetchone()
+            if not row:
+                return None
+            return RevealGate(
+                gate_id=row[0], clue_id=row[1], gate_type=row[2],
+                condition=json.loads(row[3]) if row[3] else {},
+                is_open=bool(row[4]),
+                opened_at=datetime.fromisoformat(row[5]) if row[5] else None,
+                opened_by=row[6] or "",
+            )
+
+    def list_reveal_gates_by_clue(self, clue_id: str) -> list[RevealGate]:
+        import json
+        from datetime import datetime
+        with sqlite3.connect(self.db_path) as conn:
+            rows = conn.execute(
+                "SELECT * FROM reveal_gates WHERE clue_id = ?", (clue_id,)
+            ).fetchall()
+            return [
+                RevealGate(
+                    gate_id=r[0], clue_id=r[1], gate_type=r[2],
+                    condition=json.loads(r[3]) if r[3] else {},
+                    is_open=bool(r[4]),
+                    opened_at=datetime.fromisoformat(r[5]) if r[5] else None,
+                    opened_by=r[6] or "",
+                )
+                for r in rows
+            ]
 
     def close(self) -> None:
         if self._conn is not None:
