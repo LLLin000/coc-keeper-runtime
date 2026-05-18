@@ -76,3 +76,21 @@ class TestCharacterArchive:
         data = archive.model_dump()
         assert data["schema_version"] == 1
         assert data["sheet"]["name"] == "Charlie"
+
+
+class TestFullPathBuilder:
+    def test_full_path_creates_character(self):
+        from dm_bot.character.builder import FullPathBuilder
+
+        builder = FullPathBuilder()
+        result = builder.build_fast()
+        assert result.name is not None
+        assert result.strength >= 30
+
+    def test_full_path_heuristic_fallback(self):
+        from dm_bot.character.builder import FullPathBuilder
+
+        builder = FullPathBuilder(use_model=False)
+        result = builder.build()
+        assert isinstance(result.name, str)
+        assert len(result.name) > 0

@@ -94,3 +94,45 @@ class CharacterBuilder:
             sanity=data["sanity"],
             sanity_max=data.get("sanity_max", 99),
         )
+
+
+class FullPathBuilder:
+    """Model-guided interview with heuristic fallback.
+
+    Full path uses the configured model (qwen3) for interview-style chargen.
+    When model is unavailable, falls back to randomized heuristic.
+    The model integration is a placeholder until the narration/model layer is wired.
+    """
+
+    def __init__(self, use_model: bool = False) -> None:
+        self._use_model = use_model
+
+    def build(self) -> CharacterSheet:
+        if self._use_model:
+            return self._model_guided()
+        return self.build_fast()
+
+    def build_fast(self) -> CharacterSheet:
+        """Heuristic fallback — random stats, defaults, generic name."""
+        import random
+        occupations = ["Detective", "Journalist", "Doctor", "Archeologist", "Professor"]
+        first_names = ["Alex", "Sam", "Jordan", "Morgan", "Taylor", "Casey"]
+        return CharacterSheet(
+            character_id=f"full_{random.randint(1000, 9999)}",
+            name=random.choice(first_names),
+            age=random.randint(20, 60),
+            occupation=random.choice(occupations),
+            strength=random.randint(40, 80),
+            constitution=random.randint(40, 80),
+            size=random.randint(40, 80),
+            dexterity=random.randint(40, 80),
+            appearance=random.randint(40, 80),
+            intelligence=random.randint(40, 80),
+            power=random.randint(40, 80),
+            education=random.randint(40, 80),
+            luck=random.randint(30, 80),
+        )
+
+    def _model_guided(self) -> CharacterSheet:
+        """Placeholder — delegates to build_fast until model layer is wired."""
+        return self.build_fast()
