@@ -181,3 +181,23 @@ class TestBoardIntegration:
         ]
         conseq_out = ConsequenceBoard().render({"events": events})
         assert "Alice searched the room" in conseq_out
+
+
+class TestViewPayload:
+    def test_create_payload(self):
+        from dm_bot.surface.view_payload import ViewPayload, ViewSection
+
+        section = ViewSection(heading="Findings", body="The team discovered...")
+        payload = ViewPayload(title="Clue Report", sections=[section])
+        assert payload.title == "Clue Report"
+        assert payload.sections[0].heading == "Findings"
+
+    def test_payload_with_fields(self):
+        from dm_bot.surface.view_payload import ViewPayload, FieldEntry
+
+        payload = ViewPayload(
+            title="Scene Status",
+            fields=[FieldEntry(name="Round", value="3"), FieldEntry(name="Actions", value="2", inline=True)],
+        )
+        assert len(payload.fields) == 2
+        assert payload.fields[1].inline is True
