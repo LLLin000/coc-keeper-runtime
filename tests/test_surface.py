@@ -277,3 +277,74 @@ class TestClueBoard:
         board = ClueBoard()
         output = board.render(state)
         assert "[Known]" in output or "Known" in output
+
+
+class TestClueBoardIntegration:
+    def test_clue_board_from_reveal_checker(self):
+        from dm_bot.surface.clue_board import ClueBoard
+        from dm_bot.reveal.models import RevealGate, KnowledgeState
+        from dm_bot.reveal.checker import RevealChecker
+
+        checker = RevealChecker()
+        gate_open = RevealGate(clue_id="c1", gate_type="manual")
+        gate_open.open(opened_by="KP")
+        gate_closed = RevealGate(clue_id="c2", gate_type="manual")
+        alice_knowledge = KnowledgeState(player_id="Alice")
+
+        clues_data = [
+            {"clue_id": "c1", "title": "Open Clue", "description": "Visible to all."},
+            {"clue_id": "c2", "title": "Hidden Clue", "description": "Not visible."},
+        ]
+        gates = [gate_open, gate_closed]
+
+        visible_ids = [
+            c["clue_id"] for c in clues_data
+            if checker.is_clue_visible(c["clue_id"], "Alice", gates, alice_knowledge)
+        ]
+
+        state = {
+            "clues": clues_data,
+            "visible_clue_ids": visible_ids,
+            "known_clue_ids": alice_knowledge.known_clue_ids,
+            "player_id": "Alice",
+        }
+        board = ClueBoard()
+        output = board.render(state)
+        assert "Open Clue" in output
+        assert "Hidden Clue" not in output
+
+    def test_clue_board_in_session_context(self):
+        from dm_bot.surface.session_context import SessionContext
+        from dm_bot.surface.clue_board import ClueBoard
+        from dm_bot.reveal.models import RevealGate, KnowledgeState
+        from dm_bot.reveal.checker import RevealChecker
+
+        ctx = SessionContext(session_id="ses_1", module_name="Test")
+        checker = RevealChecker()
+        gate_open = RevealGate(clue_id="c1", gate_type="manual")
+        gate_open.open(opened_by="KP")
+        gate_closed = RevealGate(clue_id="c2", gate_type="manual")
+
+        clues_data = [
+            {"clue_id": "c1", "title": "Open Clue", "description": "Visible."},
+            {"clue_id": "c2", "title": "Hidden Clue", "description": "Hidden."},
+        ]
+        gates_list = [gate_open, gate_closed]
+        player_knowledge = KnowledgeState(player_id="Alice")
+
+        visible_ids = [
+            c["clue_id"] for c in clues_data
+            if checker.is_clue_visible(c["clue_id"], "Alice", gates_list, player_knowledge)
+        ]
+
+        state = ctx.to_dict()
+        state.update({
+            "clues": clues_data,
+            "visible_clue_ids": visible_ids,
+            "known_clue_ids": player_knowledge.known_clue_ids,
+            "player_id": "Alice",
+        })
+        board = ClueBoard()
+        output = board.render(state)
+        assert "Open Clue" in output
+        assert "Hidden Clue" not in output
